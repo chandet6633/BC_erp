@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# PocketBase data (persisted in Docker volumes, not in Git)
+*/pb_data/
+pb_data/
+
+# Build output
+*/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+build_log.txt
+
+# Environment
+.env
+.env.local

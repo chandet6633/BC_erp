@@ -1,0 +1,1 @@
+import{c as t}from"./document-factory-BsryDHSI.js";import"./index-BeHq0lp5.js";import"./inventory-Cf0eCzb2.js";const i=t({title:"ใบโอน (TF)",icon:"swap_horiz",prefix:"TF",collection:"stock_transfers"});export{i as initStockTransferPage};

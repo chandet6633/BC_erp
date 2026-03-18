@@ -1,0 +1,94 @@
+/* ╔══════════════════════════════════════════════════╗
+   ║  Print Styles — PDF Export via browser print     ║
+   ╚══════════════════════════════════════════════════╝ */
+
+@media print {
+    /* Hide non-essential UI */
+    .sidebar,
+    .topnav,
+    .floating-help-btn,
+    .toolbar,
+    .toolbar-actions,
+    .form-row-4,
+    .card:has(.form-control),
+    #sidebarToggle,
+    #logoutBtn,
+    #notifBtn,
+    #helpBtn,
+    .btn-outline,
+    .btn-primary,
+    .bottom-nav {
+        display: none !important;
+    }
+
+    /* Full width content */
+    .app-container {
+        display: block !important;
+    }
+
+    .main-wrapper {
+        width: 100% !important;
+    }
+
+    .page-content {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Card styling for print */
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        break-inside: avoid;
+    }
+
+    /* Stat cards in a row */
+    .stats-grid {
+        display: flex !important;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .stat-card {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+    }
+
+    /* Table styling */
+    .data-grid {
+        font-size: 11px !important;
+    }
+
+    .data-grid th,
+    .data-grid td {
+        padding: 4px 8px !important;
+        border: 1px solid #ccc !important;
+    }
+
+    /* Page header */
+    .page-header {
+        margin-bottom: 16px;
+    }
+
+    .page-title h1 {
+        font-size: 16pt !important;
+        color: #000 !important;
+    }
+
+    /* Chart sizing for print */
+    canvas {
+        max-height: 200px !important;
+    }
+
+    /* Backgrounds */
+    body {
+        background: white !important;
+        color: black !important;
+    }
+
+    /* Page setup */
+    @page {
+        margin: 1cm;
+        size: A4 landscape;
+    }
+}

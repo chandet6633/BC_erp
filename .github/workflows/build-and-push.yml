@@ -1,0 +1,63 @@
+# ═══════════════════════════════════════════════════════════════
+#  ERP — Build & Push Docker Images to GitHub Container Registry
+# ═══════════════════════════════════════════════════════════════
+#  Builds two separate images:
+#    - ghcr.io/OWNER/BC_erp-management
+#    - ghcr.io/OWNER/BC_erp-mungkhud
+# ═══════════════════════════════════════════════════════════════
+name: Build and Push ERP Images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-management:
+    name: Build Management Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./Management
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/BC_erp-management:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/BC_erp-management:${{ github.sha }}
+
+  build-mungkhud:
+    name: Build MungkhudShop Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./MungkhudShop
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/BC_erp-mungkhud:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/BC_erp-mungkhud:${{ github.sha }}

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>แดชบอร์ดพนักงาน</title>
+    <link rel="manifest" href="../../manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Design System -->
+    <style>
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+    </style>
+    \n\n
+  <script type="module" crossorigin src="../../assets/bc_ops_employee-Bg5UHbZP.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/ui-D6UlSK9g.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/entry-CsCD-e0B.js">
+  <link rel="modulepreload" crossorigin href="../../assets/revenueService-BeC0GFMo.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/hr_migrate-BvNrfudO.css">
+</head>
+
+<body>
+    <div class="container"
+        style="padding-top: var(--space-4); padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom))">
+        <div class="header-section" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: var(--space-4);
+                ">
+            <div>
+                <h1 style="font-size: var(--text-xl)">👷 แดชบอร์ดพนักงาน</h1>
+                <p style="color: var(--surface-600); font-size: var(--text-sm)">ข้อมูลสรุปสำหรับพนักงาน</p>
+            </div>
+            <div style="display: flex; gap: var(--space-2); align-items: center">
+                <button id="refreshBtn" class="btn btn-ghost" style="font-size: var(--text-sm)">🔄 อัปเดต</button>
+                <a href="#" class="btn btn-ghost" style="font-size: var(--text-xs)" onclick="goBack(event)">← กลับ</a>
+            </div>
+        </div>
+
+        <script>
+            function goBack(e) {
+                e.preventDefault();
+                window.location.href = '../../pages/main/index.html';
+            }
+        </script>
+
+        <!-- Period Filter -->
+        <div class="card mb-3" style="margin-bottom: var(--space-4); padding: var(--space-3)">
+            <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap">
+                <label style="font-size: var(--text-sm); font-weight: 500">ช่วงเวลา:</label>
+                <select id="monthSelect" class="input"
+                    style="width: auto; height: 36px; padding: 0 var(--space-2); flex: 1; min-width: 120px"></select>
+                <select id="yearSelect" class="input"
+                    style="width: auto; height: 36px; padding: 0 var(--space-2); flex: 1; min-width: 80px"></select>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid-auto"
+            style="grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-bottom: var(--space-6)">
+            <div class="kpi-card">
+                <div class="kpi-label">งานทั้งหมด</div>
+                <div class="kpi-value" id="empJobCount">0</div>
+                <div class="kpi-sub">งาน</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">เวลาเฉลี่ย</div>
+                <div class="kpi-value" id="empAvgRepair">-</div>
+                <div class="kpi-sub">ชม./งาน</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">รายรับรวม</div>
+                <div class="kpi-value text-success" id="empRevenue">0.00</div>
+                <div class="kpi-sub">บาท</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <div class="card">
+                <h3 style="margin-bottom: var(--space-2); font-size: var(--text-base)">
+                    ⏰ ช่วงเวลาลูกค้า (Peak Hours)
+                </h3>
+                <div style="position: relative; height: 200px; width: 100%">
+                    <canvas id="empPeakHourChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom: var(--space-2); font-size: var(--text-base)">
+                    📅 วันที่ลูกค้า (Peak Days)
+                </h3>
+                <div style="position: relative; height: 200px; width: 100%">
+                    <canvas id="empPeakDayChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Services -->
+        <div class="card">
+            <h3 style="margin-bottom: var(--space-2); font-size: var(--text-lg)">⭐ สินค้า/บริการ ยอดนิยม</h3>
+            <div class="table-container">
+                <table id="topServicesTable" style="width: 100%; border-collapse: collapse">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                            <th style="padding: var(--space-2)">#</th>
+                            <th style="padding: var(--space-2)">สินค้า/บริการ</th>
+                            <th style="padding: var(--space-2); text-align: right">จำนวน</th>
+                            <th style="padding: var(--space-2); text-align: right">ยอดขาย</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => { });
+        }
+    </script>
+    \n\n
+</body>
+
+</html>

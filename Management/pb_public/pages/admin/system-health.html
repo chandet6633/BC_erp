@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Health - BC Auto Admin</title>
+    <style>
+        body {
+            padding: var(--space-6);
+            background: var(--surface-50);
+        }
+
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: var(--space-2);
+        }
+
+        .bg-success {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+        .bg-danger {
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+    </style>
+\n    \n  <script type="module" crossorigin src="../../assets/admin_health-uvjL7AMX.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+</head>
+
+<body>
+    <div class="container mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold">System Health</h1>
+                <p class="text-sub">Real-time infrastructure monitoring</p>
+            </div>
+            <button class="btn btn-ghost" onclick="window.location.href='index.html'">⬅ Back</button>
+        </div>
+
+        <div class="health-grid">
+            <!-- PocketBase Status -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold">PocketBase Connectivity</h3>
+                    <span id="pb-status" class="status-dot bg-danger"></span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-sub">Endpoint:</span>
+                        <code id="pb-endpoint">...</code>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-sub">Latency:</span>
+                        <span id="pb-latency">... ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Browser Health -->
+            <div class="card p-6">
+                <h3 class="font-bold mb-4">Client Environment</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-sub">Internet:</span>
+                        <span id="online-status">...</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-sub">Storage:</span>
+                        <span id="storage-status">...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+\n    \n</body>
+
+</html>

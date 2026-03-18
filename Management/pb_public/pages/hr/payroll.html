@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>Payroll & Salary | HR Dashboard</title>
+    <link rel="manifest" href="../../manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Design System -->
+    <style>
+        /* Tab Navigation */
+        .tab-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--surface-600);
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Payroll Specific Overrides */
+        .payroll-summary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: var(--text-sm);
+        }
+
+        .payroll-summary-table th {
+            background: var(--surface-100);
+            color: var(--surface-600);
+            padding: var(--space-3);
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid var(--surface-200);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .payroll-summary-table td {
+            padding: var(--space-3);
+            text-align: center;
+            border-bottom: 1px solid var(--surface-100);
+            vertical-align: middle;
+        }
+
+        .payroll-summary-table .avg-row {
+            background: var(--primary-50);
+            font-weight: 700;
+            color: var(--primary-700);
+        }
+
+        /* Attendance Grid (The Calendar) */
+        .attendance-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.75rem;
+        }
+
+        .attendance-grid th {
+            background: var(--surface-800);
+            color: var(--surface-50);
+            padding: var(--space-2);
+            text-align: center;
+            border: 1px solid var(--surface-600);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .attendance-grid td {
+            padding: 4px;
+            text-align: center;
+            border: 1px solid var(--surface-200);
+            min-width: 45px;
+            height: 45px;
+            vertical-align: middle;
+            font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Sticky Name Column */
+        .attendance-grid .name-col {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background: var(--surface-0);
+            z-index: 20;
+            min-width: 140px;
+            padding-left: var(--space-3);
+            font-weight: 600;
+            color: var(--surface-900);
+            border-right: 2px solid var(--surface-300);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .attendance-grid th.name-col {
+            background: var(--surface-900);
+            color: white;
+            z-index: 21;
+        }
+
+        /* Status Colors (Pro Max) */
+        .cell-full {
+            background: #dbeafe;
+            /* Blue 100 */
+            color: #1e40af;
+            /* Blue 800 */
+            font-weight: 500;
+        }
+
+        .cell-half {
+            background: #fef9c3;
+            /* Yellow 100 */
+            color: #854d0e;
+            /* Yellow 800 */
+        }
+
+        .cell-leave {
+            background: #fee2e2;
+            /* Red 100 */
+            color: #991b1b;
+            /* Red 800 */
+        }
+
+        .cell-absent {
+            background: #f3f4f6;
+            /* Gray 100 */
+            color: #374151;
+            /* Gray 700 */
+            font-weight: bold;
+        }
+
+        .cell-sunday {
+            background: #fdf2f8;
+            /* Pink 50 */
+            color: #db2777;
+            /* Pink 600 */
+        }
+
+        .day-sun {
+            background: #be185d !important;
+            /* Pink 700 */
+            color: white !important;
+        }
+
+        /* Print Overrides */
+        @media print {
+            @page {
+                size: landscape;
+                margin: 1cm;
+            }
+
+            .no-print,
+            #loading {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+                margin-bottom: 20px !important;
+                page-break-inside: avoid;
+            }
+
+            h3 {
+                font-size: 14pt !important;
+                margin-bottom: 10px !important;
+                color: #000 !important;
+            }
+
+            /* Summary Table */
+            .payroll-summary-table {
+                font-size: 10pt !important;
+                width: 100%;
+            }
+
+            .payroll-summary-table th {
+                background: #f1f5f9 !important;
+                color: #000 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+
+            .payroll-summary-table td {
+                border-bottom: 1px solid #ccc !important;
+            }
+
+            /* Attendance Grid - Scale down to fit */
+            .attendance-grid {
+                font-size: 7pt !important;
+                width: 100%;
+                table-layout: fixed;
+            }
+
+            .attendance-grid th,
+            .attendance-grid td {
+                border: 1px solid #ccc !important;
+                padding: 2px !important;
+                height: auto !important;
+                min-width: auto !important;
+            }
+
+            .attendance-grid .name-col {
+                position: static !important;
+                box-shadow: none !important;
+                width: 100px !important;
+                background: white !important;
+                color: black !important;
+            }
+
+            /* Ensure semantic colors print */
+            .cell-full {
+                background: #dbeafe !important;
+                color: #1e40af !important;
+            }
+
+            .cell-half {
+                background: #fef9c3 !important;
+                color: #854d0e !important;
+            }
+
+            .cell-leave {
+                background: #fee2e2 !important;
+                color: #991b1b !important;
+            }
+
+            .cell-absent {
+                background: #f3f4f6 !important;
+                color: #374151 !important;
+            }
+
+            .cell-sunday {
+                background: #fdf2f8 !important;
+                color: #db2777 !important;
+            }
+
+            .day-sun {
+                background: #be185d !important;
+                color: white !important;
+            }
+        }
+    </style>
+\n    \n  <script type="module" crossorigin src="../../assets/hr_payroll-_P_0gFn-.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/data_manager-BzTiqLrg.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+</head>
+
+<body>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <header class="header-section no-print" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: var(--space-6);
+                    flex-wrap: wrap;
+                    gap: var(--space-4);
+                ">
+            <div>
+                <h1 style="font-size: var(--text-xl)">💰 Payroll System</h1>
+                <p style="color: var(--surface-600); font-size: var(--text-sm)">คำนวณเงินเดือน และตรวจสอบวันลา</p>
+            </div>
+            <a href="index.html" class="btn btn-ghost btn-sm">← กลับ</a>
+        </header>
+
+        <!-- Navigation -->
+        <div class="tabs no-print" style="border-bottom: 1px solid var(--surface-100); margin-bottom: var(--space-6)">
+            <button class="tab-btn" onclick="location.href = 'hrdashboard.html'">แดชบอร์ด</button>
+            <button class="tab-btn active" onclick="location.href = 'payroll.html'">คำนวณเงินเดือน</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card no-print mb-6">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>เเผนก</label>
+                    <select id="dept" class="input" style="width: 160px">
+                        <option value="">-- เลือกเเผนก --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>เดือน</label>
+                    <input type="month" id="month" class="input" style="width: 160px" />
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 200px">
+                    <label>ค้นหาชื่อ</label>
+                    <input type="text" id="search" class="input" placeholder="พิมพ์ชื่อพนักงาน..." />
+                </div>
+                <div style="display: flex; gap: var(--space-2); margin-top: auto">
+                    <button id="load" class="btn btn-primary btn-sm">โหลดข้อมูล</button>
+                    <button id="csv" class="btn btn-outline btn-sm">CSV</button>
+                    <button id="print" class="btn btn-ghost btn-sm" onclick="window.print()">พิมพ์ / PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div id="loading" class="hidden" style="text-align: center; padding: var(--space-8); color: var(--surface-500)">
+            <p>กำลังโหลดข้อมูล...</p>
+        </div>
+
+        <div id="content-container"></div>
+    </div>
+
+    <!-- Scripts -->
+
+
+\n    \n</body>
+
+</html>

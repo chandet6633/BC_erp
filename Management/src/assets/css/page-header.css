@@ -1,0 +1,145 @@
+/*
+   PAGE HEADER — Unified Theme
+   Matches main menu gradient + glassmorphism style.
+   Import in tool pages: <link rel="stylesheet" href="../../assets/css/page-header.css">
+*/
+
+/* ===== Page Background (matches main menu) ===== */
+.page-bg {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 30%, #dbeafe 60%, #eff6ff 100%);
+}
+
+/* ===== Page Header Bar ===== */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 20px 0 0;
+}
+
+.page-header .page-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-header .page-subtitle {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.page-header .page-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== Branch Switcher Bar ===== */
+.branch-switcher-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.branch-tab {
+    padding: 10px 18px;
+    border-radius: 14px;
+    border: 2px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.branch-tab:hover {
+    border-color: #93c5fd;
+    background: white;
+}
+
+.branch-tab:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.branch-tab.active {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    color: #1e40af;
+    box-shadow: 0 2px 12px rgba(37, 99, 235, 0.12);
+}
+
+.branch-switcher-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 16px;
+}
+
+/* ===== Back Button (consistent across pages) ===== */
+.page-back-btn {
+    padding: 8px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.page-back-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+/* ===== Cards on unified background ===== */
+.page-bg .card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header .page-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .branch-switcher-bar {
+        flex-direction: column;
+    }
+
+    .branch-tab {
+        width: 100%;
+        justify-content: center;
+    }
+}

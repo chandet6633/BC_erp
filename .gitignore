@@ -4,6 +4,11 @@ node_modules/
 # PocketBase data (persisted in Docker volumes, not in Git)
 */pb_data/
 pb_data/
+*/pb_data_old/
+*/pb_data_test/
+
+# Binaries (platform-specific, downloaded during Docker build)
+*.exe
 
 # Build output
 */dist/
@@ -20,7 +25,11 @@ desktop.ini
 # Logs
 *.log
 build_log.txt
+out.txt
 
 # Environment
 .env
 .env.local
+
+# Cloudflare tunnel
+cf_token.txt

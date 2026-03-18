@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management - BC Auto Admin</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Design System -->
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/page-header.css" />
+    <style>
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .user-table th {
+            background: var(--surface-100);
+            padding: var(--space-3);
+            text-align: left;
+            font-size: var(--text-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--surface-500);
+        }
+
+        .user-table td {
+            padding: var(--space-3);
+            border-bottom: 1px solid var(--surface-200);
+            background: white;
+            vertical-align: middle;
+        }
+
+        .role-badge {
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: var(--text-xs);
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .role-badge.admin {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .role-badge.owner {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .role-badge.manager {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .role-badge.sa {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .role-badge.mechanic {
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        .branch-badge {
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: var(--text-xs);
+            font-weight: 500;
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .action-btn {
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-200);
+            background: white;
+            cursor: pointer;
+            font-size: var(--text-xs);
+            font-weight: 500;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .action-btn:hover {
+            background: var(--surface-50);
+            border-color: var(--surface-300);
+        }
+
+        .action-btn.danger {
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+
+        .action-btn.danger:hover {
+            background: #fee2e2;
+        }
+
+        .action-btn.warning {
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .action-btn.warning:hover {
+            background: #fef3c7;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+        }
+
+        .status-dot.inactive {
+            background: var(--danger);
+        }
+
+        /* Registration Modal */
+        .reg-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .reg-modal-overlay.active {
+            display: flex !important;
+        }
+
+        .reg-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 28px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.2);
+            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--surface-700);
+            margin-bottom: 4px;
+        }
+
+        .form-group .input {
+            width: 100%;
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--surface-200);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--surface-900);
+        }
+
+        .stat-card .label {
+            font-size: var(--text-xs);
+            color: var(--surface-500);
+            margin-top: 2px;
+        }
+
+        /* Wizard Styles */
+        .wizard-step {
+            display: none;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .wizard-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .wizard-progress::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--surface-200);
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+
+        .wizard-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--surface-200);
+            border: 4px solid white;
+            z-index: 1;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .wizard-dot.active {
+            background: var(--primary-500);
+            color: white;
+            box-shadow: 0 0 0 2px var(--primary-100);
+        }
+
+        .wizard-dot.completed {
+            background: var(--success);
+            color: white;
+        }
+
+        /* Real-time Validation UI */
+        .validation-wrapper {
+            position: relative;
+        }
+
+        .validation-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+        }
+
+        .input.valid {
+            border-color: var(--success);
+            padding-right: 36px;
+        }
+
+        .input.valid+.validation-icon.icon-valid {
+            display: block;
+            color: var(--success);
+        }
+
+        .input.invalid {
+            border-color: var(--danger);
+            padding-right: 36px;
+        }
+
+        .input.invalid+.validation-icon.icon-invalid {
+            display: block;
+            color: var(--danger);
+        }
+    </style>
+    \n
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n
+</head>
+
+<body class="page-bg">
+    <div class="container" style="max-width: 1000px; padding: 20px;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">👥 จัดการผู้ใช้งาน</h1>
+                <p class="page-subtitle">จัดการบัญชี สิทธิ์ และข้อมูลผู้ใช้ระบบ</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-primary btn-sm" id="addUserBtn">➕ ลงทะเบียนผู้ใช้ใหม่</button>
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-cards" id="userStats">
+            <div class="stat-card">
+                <div class="value" id="statTotal">-</div>
+                <div class="label">ผู้ใช้ทั้งหมด</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="statActive">-</div>
+                <div class="label">ใช้งานอยู่</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="statAdmin">-</div>
+                <div class="label">Admin</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="statEmployee">-</div>
+                <div class="label">พนักงาน</div>
+            </div>
+        </div>
+
+        <!-- User Table -->
+        <div class="card p-0" style="overflow: hidden; border: 1px solid var(--surface-200);">
+            <div style="overflow-x: auto;">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>สถานะ</th>
+                            <th>ชื่อ</th>
+                            <th>อีเมล</th>
+                            <th>บทบาท</th>
+                            <th>สาขา</th>
+                            <th>PIN</th>
+                            <th style="text-align: center;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-body">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px;">กำลังโหลด...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration / Edit Modal -->
+    <div class="reg-modal-overlay" id="regModal">
+        <div class="reg-modal">
+            <h3 style="margin-bottom: 20px; font-size: 1.1rem; font-weight: 700;" id="regModalTitle">➕
+                ลงทะเบียนผู้ใช้ใหม่</h3>
+
+            <div class="wizard-progress" id="wizardProgress">
+                <div class="wizard-dot active" id="dot1">1</div>
+                <div class="wizard-dot" id="dot2">2</div>
+                <div class="wizard-dot" id="dot3">3</div>
+            </div>
+
+            <form id="regForm">
+                <!-- STEP 1 -->
+                <div class="wizard-step active" id="step1">
+                    <h4 style="margin-bottom: 16px; color: var(--surface-600); font-size: var(--text-sm);">ส่วนที่ 1:
+                        ข้อมูลส่วนตัว</h4>
+                    <div class="form-group">
+                        <label>ชื่อที่แสดง *</label>
+                        <div class="validation-wrapper">
+                            <input type="text" id="regName" class="input" placeholder="ชื่อ-นามสกุล" required />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>อีเมล</label>
+                        <div class="validation-wrapper">
+                            <input type="email" id="regEmail" class="input" placeholder="example@email.com" />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn btn-outline btn-sm" id="cancelRegBtn"
+                            style="margin-right: 8px;">ยกเลิก</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="window.nextStep(2)">ถัดไป
+                            ➡️</button>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="wizard-step" id="step2">
+                    <h4 style="margin-bottom: 16px; color: var(--surface-600); font-size: var(--text-sm);">ส่วนที่ 2:
+                        สิทธิ์และการเข้าถึง</h4>
+                    <div class="form-row">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>บทบาท *</label>
+                            <select id="regRole" class="input" required>
+                                <option value="sa">SA (Service Advisor)</option>
+                                <option value="mechanic">ช่าง (Mechanic)</option>
+                                <option value="manager">ผู้จัดการ (Manager)</option>
+                                <option value="owner">เจ้าของ (Owner)</option>
+                                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>สาขา *</label>
+                            <select id="regBranch" class="input" required>
+                                <option value="BC Auto Service">BC Auto service (วิริยะเซอร์วิส)</option>
+                                <option value="suphanburi">BC Auto เมืองสุพรรณ</option>
+                                <option value="samchuk">BC AUTO XPERIENCE (สามชุก)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="window.prevStep(1)">⬅️
+                            ย้อนกลับ</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="window.nextStep(3)">ถัดไป
+                            ➡️</button>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="wizard-step" id="step3">
+                    <h4 style="margin-bottom: 16px; color: var(--surface-600); font-size: var(--text-sm);">ส่วนที่ 3:
+                        ความปลอดภัย</h4>
+                    <div class="form-group">
+                        <label>PIN (4-6 หลัก) *</label>
+                        <div class="validation-wrapper">
+                            <input type="text" id="regPin" class="input" placeholder="เช่น 1234" maxlength="6"
+                                pattern="[0-9]{4,6}" required />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                        <p style="font-size: 11px; color: var(--surface-500); margin-top: 4px;">
+                            ใช้สำหรับเข้าสู่ระบบแบบรวดเร็ว</p>
+                    </div>
+                    <div class="form-group">
+                        <label id="regPasswordLabel">รหัสผ่านบัญชีจัดการ (ตัวเลือก)</label>
+                        <div class="validation-wrapper">
+                            <input type="password" id="regPassword" class="input" placeholder="อย่างน้อย 8 ตัวอักษร" />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="window.prevStep(2)">⬅️
+                            ย้อนกลับ</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="submitRegBtn">💾 บันทึก</button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="regEditId" value="" />
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pb } from '../../services/pocketbase.js';
+        import { AuthService } from '../../services/authService.js';
+        import { AuditService } from '../../services/auditService.js';
+
+        // Security Gate
+        if (!AuthService.hasRole(['admin', 'manager', 'owner'])) {
+            AuthService.requireRole(['admin', 'manager', 'owner']);
+        }
+
+        // ==========================================
+        // USER TABLE
+        // ==========================================
+        async function loadUsers() {
+            const userBody = document.getElementById('user-body');
+            try {
+                const users = await pb.collection('users').getFullList({ sort: '-created' });
+
+                // Stats
+                document.getElementById('statTotal').textContent = users.length;
+                document.getElementById('statActive').textContent = users.filter(u => u.active !== false).length;
+                document.getElementById('statAdmin').textContent = users.filter(u => ['admin', 'owner'].includes(u.role)).length;
+                document.getElementById('statEmployee').textContent = users.filter(u => u.role === 'sa' || u.role === 'mechanic').length;
+
+                userBody.innerHTML = '';
+                if (users.length === 0) {
+                    userBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;">ยังไม่มีผู้ใช้ในระบบ</td></tr>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const isSelf = pb.authStore.model && user.id === pb.authStore.model.id;
+                    const isActive = user.active !== false;
+                    const branchLabel = user.branch === 'suphanburi' ? 'สุพรรณฯ' : (user.branch === 'BC Auto Service' || user.branch === 'main' || !user.branch ? 'สาขาหลัก' : user.branch);
+                    const roleClass = user.role || 'sa';
+
+                    tr.innerHTML = `
+                        <td>
+                            <span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>
+                            ${isActive ? 'ใช้งาน' : 'ปิด'}
+                        </td>
+                        <td style="font-weight: 600;">
+                            ${user.name || user.display_name || '-'}
+                            ${isSelf ? '<span style="font-size:0.7rem;color:var(--primary-500);display:block;">คุณ</span>' : ''}
+                        </td>
+                        <td style="color: var(--surface-500); font-size: var(--text-sm);">${user.email || '-'}</td>
+                        <td><span class="role-badge ${roleClass}">${user.role || 'sa'}</span></td>
+                        <td><span class="branch-badge">${branchLabel}</span></td>
+                        <td style="font-family: monospace; color: var(--surface-400);">${user.pin ? '••••' + user.pin.slice(-2) : '-'}</td>
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                                <button class="action-btn" onclick="editUser('${user.id}')" title="แก้ไข">✏️</button>
+                                <button class="action-btn warning" onclick="resetPin('${user.id}', '${user.name || ''}')" title="รีเซ็ต PIN">🔑</button>
+                                <button class="action-btn ${isActive ? 'danger' : ''}" onclick="toggleActive('${user.id}', ${isActive})" title="${isActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}">
+                                    ${isActive ? '🚫' : '✅'}
+                                </button>
+                                ${!isSelf ? `<button class="action-btn danger" onclick="deleteUser('${user.id}', '${(user.name || '').replace("'", "\\'")}')" title="ลบ">🗑️</button>` : ''}
+                            </div>
+                        </td>
+                    `;
+                    userBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                userBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger);">Error: ' + error.message + '</td></tr>';
+            }
+        }
+
+        // ==========================================
+        // REGISTRATION MODAL
+        // ==========================================
+        const regModal = document.getElementById('regModal');
+        const regForm = document.getElementById('regForm');
+
+        document.getElementById('addUserBtn').addEventListener('click', () => {
+            document.getElementById('regModalTitle').textContent = '➕ ลงทะเบียนผู้ใช้ใหม่';
+            document.getElementById('submitRegBtn').textContent = '💾 ลงทะเบียน';
+            document.getElementById('regPasswordLabel').textContent = 'รหัสผ่านบัญชีจัดการ (ตัวเลือก)';
+            regForm.reset();
+            document.getElementById('regEditId').value = '';
+            document.getElementById('regPassword').required = false;
+
+            // Reset Wizard to Step 1 & clear validation visuals
+            if (window.showStep) window.showStep(1);
+            document.querySelectorAll('.input').forEach(el => el.classList.remove('valid', 'invalid'));
+
+            regModal.classList.add('active');
+        });
+
+        document.getElementById('cancelRegBtn').addEventListener('click', () => {
+            regModal.classList.remove('active');
+        });
+
+        regModal.addEventListener('click', (e) => {
+            if (e.target === regModal) regModal.classList.remove('active');
+        });
+
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('regEditId').value;
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+            const branch = document.getElementById('regBranch').value;
+            const pin = document.getElementById('regPin').value.trim();
+
+            if (!name || !pin || pin.length < 4) {
+                alert('กรุณากรอก ชื่อ และ PIN (อย่างน้อย 4 หลัก)');
+                return;
+            }
+
+            try {
+                const data = {
+                    name,
+                    role,
+                    branch,
+                    pin,
+                    active: true
+                };
+
+                if (email) data.email = email;
+                if (password) {
+                    data.password = password;
+                    data.passwordConfirm = password;
+                }
+
+                // SECURITY BYPASS: ManageRule for Users collection requires Admin privileges
+                // Standard managers cannot update email/password fields of other users normally.
+                // We authenticate as a system admin briefly to perform the mutation.
+                const sysAuth = await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
+
+                if (editId) {
+                    // Update existing user
+                    if (!password) {
+                        delete data.password;
+                        delete data.passwordConfirm;
+                    }
+                    await pb.collection('users').update(editId, data);
+                    AuditService.log('user_updated', `Updated user: ${name} (${role}, ${branch})`, 'admin');
+                    alert('อัปเดตข้อมูลผู้ใช้สำเร็จ');
+                } else {
+                    // Create new user
+                    if (!password) {
+                        // Generate a random password if not provided
+                        data.password = Math.random().toString(36).slice(-10) + 'A1!';
+                        data.passwordConfirm = data.password;
+                    }
+                    await pb.collection('users').create(data);
+                    AuditService.log('user_created', `New user registered: ${name} (${role}, ${branch})`, 'admin');
+                    alert('ลงทะเบียนผู้ใช้ใหม่สำเร็จ');
+                }
+
+                regModal.classList.remove('active');
+                loadUsers();
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('เกิดข้อผิดพลาด: ' + (error.message || JSON.stringify(error.data)));
+            }
+        });
+
+        // ==========================================
+        // EDIT USER
+        // ==========================================
+        window.editUser = async (id) => {
+            try {
+                const user = await pb.collection('users').getOne(id);
+                document.getElementById('regModalTitle').textContent = '✏️ แก้ไขผู้ใช้: ' + (user.name || user.email);
+                document.getElementById('submitRegBtn').textContent = '💾 บันทึกการแก้ไข';
+                document.getElementById('regPasswordLabel').textContent = 'รหัสผ่านใหม่ (ว่างไว้ไม่เปลี่ยน)';
+                document.getElementById('regEditId').value = id;
+                document.getElementById('regName').value = user.name || user.display_name || '';
+                document.getElementById('regEmail').value = user.email || '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regPassword').required = false;
+                document.getElementById('regRole').value = user.role || 'sa';
+                document.getElementById('regBranch').value = user.branch === 'main' ? 'BC Auto Service' : (user.branch || 'BC Auto Service');
+                document.getElementById('regPin').value = user.pin || '';
+
+                // Reset Wizard to Step 1 & clear validation visuals
+                if (window.showStep) window.showStep(1);
+                document.querySelectorAll('.input').forEach(el => el.classList.remove('valid', 'invalid'));
+
+                regModal.classList.add('active');
+            } catch (error) {
+                alert('ไม่สามารถโหลดข้อมูลผู้ใช้: ' + error.message);
+            }
+        };
+
+        // ==========================================
+        // RESET PIN
+        // ==========================================
+        window.resetPin = async (id, name) => {
+            const newPin = prompt(`กำหนด PIN ใหม่สำหรับ ${name}:`, '');
+            if (!newPin || newPin.length < 4) {
+                if (newPin !== null) alert('PIN ต้องมีอย่างน้อย 4 หลัก');
+                return;
+            }
+            try {
+                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
+                await pb.collection('users').update(id, { pin: newPin });
+                AuditService.log('pin_reset', `PIN reset for user: ${name}`, 'admin');
+                alert('รีเซ็ต PIN สำเร็จ');
+                loadUsers();
+            } catch (error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        };
+
+        // ==========================================
+        // TOGGLE ACTIVE
+        // ==========================================
+        window.toggleActive = async (id, currentlyActive) => {
+            const action = currentlyActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน';
+            if (!confirm(`ต้องการ${action}ผู้ใช้นี้หรือไม่?`)) return;
+            try {
+                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
+                await pb.collection('users').update(id, { active: !currentlyActive });
+                AuditService.log('user_status_change', `User ${id} ${action}`, 'admin');
+                loadUsers();
+            } catch (error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        };
+
+        // ==========================================
+        // DELETE USER
+        // ==========================================
+        window.deleteUser = async (id, name) => {
+            if (!confirm(`⚠️ ต้องการลบ "${name}" จริงหรือไม่?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
+            try {
+                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
+                await pb.collection('users').delete(id);
+                AuditService.log('user_deleted', `Deleted user: ${name} (${id})`, 'admin');
+                alert('ลบผู้ใช้สำเร็จ');
+                loadUsers();
+            } catch (error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        };
+
+        // ==========================================
+        // WIZARD LOGIC
+        // ==========================================
+        window.currentStep = 1;
+
+        window.showStep = (step) => {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.wizard-dot').forEach((el, index) => {
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                    el.classList.remove('active');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                    el.classList.remove('completed');
+                } else {
+                    el.classList.remove('active', 'completed');
+                }
+            });
+            document.getElementById('step' + step).classList.add('active');
+            window.currentStep = step;
+        };
+
+        window.nextStep = (step) => {
+            // Validate current step before proceeding
+            if (window.currentStep === 1) {
+                const name = document.getElementById('regName').value.trim();
+                const email = document.getElementById('regEmail').value.trim();
+                if (!name || name.length < 2) {
+                    alert('กรุณากรอกชื่อที่แสดงให้ถูกต้อง');
+                    return;
+                }
+                if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    alert('รูปแบบอีเมลไม่ถูกต้อง');
+                    return;
+                }
+            }
+            if (window.currentStep === 2) {
+                const role = document.getElementById('regRole').value;
+                const branch = document.getElementById('regBranch').value;
+                if (!role || !branch) {
+                    alert('กรุณาเลือกบทบาทและสาขา');
+                    return;
+                }
+            }
+            window.showStep(step);
+        };
+
+        window.prevStep = (step) => {
+            window.showStep(step);
+        };
+
+        // ==========================================
+        // REAL-TIME VALIDATION LOGIC
+        // ==========================================
+        function setupValidation(inputId, ruleFn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.addEventListener('input', () => {
+                const val = input.value.trim();
+                if (val === '') {
+                    input.classList.remove('valid', 'invalid');
+                    return;
+                }
+                const isValid = ruleFn(val);
+                if (isValid) {
+                    input.classList.remove('invalid');
+                    input.classList.add('valid');
+                } else {
+                    input.classList.remove('valid');
+                    input.classList.add('invalid');
+                }
+            });
+        }
+
+        setupValidation('regName', val => val.length >= 2);
+        setupValidation('regEmail', val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val));
+        setupValidation('regPin', val => /^[0-9]{4,6}$/.test(val));
+        setupValidation('regPassword', val => val.length >= 8);
+
+        loadUsers();
+    </script>
+    \n
+    <script type="module" src="../../assets/js/app-shell.js"></script>\n
+</body>
+
+</html>

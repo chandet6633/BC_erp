@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>HR Dashboard | Viriyah Service</title>
+    <link rel="manifest" href="../../manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Design System -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tab-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--surface-600);
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-bottom: var(--space-6);
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .filter-group label {
+            font-size: var(--text-xs);
+            color: var(--surface-500);
+            font-weight: 500;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, min-min(280px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .chart-card {
+            background: white;
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--surface-100);
+        }
+
+        .chart-card h3 {
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+            color: var(--surface-700);
+        }
+    </style>
+\n    \n  <script type="module" crossorigin src="../../assets/hr_dashboard-D2yCv62y.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/data_manager-BzTiqLrg.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/glass-ui-BB2-B0XT.css">
+</head>
+
+<body class="bg-transparent p-4">
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <div class="header-section" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: var(--space-6);
+                    flex-wrap: wrap;
+                    gap: var(--space-4);
+                ">
+            <div>
+                <h1 style="font-size: var(--text-xl)">👥 HR Dashboard</h1>
+                <p style="color: var(--surface-600); font-size: var(--text-sm)">ระบบจัดการพนักงาน และลงเวลา</p>
+            </div>
+            <div style="display: flex; gap: var(--space-2)">
+                <a href="collection_management.html" class="btn btn-ghost btn-sm">⚙ Admin DB</a>
+                <a href="../main/index.html" class="btn btn-ghost btn-sm">← กลับ</a>
+            </div>
+        </div>
+
+        <!-- Main Navigation -->
+        <div class="tabs" style="border-bottom: 1px solid var(--surface-100); margin-bottom: var(--space-6)">
+            <button class="tab-btn active" onclick="location.href = 'hrdashboard.html'">แดชบอร์ด</button>
+            <button class="tab-btn" onclick="location.href = 'payroll.html'">คำนวณเงินเดือน</button>
+        </div>
+
+        <!-- Sub Tabs -->
+        <div class="tabs">
+            <button data-tab="attendance" class="tab-btn active">📅 ลงเวลาเข้า-ออก</button>
+            <button data-tab="register" class="tab-btn">🆕 ลงทะเบียนพนักงาน</button>
+        </div>
+
+        <!-- Debug Info -->
+        <div id="debug-info" style="
+                    display: none;
+                    padding: var(--space-3);
+                    background: var(--surface-900);
+                    color: var(--warning-400);
+                    border-radius: var(--radius-md);
+                    margin-bottom: var(--space-4);
+                    font-family: monospace;
+                    font-size: var(--text-xs);
+                ">
+            <strong>Debug:</strong> <span id="debug-text"></span>
+        </div>
+
+        <!-- ========== Attendance Section ========== -->
+        <div id="attendance-content" class="tab-content active">
+            <div class="card mb-4">
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>เเผนก</label>
+                        <select id="dept-filter" class="input" style="width: 140px"></select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>วันที่</label>
+                        <input type="date" id="date-filter" class="input" style="width: 150px" />
+                    </div>
+                    <div class="filter-group" style="flex: 1; min-width: 200px">
+                        <label>ค้นหาชื่อ</label>
+                        <input type="text" id="search-name" class="input" placeholder="พิมพ์ชื่อพนักงาน..." />
+                    </div>
+                    <div style="display: flex; gap: var(--space-1); margin-top: auto">
+                        <button id="clear-filters" class="btn btn-ghost btn-sm">Clear</button>
+                    </div>
+                </div>
+
+                <div style="
+                            display: flex;
+                            gap: var(--space-2);
+                            margin-bottom: var(--space-4);
+                            overflow-x: auto;
+                            padding-bottom: var(--space-2);
+                        ">
+                    <button id="sync-daily-btn" class="btn btn-primary btn-sm">⚡ Sync Daily</button>
+                    <button id="sync-month-btn" class="btn btn-outline btn-sm">📅 Month Sync</button>
+                    <button id="sync-all-btn" class="btn btn-ghost btn-sm">📚 All Sync</button>
+                    <button id="export-csv" class="btn btn-outline btn-sm" style="margin-left: auto">
+                        📤 Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid-auto mb-6" style="gap: var(--space-4); margin-bottom: var(--space-6)">
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-blue-100 text-blue-600 rounded-full p-3 text-2xl">👥</div>
+                    <div>
+                        <div class="text-sub text-sm">พนักงานทั้งหมด</div>
+                        <div class="text-2xl font-bold text-surface-900" id="totalStaff">-</div>
+                        <div class="text-xs text-surface-500">คน</div>
+                    </div>
+                </div>
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-green-100 text-green-600 rounded-full p-3 text-2xl">✅</div>
+                    <div>
+                        <div class="text-sub text-sm">เช็คอินวันนี้</div>
+                        <div class="text-2xl font-bold text-success" id="totalChecked">-</div>
+                        <div class="text-xs text-surface-500">คน</div>
+                    </div>
+                </div>
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-purple-100 text-purple-600 rounded-full p-3 text-2xl">📈</div>
+                    <div>
+                        <div class="text-sub text-sm" id="rateLabel">อัตราการเช็คอิน</div>
+                        <div class="text-2xl font-bold text-primary" id="checkinRate">-</div>
+                        <div class="text-xs text-surface-500">%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Department Charts -->
+            <div id="dept-charts" class="grid-auto mb-6" style="
+                        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                        gap: var(--space-4);
+                        margin-bottom: var(--space-6);
+                    "></div>
+
+            <!-- Table -->
+            <div class="card">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">📋 รายการลงเวลา</h3>
+                <p id="loading-msg" style="text-align: center; color: var(--surface-500); padding: var(--space-8)">
+                    กำลังโหลดข้อมูล...
+                </p>
+                <div class="table-container">
+                    <table id="attendance-table" style="width: 100%; white-space: nowrap; display: none">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">วัน/เวลา</th>
+                                <th style="padding: var(--space-2)">ชื่อ</th>
+                                <th style="padding: var(--space-2)">แผนก</th>
+                                <th style="padding: var(--space-2)">ประเภท</th>
+                                <th style="padding: var(--space-2)">สาขา</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Average Time -->
+            <div id="average-section" class="card mt-6" style="display: none; margin-top: var(--space-6)">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">🕒 เวลาเข้างานเฉลี่ย</h3>
+                <div class="table-container">
+                    <table id="average-table" style="width: 100%">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">แผนก</th>
+                                <th style="padding: var(--space-2)">ชื่อ</th>
+                                <th style="padding: var(--space-2)">เวลาเข้าเฉลี่ย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="avg-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Register Section ========== -->
+        <div id="register-content" class="tab-content" style="display: none">
+            <div class="card mb-6">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">👤 เพิ่มพนักงานใหม่</h3>
+                <div class="grid-auto"
+                    style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4)">
+                    <div class="form-group">
+                        <label>รหัสพนักงาน (ID)</label>
+                        <input type="text" id="new-id" class="input" placeholder="EMP001" />
+                    </div>
+                    <div class="form-group">
+                        <label>ชื่อ-นามสกุล</label>
+                        <input type="text" id="new-name" class="input" placeholder="ชื่อ นามสกุล" />
+                    </div>
+                    <div class="form-group">
+                        <label>เพศ</label>
+                        <select id="new-sex" class="input">
+                            <option value="">-- เลือก --</option>
+                            <option value="Male">ชาย</option>
+                            <option value="Female">หญิง</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>แผนก</label>
+                        <select id="new-dept" class="input">
+                            <option value="">-- เลือก --</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: var(--space-6)">
+                    <button id="add-member" class="btn btn-primary">💾 บันทึกข้อมูล</button>
+                </div>
+            </div>
+
+            <div id="register-container">
+                <p id="register-loading" style="text-align: center; color: var(--surface-500); padding: var(--space-8)">
+                    กำลังโหลดข้อมูล...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+
+</body>
+
+</html>

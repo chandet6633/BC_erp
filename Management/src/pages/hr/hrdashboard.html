@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>HR Dashboard | Viriyah Service</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/glass-ui.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tab-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--surface-600);
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-bottom: var(--space-6);
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .filter-group label {
+            font-size: var(--text-xs);
+            color: var(--surface-500);
+            font-weight: 500;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, min-min(280px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .chart-card {
+            background: white;
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--surface-100);
+        }
+
+        .chart-card h3 {
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+            color: var(--surface-700);
+        }
+    </style>
+\n    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n</head>
+
+<body class="bg-transparent p-4">
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <div class="header-section" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: var(--space-6);
+                    flex-wrap: wrap;
+                    gap: var(--space-4);
+                ">
+            <div>
+                <h1 style="font-size: var(--text-xl)">👥 HR Dashboard</h1>
+                <p style="color: var(--surface-600); font-size: var(--text-sm)">ระบบจัดการพนักงาน และลงเวลา</p>
+            </div>
+            <div style="display: flex; gap: var(--space-2)">
+                <a href="collection_management.html" class="btn btn-ghost btn-sm">⚙ Admin DB</a>
+                <a href="../main/index.html" class="btn btn-ghost btn-sm">← กลับ</a>
+            </div>
+        </div>
+
+        <!-- Main Navigation -->
+        <div class="tabs" style="border-bottom: 1px solid var(--surface-100); margin-bottom: var(--space-6)">
+            <button class="tab-btn active" onclick="location.href = 'hrdashboard.html'">แดชบอร์ด</button>
+            <button class="tab-btn" onclick="location.href = 'payroll.html'">คำนวณเงินเดือน</button>
+        </div>
+
+        <!-- Sub Tabs -->
+        <div class="tabs">
+            <button data-tab="attendance" class="tab-btn active">📅 ลงเวลาเข้า-ออก</button>
+            <button data-tab="register" class="tab-btn">🆕 ลงทะเบียนพนักงาน</button>
+        </div>
+
+        <!-- Debug Info -->
+        <div id="debug-info" style="
+                    display: none;
+                    padding: var(--space-3);
+                    background: var(--surface-900);
+                    color: var(--warning-400);
+                    border-radius: var(--radius-md);
+                    margin-bottom: var(--space-4);
+                    font-family: monospace;
+                    font-size: var(--text-xs);
+                ">
+            <strong>Debug:</strong> <span id="debug-text"></span>
+        </div>
+
+        <!-- ========== Attendance Section ========== -->
+        <div id="attendance-content" class="tab-content active">
+            <div class="card mb-4">
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>เเผนก</label>
+                        <select id="dept-filter" class="input" style="width: 140px"></select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>วันที่</label>
+                        <input type="date" id="date-filter" class="input" style="width: 150px" />
+                    </div>
+                    <div class="filter-group" style="flex: 1; min-width: 200px">
+                        <label>ค้นหาชื่อ</label>
+                        <input type="text" id="search-name" class="input" placeholder="พิมพ์ชื่อพนักงาน..." />
+                    </div>
+                    <div style="display: flex; gap: var(--space-1); margin-top: auto">
+                        <button id="clear-filters" class="btn btn-ghost btn-sm">Clear</button>
+                    </div>
+                </div>
+
+                <div style="
+                            display: flex;
+                            gap: var(--space-2);
+                            margin-bottom: var(--space-4);
+                            overflow-x: auto;
+                            padding-bottom: var(--space-2);
+                        ">
+                    <button id="sync-daily-btn" class="btn btn-primary btn-sm">⚡ Sync Daily</button>
+                    <button id="sync-month-btn" class="btn btn-outline btn-sm">📅 Month Sync</button>
+                    <button id="sync-all-btn" class="btn btn-ghost btn-sm">📚 All Sync</button>
+                    <button id="export-csv" class="btn btn-outline btn-sm" style="margin-left: auto">
+                        📤 Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid-auto mb-6" style="gap: var(--space-4); margin-bottom: var(--space-6)">
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-blue-100 text-blue-600 rounded-full p-3 text-2xl">👥</div>
+                    <div>
+                        <div class="text-sub text-sm">พนักงานทั้งหมด</div>
+                        <div class="text-2xl font-bold text-surface-900" id="totalStaff">-</div>
+                        <div class="text-xs text-surface-500">คน</div>
+                    </div>
+                </div>
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-green-100 text-green-600 rounded-full p-3 text-2xl">✅</div>
+                    <div>
+                        <div class="text-sub text-sm">เช็คอินวันนี้</div>
+                        <div class="text-2xl font-bold text-success" id="totalChecked">-</div>
+                        <div class="text-xs text-surface-500">คน</div>
+                    </div>
+                </div>
+                <div class="card flex items-center gap-4">
+                    <div class="icon-box bg-purple-100 text-purple-600 rounded-full p-3 text-2xl">📈</div>
+                    <div>
+                        <div class="text-sub text-sm" id="rateLabel">อัตราการเช็คอิน</div>
+                        <div class="text-2xl font-bold text-primary" id="checkinRate">-</div>
+                        <div class="text-xs text-surface-500">%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Department Charts -->
+            <div id="dept-charts" class="grid-auto mb-6" style="
+                        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                        gap: var(--space-4);
+                        margin-bottom: var(--space-6);
+                    "></div>
+
+            <!-- Table -->
+            <div class="card">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">📋 รายการลงเวลา</h3>
+                <p id="loading-msg" style="text-align: center; color: var(--surface-500); padding: var(--space-8)">
+                    กำลังโหลดข้อมูล...
+                </p>
+                <div class="table-container">
+                    <table id="attendance-table" style="width: 100%; white-space: nowrap; display: none">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">วัน/เวลา</th>
+                                <th style="padding: var(--space-2)">ชื่อ</th>
+                                <th style="padding: var(--space-2)">แผนก</th>
+                                <th style="padding: var(--space-2)">ประเภท</th>
+                                <th style="padding: var(--space-2)">สาขา</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Average Time -->
+            <div id="average-section" class="card mt-6" style="display: none; margin-top: var(--space-6)">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">🕒 เวลาเข้างานเฉลี่ย</h3>
+                <div class="table-container">
+                    <table id="average-table" style="width: 100%">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">แผนก</th>
+                                <th style="padding: var(--space-2)">ชื่อ</th>
+                                <th style="padding: var(--space-2)">เวลาเข้าเฉลี่ย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="avg-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== Register Section ========== -->
+        <div id="register-content" class="tab-content" style="display: none">
+            <div class="card mb-6">
+                <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4)">👤 เพิ่มพนักงานใหม่</h3>
+                <div class="grid-auto"
+                    style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4)">
+                    <div class="form-group">
+                        <label>รหัสพนักงาน (ID)</label>
+                        <input type="text" id="new-id" class="input" placeholder="EMP001" />
+                    </div>
+                    <div class="form-group">
+                        <label>ชื่อ-นามสกุล</label>
+                        <input type="text" id="new-name" class="input" placeholder="ชื่อ นามสกุล" />
+                    </div>
+                    <div class="form-group">
+                        <label>เพศ</label>
+                        <select id="new-sex" class="input">
+                            <option value="">-- เลือก --</option>
+                            <option value="Male">ชาย</option>
+                            <option value="Female">หญิง</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>แผนก</label>
+                        <select id="new-dept" class="input">
+                            <option value="">-- เลือก --</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: var(--space-6)">
+                    <button id="add-member" class="btn btn-primary">💾 บันทึกข้อมูล</button>
+                </div>
+            </div>
+
+            <div id="register-container">
+                <p id="register-loading" style="text-align: center; color: var(--surface-500); padding: var(--space-8)">
+                    กำลังโหลดข้อมูล...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+    <script type="module">
+        import '../../services/pocketbase.js';
+        import '../../utils/helpers.js';
+        import '../../services/authService.js';
+        import './js/api.js';
+        import './js/data_manager.js';
+    </script>
+
+    <script type="module">
+        let attendanceData = [],
+            roster = [];
+
+        // Elements
+        const tabs = document.querySelectorAll('.tab-btn[data-tab]');
+        const contents = document.querySelectorAll('.tab-content');
+        const deptSel = document.getElementById('dept-filter');
+        const dateSel = document.getElementById('date-filter');
+        const searchInput = document.getElementById('search-name');
+        const clearBtn = document.getElementById('clear-filters');
+        const exportBtn = document.getElementById('export-csv');
+        const syncDailyBtn = document.getElementById('sync-daily-btn');
+        const syncMonthBtn = document.getElementById('sync-month-btn');
+        const syncAllBtn = document.getElementById('sync-all-btn');
+        const loadingMsg = document.getElementById('loading-msg');
+        const attTable = document.getElementById('attendance-table');
+        const avgSection = document.getElementById('average-section');
+        const avgBody = document.getElementById('avg-body');
+        const regLoading = document.getElementById('register-loading');
+        const regContainer = document.getElementById('register-container');
+        const newIdInput = document.getElementById('new-id');
+        const newNameInput = document.getElementById('new-name');
+        const newSexInput = document.getElementById('new-sex');
+        const newDeptInput = document.getElementById('new-dept');
+        const addMemberBtn = document.getElementById('add-member');
+
+        // Init Dates
+        const today = getTodayThailand();
+        dateSel.value = today;
+
+
+        // Helper to handle sync
+        async function performSync(actionName, syncFn) {
+            if (!confirm(`Confirm ${actionName}?`)) return;
+            const btns = [syncDailyBtn, syncMonthBtn, syncAllBtn];
+            btns.forEach(b => (b.disabled = true));
+            loadingMsg.textContent = `⏳ ${actionName}...`;
+            loadingMsg.style.display = 'block';
+
+            try {
+                await syncFn();
+                await loadAttendance();
+                alert(`${actionName} Complete!`);
+            } catch (e) {
+                alert('Sync Error: ' + e.message);
+            } finally {
+                btns.forEach(b => (b.disabled = false));
+            }
+        }
+
+        syncDailyBtn.addEventListener('click', () => {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            performSync('Daily Sync', () => DataManager.syncMonth(currentMonth, msg => {
+                loadingMsg.textContent = `⏳ ${msg}`;
+            }));
+        });
+
+        syncMonthBtn.addEventListener('click', () => {
+            const m = dateSel.value ? dateSel.value.slice(0, 7) : today.slice(0, 7);
+            if (!m) return alert('Select date first.');
+            performSync(`Sync ${m}`, () => DataManager.syncMonth(m, msg => {
+                loadingMsg.textContent = `⏳ ${msg}`;
+            }));
+        });
+
+        syncAllBtn.addEventListener('click', () => {
+            performSync('Full Sync', () => DataManager.syncAll());
+        });
+
+        // Tabs
+        tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabs.forEach(b => b.classList.remove('active'));
+                contents.forEach(c => (c.style.display = 'none'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-tab');
+                if (target === 'attendance') {
+                    document.getElementById('attendance-content').style.display = 'block';
+                    loadAttendance();
+                } else {
+                    document.getElementById('register-content').style.display = 'block';
+                    loadRegister();
+                }
+            });
+        });
+
+        let currentLoadedMonth = '';
+
+        async function loadAttendance() {
+            loadingMsg.style.display = 'block';
+            loadingMsg.textContent = 'กำลังโหลดข้อมูล...';
+            attTable.style.display = 'none';
+            avgSection.style.display = 'none';
+
+            try {
+                roster = await DataManager.getRoster();
+                populateDeptFilter();
+                const m = dateSel.value ? dateSel.value.slice(0, 7) : today.slice(0, 7);
+                currentLoadedMonth = m;
+                attendanceData = await DataManager.getAttendance(m);
+
+                const rosterMap = new Map(roster.map(r => [r.name, r.department]));
+                attendanceData.forEach(r => {
+                    if (!r.department && rosterMap.has(r.name)) r.department = rosterMap.get(r.name);
+                });
+
+                renderAttendance();
+                loadingMsg.style.display = 'none';
+            } catch (e) {
+                loadingMsg.textContent = 'โหลดข้อมูลล้มเหลว: ' + e.message;
+            }
+        }
+
+        function populateDeptFilter() {
+            const depts = [...new Set(roster.map(r => r.department))].sort();
+            const current = deptSel.value;
+            deptSel.innerHTML = '<option value="">-- ทุกแผนก --</option>';
+            depts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                deptSel.appendChild(opt);
+            });
+            deptSel.value = current;
+        }
+
+        function renderAttendance() {
+            const dateVal = dateSel.value;
+            const deptVal = deptSel.value;
+            const searchVal = searchInput.value.toLowerCase();
+
+            let displayData = attendanceData.filter(row => {
+                const rawDate = row.date || row.timestamp;
+                const dKey = rawDate ? rawDate.slice(0, 10) : '';
+                return (
+                    (dateVal ? dKey === dateVal : true) &&
+                    (deptVal ? row.department === deptVal : true) &&
+                    (searchVal ? (row.name || '').toLowerCase().includes(searchVal) : true)
+                );
+            });
+
+            const tbody = attTable.querySelector('tbody');
+            tbody.innerHTML = '';
+            if (displayData.length === 0) {
+                tbody.innerHTML =
+                    '<tr><td colspan="5" style="text-align: center; color: var(--surface-400); padding: var(--space-8);">ไม่พบข้อมูล</td></tr>';
+            } else {
+                displayData.forEach(r => {
+                    const tr = document.createElement('tr');
+                    const ts =
+                        r.date || r.timestamp ? new Date(r.date || r.timestamp).toLocaleString('th-TH') : '-';
+                    const typeVal = (r.status || r.type || '').toUpperCase();
+                    const badgeClass = typeVal === 'IN' ? 'badge-success' : 'badge-danger';
+                    tr.innerHTML = `
+                        <td style="padding: var(--space-2);">${ts}</td>
+                        <td style="padding: var(--space-2);">${r.name || '-'}</td>
+                        <td style="padding: var(--space-2);">${r.department || '-'}</td>
+                        <td style="padding: var(--space-2);"><span class="badge ${badgeClass}">${typeVal}</span></td>
+                        <td style="padding: var(--space-2);">${r.store || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            attTable.style.display = 'table';
+
+            // KPIs
+            const relevantRoster = deptVal ? roster.filter(u => u.department === deptVal) : roster;
+            const total = relevantRoster.length;
+            const uniqueCheckins = new Set(
+                displayData.filter(r => r.status === 'IN' || r.type === 'IN').map(r => r.name)
+            ).size;
+            document.getElementById('totalStaff').textContent = total;
+            document.getElementById('totalChecked').textContent = uniqueCheckins;
+            document.getElementById('checkinRate').textContent = total
+                ? Math.round((uniqueCheckins / total) * 100)
+                : 0;
+
+            renderCharts(displayData, relevantRoster, deptVal);
+            if (displayData.length > 0) renderAverages();
+        }
+
+        function renderCharts(data, staffList, selectedDept) {
+            const chartsDiv = document.getElementById('dept-charts');
+            chartsDiv.innerHTML = '';
+            const deptsToShow = selectedDept
+                ? [selectedDept]
+                : [...new Set(staffList.map(u => u.department))].sort();
+
+            deptsToShow.forEach(dept => {
+                const deptStaff = staffList.filter(u => u.department === dept);
+                const deptCheckins = new Set(
+                    data
+                        .filter(r => (r.status === 'IN' || r.type === 'IN') && r.department === dept)
+                        .map(r => r.name)
+                ).size;
+                const absent = deptStaff.length - deptCheckins;
+
+                const card = document.createElement('div');
+                card.className = 'chart-card';
+                card.innerHTML = `<h3>${dept}</h3><div style="height: 150px;"><canvas></canvas></div>`;
+                chartsDiv.appendChild(card);
+
+                new Chart(card.querySelector('canvas'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Attended', 'Absent'],
+                        datasets: [
+                            {
+                                data: [deptCheckins, absent],
+                                backgroundColor: ['#22c55e', '#ef4444'],
+                                borderWidth: 0
+                            }
+                        ]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+                    }
+                });
+            });
+        }
+
+        function renderAverages() {
+            avgBody.innerHTML = '';
+            const firstIn = {};
+            attendanceData.forEach(r => {
+                if ((r.status === 'IN' || r.type === 'IN') && (r.date || r.timestamp)) {
+                    const timeStr = r.date || r.timestamp;
+                    const d = timeStr.slice(0, 10);
+                    const name = r.name;
+                    const dept = r.department || 'Unknown';
+                    const t = new Date(timeStr);
+                    const ms = t.getHours() * 3600000 + t.getMinutes() * 60000;
+                    if (!firstIn[dept]) firstIn[dept] = {};
+                    if (!firstIn[dept][name]) firstIn[dept][name] = {};
+                    if (!firstIn[dept][name][d] || ms < firstIn[dept][name][d]) firstIn[dept][name][d] = ms;
+                }
+            });
+
+            Object.keys(firstIn)
+                .sort()
+                .forEach(dept => {
+                    Object.keys(firstIn[dept])
+                        .sort()
+                        .forEach(name => {
+                            const days = Object.values(firstIn[dept][name]);
+                            const avg = days.reduce((a, b) => a + b, 0) / days.length;
+                            const h = Math.floor(avg / 3600000);
+                            const m = Math.floor((avg % 3600000) / 60000);
+                            avgBody.innerHTML += `<tr><td style="padding: var(--space-2);">${dept}</td><td style="padding: var(--space-2);">${name}</td><td style="padding: var(--space-2);">${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}</td></tr>`;
+                        });
+                });
+            avgSection.style.display = 'block';
+        }
+
+        deptSel.addEventListener('change', renderAttendance);
+        dateSel.addEventListener('change', () => {
+            const newMonth = dateSel.value ? dateSel.value.slice(0, 7) : today.slice(0, 7);
+            if (newMonth !== currentLoadedMonth) {
+                loadAttendance();
+            } else {
+                renderAttendance();
+            }
+        });
+        searchInput.addEventListener('input', renderAttendance);
+        clearBtn.onclick = () => {
+            deptSel.value = '';
+            dateSel.value = today;
+            searchInput.value = '';
+            renderAttendance();
+        };
+        exportBtn.onclick = () => {
+            const csv =
+                'Date,Name,Department,Status,Store\n' +
+                attendanceData
+                    .map(e => `${e.date || e.timestamp},${e.name},${e.department},${e.status || e.type},${e.store}`)
+                    .join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_${dateSel.value}.csv`;
+            a.click();
+        };
+
+        function loadRegister() {
+            regLoading.style.display = 'block';
+            regContainer.innerHTML = '';
+            DataManager.getRoster().then(data => {
+                roster = data;
+                renderRegisterUI();
+                regLoading.style.display = 'none';
+                newDeptInput.innerHTML = '<option value="">-- เลือก --</option>';
+                [...new Set(roster.map(r => r.department))].sort().forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    newDeptInput.appendChild(opt);
+                });
+            });
+        }
+
+        function renderRegisterUI() {
+            const depts = [...new Set(roster.map(r => r.department))].sort();
+            depts.forEach(d => {
+                const users = roster.filter(u => u.department === d);
+                const section = document.createElement('div');
+                section.className = 'card mb-4';
+                section.innerHTML = `
+                    <h4 style="margin-bottom: var(--space-3); color: var(--primary-600); border-bottom: 1px solid var(--surface-100); padding-bottom: var(--space-2);">${d}</h4>
+                    <div class="table-container">
+                        <table style="width: 100%;">
+                            <thead><tr style="text-align: left; border-bottom: 1px solid var(--surface-200);"><th style="padding: var(--space-2);">ID</th><th style="padding: var(--space-2);">ชื่อ</th><th style="padding: var(--space-2);">เพศ</th><th style="padding: var(--space-2);">จัดการ</th></tr></thead>
+                            <tbody>
+                                ${users.map(u => `<tr><td style="padding: var(--space-2);">${u.id}</td><td style="padding: var(--space-2);">${u.name}</td><td style="padding: var(--space-2);">${u.sex}</td><td style="padding: var(--space-2);"><button class="btn btn-ghost btn-sm text-danger del-btn" data-id="${u.id}">ลบ</button></td></tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+                regContainer.appendChild(section);
+            });
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = () => {
+                    if (confirm('ยืนยันการลบ?')) HR_API.removeMember(btn.dataset.id, loadRegister);
+                };
+            });
+        }
+
+        addMemberBtn.onclick = () => {
+            const data = {
+                id: newIdInput.value.trim(),
+                name: newNameInput.value.trim(),
+                sex: newSexInput.value,
+                department: newDeptInput.value
+            };
+            if (!data.id || !data.name || !data.sex || !data.department) return alert('กรุณากรอกข้อมูลให้ครบ');
+            HR_API.addMember(data, () => {
+                alert('บันทึกสำเร็จ');
+                newIdInput.value = '';
+                newNameInput.value = '';
+                loadRegister();
+            });
+        };
+
+        loadAttendance();
+    </script>
+</body>
+
+</html>

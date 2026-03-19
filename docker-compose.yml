@@ -85,7 +85,7 @@ services:
       - ~/.docker/config.json:/config.json:ro
     environment:
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_POLL_INTERVAL=30
       - WATCHTOWER_LABEL_ENABLE=false
       - WATCHTOWER_INCLUDE_STOPPED=false
       - DOCKER_API_VERSION=1.44

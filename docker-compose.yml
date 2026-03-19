@@ -1,19 +1,20 @@
 # ═══════════════════════════════════════════════════════════════
 #  BC AUTO XPERIENCE — Docker Compose (Production)
 # ═══════════════════════════════════════════════════════════════
-#
 #  Two services sharing the same PocketBase architecture:
 #    - Management   (port 8092) — Back-office analytics & operations
 #    - MungkhudShop (port 8091) — Front-office shop ERP
 #
-#  IMPORTANT: Database files live in named Docker volumes.
+#  AUTO-DEPLOY: Watchtower checks for new images every 5 minutes.
+#  Just push to `main` branch → GitHub Actions builds images →
+#  Watchtower pulls & restarts containers automatically.
+#
+#  IMPORTANT: Database files live in local pb_data/ directories.
 #  Rebuilding/updating containers will NEVER touch your data.
-#  Only `docker volume rm` can delete the volumes.
 #
 #  Quick commands:
 #    Start:  docker compose up -d
 #    Stop:   docker compose down
-#    Update: .\update_production.bat
 #    Logs:   docker compose logs -f
 # ═══════════════════════════════════════════════════════════════
 
@@ -21,9 +22,7 @@ services:
 
   # ─── Back-Office: Revenue, P&L, HR, Audit ───
   management:
-    build:
-      context: ./Management
-      dockerfile: Dockerfile
+    image: ghcr.io/chandet6633/bc_erp-management:latest
     container_name: bc-management
     ports:
       - "8092:8092"
@@ -51,9 +50,7 @@ services:
 
   # ─── Front-Office: Jobs, Inventory, Documents, Purchasing ───
   mungkhudshop:
-    build:
-      context: ./MungkhudShop
-      dockerfile: Dockerfile
+    image: ghcr.io/chandet6633/bc_erp-mungkhud:latest
     container_name: bc-mungkhud
     ports:
       - "8091:8091"
@@ -76,6 +73,28 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    networks:
+      - erp-net
+
+  # ─── Auto-Deploy: Watchtower pulls new images automatically ───
+  watchtower:
+    image: containrrr/watchtower
+    container_name: bc-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.docker/config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_LABEL_ENABLE=false
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - DOCKER_API_VERSION=1.44
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
     networks:
       - erp-net
 

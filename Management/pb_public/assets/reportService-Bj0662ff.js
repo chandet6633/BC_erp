@@ -1,0 +1,1 @@
+const a={async exportToPDF(e,r="report.pdf"){const t={margin:10,filename:r,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:!0,letterRendering:!0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}};try{return await html2pdf().set(t).from(e).save(),!0}catch(o){return console.error("PDF Export failed:",o),!1}}};window.ReportService=a;

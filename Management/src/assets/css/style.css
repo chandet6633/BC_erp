@@ -1,0 +1,52 @@
+@import url('./design-system.css');
+
+/* 
+   Revenue Dashboard Specific Overrides 
+   - Uses design-system.css as base
+*/
+
+/* Custom Scrollbar for dashboard tables if needed */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Specific component overrides */
+.kpi-card {
+    background: var(--surface-0);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    border: 1px solid var(--surface-200);
+}
+
+.kpi-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.kpi-label {
+    font-size: var(--text-sm);
+    color: var(--surface-600);
+    margin-bottom: var(--space-1);
+}
+
+.kpi-sub {
+    font-size: var(--text-xs);
+    color: var(--surface-400);
+}
+
+/* Utility Helpers */
+.text-success {
+    color: var(--success);
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+.text-warning {
+    color: var(--warning);
+}

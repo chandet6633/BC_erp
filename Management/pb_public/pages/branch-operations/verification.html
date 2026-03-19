@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>ตรวจสอบประจำวัน</title>
+    <link rel="manifest" href="../../manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Design System -->
+    <style>
+        .progress-bar-container {
+            background: var(--surface-200);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--primary-600);
+            transition: width 0.4s ease;
+        }
+
+        .verify-btn {
+            background: var(--success-100);
+            color: var(--success-700);
+            border: 1px solid var(--success-200);
+        }
+
+        .verify-btn:hover {
+            background: var(--success);
+            color: white;
+        }
+
+        .unverify-btn {
+            background: var(--danger-100);
+            color: var(--danger-700);
+            border: 1px solid var(--danger-200);
+        }
+
+        .unverify-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+    </style>
+    \n\n
+  <script type="module" crossorigin src="../../assets/bc_ops_verification-D-J3S3kh.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/ui-D6UlSK9g.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/entry-CsCD-e0B.js">
+  <link rel="modulepreload" crossorigin href="../../assets/revenueService-BeC0GFMo.js">
+  <link rel="modulepreload" crossorigin href="../../assets/auditService-BS08mIiJ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/branch-switcher-CW4iuO5M.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/page-header-B6HlsY86.css">
+  <link rel="stylesheet" crossorigin href="../../assets/hr_migrate-BvNrfudO.css">
+</head>
+
+<body class="page-bg">
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">ตรวจสอบรายการ</h1>
+                <p class="page-subtitle">ยืนยันความถูกต้องรายวัน</p>
+            </div>
+            <a href="../main/index.html" class="page-back-btn">← กลับ</a>
+        </div>
+
+        <!-- Branch Switcher -->
+        <div id="branch-switcher" style="display:none"></div>
+
+        <!-- Date Navigation & Actions -->
+        <div class="card mb-3" style="margin-bottom: var(--space-4); padding: var(--space-3)">
+            <div style="display: flex; flex-direction: column; gap: var(--space-3)">
+                <div style="display: flex; gap: var(--space-2); align-items: center; justify-content: center">
+                    <button onclick="changeDate(-1)" class="btn btn-ghost" style="padding: var(--space-2)">
+                        ◀
+                    </button>
+                    <input type="date" id="verifyDate" class="input" style="max-width: 160px; text-align: center" />
+                    <button onclick="changeDate(1)" class="btn btn-ghost" style="padding: var(--space-2)">▶</button>
+                    <button onclick="goToday()" class="btn btn-sm btn-ghost">วันนี้</button>
+                </div>
+                <div style="display: flex; gap: var(--space-2); justify-content: center; flex-wrap: wrap">
+                    <button class="btn btn-sm" style="background: var(--success); color: white" id="verifyAllBtn"
+                        onclick="verifyAll()">
+                        ✅ ยืนยันทั้งหมด
+                    </button>
+                    <button class="btn btn-sm btn-outline" style="border-color: var(--danger); color: var(--danger)"
+                        id="unverifyAllBtn" onclick="unverifyAll()">
+                        ↩ ยกเลิกทั้งหมด
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary -->
+        <div class="grid-auto"
+            style="grid-template-columns: repeat(2, 1fr); gap: var(--space-2); margin-bottom: var(--space-2)">
+            <div class="kpi-card">
+                <div class="kpi-label">💰 รายรับรวม</div>
+                <div class="kpi-value text-success" id="vTotalRev">฿0.00</div>
+                <div class="kpi-sub" id="vRevCount">0 รายการ</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">💸 รายจ่ายรวม</div>
+                <div class="kpi-value text-danger" id="vTotalExp">฿0.00</div>
+                <div class="kpi-sub" id="vExpCount">0 รายการ</div>
+            </div>
+        </div>
+        <div class="grid-auto"
+            style="grid-template-columns: repeat(2, 1fr); gap: var(--space-2); margin-bottom: var(--space-6)">
+            <div class="kpi-card">
+                <div class="kpi-label">📊 สุทธิ</div>
+                <div class="kpi-value" id="vNet">฿0.00</div>
+                <div class="kpi-sub" id="vNetLabel">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">✅ ยืนยันแล้ว</div>
+                <div class="kpi-value" id="vVerifyProgress">0%</div>
+                <div class="kpi-sub" id="vVerifyLabel">0/0 รายการ</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="vProgressBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Type Breakdown -->
+        <div class="card mb-3" style="margin-bottom: var(--space-4)">
+            <h3 class="mb-2" style="font-size: var(--text-base)">💳 แยกตามประเภทชำระ</h3>
+            <div class="grid-auto" style="grid-template-columns: repeat(3, 1fr); gap: var(--space-2)">
+                <div class="kpi-card" style="padding: var(--space-2)">
+                    <div class="kpi-label" style="font-size: 0.7rem">เงินสด</div>
+                    <div class="kpi-value" id="vPayCash" style="font-size: var(--text-lg)">฿0</div>
+                    <div class="kpi-sub" id="vPayCashCount">0 รายการ</div>
+                </div>
+                <div class="kpi-card" style="padding: var(--space-2)">
+                    <div class="kpi-label" style="font-size: 0.7rem">โอน</div>
+                    <div class="kpi-value" id="vPayTransfer" style="font-size: var(--text-lg)">฿0</div>
+                    <div class="kpi-sub" id="vPayTransferCount">0 รายการ</div>
+                </div>
+                <div class="kpi-card" style="padding: var(--space-2)">
+                    <div class="kpi-label" style="font-size: 0.7rem">Slip</div>
+                    <div class="kpi-value" id="vPaySlip" style="font-size: var(--text-lg)">฿0</div>
+                    <div class="kpi-sub" id="vPaySlipCount">0 รายการ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Discrepancy Check -->
+        <div class="card mb-3" id="discrepancySection" style="margin-bottom: var(--space-4)">
+            <h3 class="mb-2" style="font-size: var(--text-base)">🔍 เปรียบเทียบกับระบบ</h3>
+            <div id="discrepancyContent">
+                <p class="text-muted">กำลังโหลด...</p>
+            </div>
+        </div>
+
+        <!-- Revenue Section -->
+        <div class="card mb-3" style="margin-bottom: var(--space-4)">
+            <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: var(--space-2);
+                    ">
+                <h3 style="font-size: var(--text-lg)">💰 รายรับ</h3>
+                <span class="badge" id="revVerifyBadge" style="
+                            background: var(--surface-200);
+                            color: var(--surface-700);
+                            padding: 2px 8px;
+                            border-radius: 99px;
+                            font-size: var(--text-xs);
+                        ">0/0</span>
+            </div>
+            <div class="table-container">
+                <table id="vRevTable" class="table-mobile-card" style="width: 100%">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                            <th style="padding: var(--space-2)">รายละเอียด</th>
+                            <th style="padding: var(--space-2)">จำนวนเงิน</th>
+                            <th style="padding: var(--space-2)">ประเภท</th>
+                            <th style="padding: var(--space-2)">หลักฐาน</th>
+                            <th style="padding: var(--space-2)">หมายเหตุ</th>
+                            <th style="padding: var(--space-2); min-width: 100px">ยืนยัน</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expenses Section -->
+        <div class="card mb-3">
+            <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: var(--space-2);
+                    ">
+                <h3 style="font-size: var(--text-lg)">💸 รายจ่าย</h3>
+                <span class="badge" id="expVerifyBadge" style="
+                            background: var(--surface-200);
+                            color: var(--surface-700);
+                            padding: 2px 8px;
+                            border-radius: 99px;
+                            font-size: var(--text-xs);
+                        ">0/0</span>
+            </div>
+            <div class="table-container">
+                <table id="vExpTable" class="table-mobile-card" style="width: 100%">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                            <th style="padding: var(--space-2)">หมวดหมู่</th>
+                            <th style="padding: var(--space-2)">จำนวนเงิน</th>
+                            <th style="padding: var(--space-2)">หลักฐาน</th>
+                            <th style="padding: var(--space-2)">หมายเหตุ</th>
+                            <th style="padding: var(--space-2); min-width: 100px">ยืนยัน</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => { });
+        }
+    </script>
+    \n\n
+</body>
+
+</html>

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>Payroll & Salary | HR Dashboard</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <style>
+        /* Tab Navigation */
+        .tab-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--surface-600);
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Payroll Specific Overrides */
+        .payroll-summary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: var(--text-sm);
+        }
+
+        .payroll-summary-table th {
+            background: var(--surface-100);
+            color: var(--surface-600);
+            padding: var(--space-3);
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid var(--surface-200);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .payroll-summary-table td {
+            padding: var(--space-3);
+            text-align: center;
+            border-bottom: 1px solid var(--surface-100);
+            vertical-align: middle;
+        }
+
+        .payroll-summary-table .avg-row {
+            background: var(--primary-50);
+            font-weight: 700;
+            color: var(--primary-700);
+        }
+
+        /* Attendance Grid (The Calendar) */
+        .attendance-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.75rem;
+        }
+
+        .attendance-grid th {
+            background: var(--surface-800);
+            color: var(--surface-50);
+            padding: var(--space-2);
+            text-align: center;
+            border: 1px solid var(--surface-600);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .attendance-grid td {
+            padding: 4px;
+            text-align: center;
+            border: 1px solid var(--surface-200);
+            min-width: 45px;
+            height: 45px;
+            vertical-align: middle;
+            font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Sticky Name Column */
+        .attendance-grid .name-col {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background: var(--surface-0);
+            z-index: 20;
+            min-width: 140px;
+            padding-left: var(--space-3);
+            font-weight: 600;
+            color: var(--surface-900);
+            border-right: 2px solid var(--surface-300);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .attendance-grid th.name-col {
+            background: var(--surface-900);
+            color: white;
+            z-index: 21;
+        }
+
+        /* Status Colors (Pro Max) */
+        .cell-full {
+            background: #dbeafe;
+            /* Blue 100 */
+            color: #1e40af;
+            /* Blue 800 */
+            font-weight: 500;
+        }
+
+        .cell-half {
+            background: #fef9c3;
+            /* Yellow 100 */
+            color: #854d0e;
+            /* Yellow 800 */
+        }
+
+        .cell-leave {
+            background: #fee2e2;
+            /* Red 100 */
+            color: #991b1b;
+            /* Red 800 */
+        }
+
+        .cell-absent {
+            background: #f3f4f6;
+            /* Gray 100 */
+            color: #374151;
+            /* Gray 700 */
+            font-weight: bold;
+        }
+
+        .cell-sunday {
+            background: #fdf2f8;
+            /* Pink 50 */
+            color: #db2777;
+            /* Pink 600 */
+        }
+
+        .day-sun {
+            background: #be185d !important;
+            /* Pink 700 */
+            color: white !important;
+        }
+
+        /* Print Overrides */
+        @media print {
+            @page {
+                size: landscape;
+                margin: 1cm;
+            }
+
+            .no-print,
+            #loading {
+                display: none !important;
+            }
+
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+                margin-bottom: 20px !important;
+                page-break-inside: avoid;
+            }
+
+            h3 {
+                font-size: 14pt !important;
+                margin-bottom: 10px !important;
+                color: #000 !important;
+            }
+
+            /* Summary Table */
+            .payroll-summary-table {
+                font-size: 10pt !important;
+                width: 100%;
+            }
+
+            .payroll-summary-table th {
+                background: #f1f5f9 !important;
+                color: #000 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+
+            .payroll-summary-table td {
+                border-bottom: 1px solid #ccc !important;
+            }
+
+            /* Attendance Grid - Scale down to fit */
+            .attendance-grid {
+                font-size: 7pt !important;
+                width: 100%;
+                table-layout: fixed;
+            }
+
+            .attendance-grid th,
+            .attendance-grid td {
+                border: 1px solid #ccc !important;
+                padding: 2px !important;
+                height: auto !important;
+                min-width: auto !important;
+            }
+
+            .attendance-grid .name-col {
+                position: static !important;
+                box-shadow: none !important;
+                width: 100px !important;
+                background: white !important;
+                color: black !important;
+            }
+
+            /* Ensure semantic colors print */
+            .cell-full {
+                background: #dbeafe !important;
+                color: #1e40af !important;
+            }
+
+            .cell-half {
+                background: #fef9c3 !important;
+                color: #854d0e !important;
+            }
+
+            .cell-leave {
+                background: #fee2e2 !important;
+                color: #991b1b !important;
+            }
+
+            .cell-absent {
+                background: #f3f4f6 !important;
+                color: #374151 !important;
+            }
+
+            .cell-sunday {
+                background: #fdf2f8 !important;
+                color: #db2777 !important;
+            }
+
+            .day-sun {
+                background: #be185d !important;
+                color: white !important;
+            }
+        }
+    </style>
+\n    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n</head>
+
+<body>
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <header class="header-section no-print" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: var(--space-6);
+                    flex-wrap: wrap;
+                    gap: var(--space-4);
+                ">
+            <div>
+                <h1 style="font-size: var(--text-xl)">💰 Payroll System</h1>
+                <p style="color: var(--surface-600); font-size: var(--text-sm)">คำนวณเงินเดือน และตรวจสอบวันลา</p>
+            </div>
+            <a href="index.html" class="btn btn-ghost btn-sm">← กลับ</a>
+        </header>
+
+        <!-- Navigation -->
+        <div class="tabs no-print" style="border-bottom: 1px solid var(--surface-100); margin-bottom: var(--space-6)">
+            <button class="tab-btn" onclick="location.href = 'hrdashboard.html'">แดชบอร์ด</button>
+            <button class="tab-btn active" onclick="location.href = 'payroll.html'">คำนวณเงินเดือน</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card no-print mb-6">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label>เเผนก</label>
+                    <select id="dept" class="input" style="width: 160px">
+                        <option value="">-- เลือกเเผนก --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>เดือน</label>
+                    <input type="month" id="month" class="input" style="width: 160px" />
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 200px">
+                    <label>ค้นหาชื่อ</label>
+                    <input type="text" id="search" class="input" placeholder="พิมพ์ชื่อพนักงาน..." />
+                </div>
+                <div style="display: flex; gap: var(--space-2); margin-top: auto">
+                    <button id="load" class="btn btn-primary btn-sm">โหลดข้อมูล</button>
+                    <button id="csv" class="btn btn-outline btn-sm">CSV</button>
+                    <button id="print" class="btn btn-ghost btn-sm" onclick="window.print()">พิมพ์ / PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div id="loading" class="hidden" style="text-align: center; padding: var(--space-8); color: var(--surface-500)">
+            <p>กำลังโหลดข้อมูล...</p>
+        </div>
+
+        <div id="content-container"></div>
+    </div>
+
+    <!-- Scripts -->
+
+    <script type="module">
+        import '../../services/pocketbase.js';
+        import '../../utils/helpers.js';
+        import '../../services/authService.js';
+        import './js/api.js';
+        import './js/data_manager.js';
+    </script>
+
+    <script type="module">
+        const $ = s => document.querySelector(s);
+        const deptSel = $('#dept');
+        const monthSel = $('#month');
+        const container = $('#content-container');
+        const loadBtn = $('#load');
+        const csvBtn = $('#csv');
+        const searchInput = $('#search');
+        const loadingDiv = $('#loading');
+
+        let currentSummary = [];
+        let globalRoster = [];
+
+        (async () => {
+            try {
+                globalRoster = await DataManager.getRoster();
+                const depts = [...new Set(globalRoster.map(r => r.department))].sort();
+                deptSel.innerHTML = '<option value="">-- เลือกเเผนก --</option>';
+                depts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    deptSel.appendChild(opt);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        })();
+
+        const calcOT = outT => {
+            if (!outT) return 0;
+            const [h, m] = outT.split(':').map(Number);
+            const outMin = h * 60 + m;
+            const base = 17 * 60 + 59;
+            return outMin > base ? Math.ceil((outMin - base) / 30) * 0.5 : 0;
+        };
+
+        loadBtn.onclick = async () => {
+            if (!deptSel.value || !monthSel.value) return alert('กรุณาเลือกเเผนกเเละเดือน');
+            container.innerHTML = '';
+            loadingDiv.classList.remove('hidden');
+
+            try {
+                const [checks, leaves] = await Promise.all([
+                    DataManager.getAttendance(monthSel.value, deptSel.value),
+                    DataManager.getLeaves(monthSel.value, deptSel.value)
+                ]);
+
+                const nameMap = new Map();
+                globalRoster.forEach(e => {
+                    nameMap.set(e.id, e.name);
+                    nameMap.set(e.name, e.name);
+                });
+
+                const deptRosterNames = new Set(
+                    globalRoster.filter(e => e.department === deptSel.value).map(e => e.name)
+                );
+                const deptChecks = checks.filter(c =>
+                    deptRosterNames.has(c.name || nameMap.get(c.employee_id) || c.employee_id)
+                );
+
+                const adaptedChecks = deptChecks.map(c => ({
+                    Name: c.name || nameMap.get(c.employee_id) || c.employee_id,
+                    Timestamp: c.date,
+                    Type: c.status
+                }));
+
+                const adaptedLeaves = leaves.map(l => ({
+                    'Name-นามสกุล': l.name,
+                    StartDate: l.start_date,
+                    EndDate: l.end_date,
+                    Reason: l.reason,
+                    Type: l.type
+                }));
+
+                renderTables(
+                    globalRoster.filter(e => e.department === deptSel.value),
+                    adaptedChecks,
+                    adaptedLeaves,
+                    monthSel.value
+                );
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        };
+
+        function renderTables(deptRoster, checks, leaves, month) {
+            const [y, m] = month.split('-').map(Number);
+            const dim = new Date(y, m, 0).getDate();
+            const byEmp = {};
+            const lvEmp = {};
+
+            deptRoster.forEach(emp => (byEmp[emp.name] = {}));
+            checks.forEach(r => {
+                const name = r.Name;
+                if (!name || !byEmp[name]) return;
+                const ts = new Date(r.Timestamp);
+                const d = ts.getDate();
+                if (!byEmp[name][d]) byEmp[name][d] = {};
+                const type = String(r.Type).toLowerCase() === 'in' ? 'in' : 'out';
+                const timeStr = ts.toTimeString().slice(0, 5);
+                if (type === 'in') {
+                    if (!byEmp[name][d].in || timeStr < byEmp[name][d].in) byEmp[name][d].in = timeStr;
+                } else {
+                    if (!byEmp[name][d].out || timeStr > byEmp[name][d].out) byEmp[name][d].out = timeStr;
+                }
+            });
+
+            leaves.forEach(r => {
+                const name = r['Name-นามสกุล'];
+                if (!name) return;
+                const s = new Date(r.StartDate).getDate();
+                const e = new Date(r.EndDate).getDate();
+                if (!lvEmp[name]) lvEmp[name] = {};
+                for (let d = s; d <= e; d++) lvEmp[name][d] = r.Reason || 'ลางาน';
+            });
+
+            const allNames = Object.keys(byEmp).sort();
+            const summary = allNames.map(name => {
+                let full = 0,
+                    half = 0,
+                    log = 0,
+                    nolog = 0,
+                    bonus = 0,
+                    ot = 0;
+                const cutoff = '07:40';
+                for (let d = 1; d <= dim; d++) {
+                    const isSun = new Date(y, m - 1, d).getDay() === 0;
+                    if (isSun) continue;
+                    const rec = byEmp[name][d] || {},
+                        inT = rec.in,
+                        outT = rec.out,
+                        leave = lvEmp[name]?.[d];
+                    if (leave && !inT && !outT) log++;
+                    else if (!leave && !inT && !outT) nolog++;
+                    else if (inT || outT) {
+                        if (inT && outT) {
+                            const [h1, m1] = inT.split(':').map(Number),
+                                [h2, m2] = outT.split(':').map(Number);
+                            const hrs = (new Date(y, m - 1, d, h2, m2) - new Date(y, m - 1, d, h1, m1)) / 3600000;
+                            if (hrs >= 7) full++;
+                            else half++;
+                        } else half++;
+                        if (inT && inT <= cutoff) bonus++;
+                        if (outT) ot += calcOT(outT);
+                    }
+                }
+                return { name, full, half, total: full + half, bonus, ot, log, nolog };
+            });
+
+            const n = summary.length || 1;
+            const avg = summary.reduce(
+                (acc, s) => ({
+                    full: acc.full + s.full,
+                    half: acc.half + s.half,
+                    total: acc.total + s.total,
+                    bonus: acc.bonus + s.bonus,
+                    ot: acc.ot + s.ot,
+                    log: acc.log + s.log,
+                    nolog: acc.nolog + s.nolog
+                }),
+                { full: 0, half: 0, total: 0, bonus: 0, ot: 0, log: 0, nolog: 0 }
+            );
+            Object.keys(avg).forEach(k => (avg[k] = Math.round((avg[k] / n) * 10) / 10));
+
+            let html = `
+                <div class="card mb-6">
+                    <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4);">📋 สรุปประจำเดือน ${month}</h3>
+                    <div class="table-container">
+                        <table class="payroll-summary-table">
+                            <thead><tr><th>ชื่อ-สกุล</th><th>เต็มวัน</th><th>ครึ่งวัน</th><th>รวม</th><th>เบี้ยขยัน</th><th>OT</th><th>ลางาน</th><th>ขาดงาน</th></tr></thead>
+                            <tbody>
+                                ${summary.map(s => `<tr><td>${s.name}</td><td>${s.full}</td><td>${s.half}</td><td><span class="badge badge-success">${s.total}</span></td><td>${s.bonus}</td><td>${s.ot}</td><td>${s.log}</td><td>${s.nolog}</td></tr>`).join('')}
+                                <tr class="avg-row"><td>∅ เฉลี่ย</td><td>${avg.full}</td><td>${avg.half}</td><td>${avg.total}</td><td>${avg.bonus}</td><td>${avg.ot}</td><td>${avg.log}</td><td>${avg.nolog}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card mt-6" style="overflow-x: auto;">
+                    <h3 style="font-size: var(--text-lg); margin-bottom: var(--space-4);">📅 ตารางลงเวลาประจำเดือน ${month}</h3>
+                    <table class="attendance-grid">
+                        <thead><tr><th class="name-col">รายชื่อ</th>${Array.from({ length: dim }, (_, i) => {
+                const d = i + 1;
+                const isSun = new Date(y, m - 1, d).getDay() === 0;
+                return `<th class="${isSun ? 'day-sun' : ''}">${d}</th>`;
+            }).join('')}<th style="background:#4b5563">รวม</th></tr></thead>
+                        <tbody>
+                            ${allNames
+                    .map(name => {
+                        const row = summary.find(s => s.name === name);
+                        return `<tr><td class="name-col">${name}</td>${Array.from(
+                            { length: dim },
+                            (_, i) => {
+                                const d = i + 1;
+                                const isSun = new Date(y, m - 1, d).getDay() === 0;
+                                const rec = byEmp[name][d] || {};
+                                const leave = lvEmp[name]?.[d];
+                                let cls = isSun ? 'cell-sunday' : '';
+                                let txt = '';
+                                if (leave && !rec.in && !rec.out) {
+                                    cls = 'cell-leave';
+                                    txt = 'L';
+                                } else if (!leave && !rec.in && !rec.out && !isSun) {
+                                    cls = 'cell-absent';
+                                    txt = 'A';
+                                } else if (rec.in || rec.out) {
+                                    txt = `${rec.in || '-'}<br>${rec.out || '-'}`;
+                                    if (rec.in && rec.out) {
+                                        const [h1, m1] = rec.in.split(':').map(Number);
+                                        const [h2, m2] = rec.out.split(':').map(Number);
+                                        const hrs =
+                                            (new Date(y, m - 1, d, h2, m2) -
+                                                new Date(y, m - 1, d, h1, m1)) /
+                                            3600000;
+                                        cls = hrs >= 7 ? 'cell-full' : 'cell-half';
+                                    } else cls = 'cell-half';
+                                }
+                                return `<td class="${cls}">${txt}</td>`;
+                            }
+                        ).join('')}<td style="font-weight:700">${row ? row.total : 0}</td></tr>`;
+                    })
+                    .join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+            container.innerHTML = html;
+        }
+
+        searchInput.oninput = () => {
+            const val = searchInput.value.toLowerCase();
+            $$('.payroll-summary-table tbody tr:not(.avg-row), .attendance-grid tbody tr').forEach(tr => {
+                const name = (tr.querySelector('td:first-child')?.innerText || '').toLowerCase();
+                tr.style.display = name.includes(val) ? '' : 'none';
+            });
+        };
+
+        csvBtn.onclick = () => {
+            const csv =
+                'Name,Full,Half,TotalWork,Bonus,OT,Leave,Absent\n' +
+                currentSummary
+                    .map(s => `${s.name},${s.full},${s.half},${s.total},${s.bonus},${s.ot},${s.log},${s.nolog}`)
+                    .join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `payroll_${monthSel.value}.csv`;
+            a.click();
+        };
+    </script>
+\n    <script type="module" src="../../assets/js/app-shell.js"></script>\n</body>
+
+</html>

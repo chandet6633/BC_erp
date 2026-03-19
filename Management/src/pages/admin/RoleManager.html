@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Role Manager | Admin Suite</title>
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <style>
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+            margin-top: var(--space-6);
+        }
+
+        .tool-check-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            margin-top: var(--space-4);
+            max-height: 400px;
+            overflow-y: auto;
+            padding: var(--space-4);
+            background: var(--surface-50);
+            border-radius: var(--radius-lg);
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2);
+            border-radius: var(--radius-md);
+            transition: background 0.2s;
+        }
+
+        .tool-item:hover {
+            background: var(--surface-100);
+        }
+
+        .tool-item input {
+            width: 18px;
+            height: 18px;
+        }
+    </style>
+    \n
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n
+</head>
+
+<body>
+    <div class="container py-8">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold">🔐 Role & Permission Manager</h1>
+                <p class="text-sub">Manage which roles can access specific tools</p>
+            </div>
+            <a href="index.html" class="btn btn-ghost">← Back to Suite</a>
+        </header>
+
+        <div id="loading" class="text-center py-12">
+            <p class="text-sub">Loading roles and tools...</p>
+        </div>
+
+        <div id="manager-content" class="hidden">
+            <div class="role-grid" id="role-cards">
+                <!-- Role cards will be injected here -->
+            </div>
+
+            <div class="mt-12 text-center">
+                <button onclick="saveAllPermissions(event)" class="btn btn-primary btn-lg">
+                    💾 Save All Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pb } from '../../services/pocketbase.js';
+        import { AuthService } from '../../services/authService.js';
+        import { TOOLS } from '../../registry.js';
+        import { ConfigService } from '../../services/configService.js';
+        import { AuditService } from '../../services/auditService.js';
+
+        const ROLES = ['admin', 'manager', 'owner', 'sa', 'mechanic', 'sa_main', 'sa_suphanburi'];
+        let rolePermissions = {};
+
+        async function init() {
+            if (!AuthService.requireRole(['admin'])) return;
+
+            await ConfigService.init();
+
+            // Prime rolePermissions with current state or defaults
+            ROLES.forEach(role => {
+                const dbPerms = ConfigService.rolePermissions[role] || [];
+                // Only use DB perms if they contain at least one valid current tool ID.
+                // This gracefully handles legacy DB states where tool IDs might have changed.
+                const hasValid = dbPerms.some(dbId => TOOLS.some(t => t.id === dbId));
+
+                rolePermissions[role] = hasValid ? dbPerms :
+                    TOOLS.filter(t => t.roles.includes(role)).map(t => t.id);
+            });
+
+            renderRoles();
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('manager-content').classList.remove('hidden');
+        }
+
+        function renderRoles() {
+            const container = document.getElementById('role-cards');
+            container.innerHTML = ROLES.map(role => `
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold mb-2 capitalize">${role}</h3>
+                    <p class="text-xs text-sub mb-4">Select accessible tools for this role</p>
+                    
+                    <div class="tool-check-list">
+                        ${TOOLS.map(tool => `
+                            <label class="tool-item">
+                                <input type="checkbox" 
+                                       ${rolePermissions[role].includes(tool.id) ? 'checked' : ''} 
+                                       onchange="togglePermission('${role}', '${tool.id}', this.checked)">
+                                <div>
+                                    <div class="font-medium text-sm">${tool.title}</div>
+                                    <div class="text-xs text-sub">${tool.description || tool.group || 'Utility'}</div>
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.togglePermission = (role, toolId, isChecked) => {
+            if (!rolePermissions[role]) rolePermissions[role] = [];
+
+            if (isChecked) {
+                if (!rolePermissions[role].includes(toolId)) {
+                    rolePermissions[role].push(toolId);
+                }
+            } else {
+                rolePermissions[role] = rolePermissions[role].filter(id => id !== toolId);
+            }
+        };
+
+        window.saveAllPermissions = async (event) => {
+            const btn = event ? event.currentTarget : document.querySelector('button.btn-primary');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const promises = ROLES.map(async (role) => {
+                    // Find existing record for this role
+                    let record;
+                    try {
+                        record = await pb.collection('system_roles').getFirstListItem(`role_name='${role}'`);
+                    } catch (e) {
+                        // Not found, will create
+                    }
+
+                    const data = {
+                        role_name: role,
+                        allowed_tools: rolePermissions[role]
+                    };
+
+                    if (record) {
+                        return pb.collection('system_roles').update(record.id, data);
+                    } else {
+                        return pb.collection('system_roles').create(data);
+                    }
+                });
+
+                await Promise.all(promises);
+                AuditService.log('permissions_update', `Updated role permissions for: ${ROLES.join(', ')}`, 'admin');
+                await ConfigService.init(); // Reload configurations after saving
+                alert('Permissions saved successfully!');
+            } catch (error) {
+                console.error(error);
+                alert('Error saving permissions: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        };
+
+        init();
+    </script>
+    \n
+    <script type="module" src="../../assets/js/app-shell.js"></script>\n
+</body>
+
+</html>

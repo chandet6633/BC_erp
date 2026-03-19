@@ -1,0 +1,11 @@
+/**
+ * TOOL_TITLE — Tool-Specific Styles
+ *
+ * Keep this minimal! Only add styles that are unique to this tool.
+ * Use design-system.css classes for everything else:
+ *   .card, .btn, .btn-primary, .btn-outline, .btn-sm
+ *   .text-xl, .text-lg, .text-sm, .text-sub
+ *   .flex, .gap-2, .mb-4, .p-4
+ *   .glass-card, .kpi-card
+ *   var(--primary-600), var(--surface-500), var(--success), var(--danger)
+ */

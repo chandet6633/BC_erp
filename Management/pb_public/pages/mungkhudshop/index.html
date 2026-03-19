@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🏪 ระบบจัดการร้าน — BC Auto</title>
+    <meta name="description" content="ระบบจัดการร้านบริการรถยนต์ MungkhudShop" />
+    <meta name="theme-color" content="#1e293b" />
+    <link rel="manifest" href="../../manifest.json" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        .mungkhud-frame {
+            width: 100%;
+            height: calc(100vh - 60px);
+            border: none;
+            background: #f0f2f5;
+        }
+
+        .mungkhud-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 60px);
+            gap: 16px;
+            font-family: 'Prompt', 'Inter', sans-serif;
+            color: #475569;
+            background: #f0f2f5;
+        }
+
+        .mungkhud-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .mungkhud-error {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 60px);
+            gap: 12px;
+            font-family: 'Prompt', 'Inter', sans-serif;
+            color: #ef4444;
+            background: #f0f2f5;
+        }
+
+        .mungkhud-error button {
+            padding: 8px 24px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+    </style>
+  <script type="module" crossorigin src="../../assets/mungkhudshop-2MNIdTu7.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+</head>
+
+<body>
+    <div id="loading" class="mungkhud-loading">
+        <div class="spinner"></div>
+        <span>กำลังเชื่อมต่อระบบจัดการร้าน...</span>
+    </div>
+
+    <div id="error" class="mungkhud-error">
+        <span style="font-size:2rem;">⚠️</span>
+        <span>ไม่สามารถเชื่อมต่อ MungkhudShop ได้</span>
+        <button onclick="loadMungkhudShop()">ลองใหม่</button>
+    </div>
+
+    <iframe id="mungkhudFrame" class="mungkhud-frame" style="display:none;"
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+
+</body>
+
+</html>

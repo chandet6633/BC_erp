@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>ตรวจสอบข้อมูล</title>
+    <link rel="manifest" href="../../manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Design System -->
+    <!-- html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .tab-btn {
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            color: var(--surface-600);
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+    </style>
+    \n\n
+  <script type="module" crossorigin src="../../assets/bc_ops_audit-BRMwtwrJ.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/ui-D6UlSK9g.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/entry-CsCD-e0B.js">
+  <link rel="modulepreload" crossorigin href="../../assets/auditService-BS08mIiJ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reportService-Bj0662ff.js">
+  <link rel="modulepreload" crossorigin href="../../assets/branch-switcher-CW4iuO5M.js">
+  <link rel="modulepreload" crossorigin href="../../assets/database-Ex4bZHqx.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/glass-ui-BB2-B0XT.css">
+  <link rel="stylesheet" crossorigin href="../../assets/page-header-B6HlsY86.css">
+  <link rel="stylesheet" crossorigin href="../../assets/hr_migrate-BvNrfudO.css">
+</head>
+
+<body class="page-bg">
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🔍 ตรวจสอบข้อมูล</h1>
+                <p class="page-subtitle">ตรวจสอบความถูกต้องของข้อมูล</p>
+            </div>
+            <a href="../main/index.html" class="page-back-btn">← กลับ</a>
+        </div>
+
+        <!-- Branch Switcher -->
+        <div id="branch-switcher" style="display:none"></div>
+
+        <div class="card mb-3" style="margin-bottom: var(--space-4)">
+            <div style="display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap">
+                <button class="btn btn-outline btn-sm" id="exportPDFBtn">📄 ส่งออก PDF</button>
+                <button class="btn btn-outline btn-sm" id="exportAuditBtn">📥 ส่งออก CSV</button>
+                <button class="btn btn-primary btn-sm" id="runAuditBtn">🔄 ตรวจสอบใหม่</button>
+            </div>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div class="grid-auto" id="auditSummary" style="
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: var(--space-2);
+                    margin-bottom: var(--space-6);
+                ">
+            <div class="kpi-card">
+                <div class="kpi-label">ใบบันทึก</div>
+                <div class="kpi-value" id="totalOrders">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">คลาดเคลื่อน</div>
+                <div class="kpi-value text-danger" id="orderDiscrepancies">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">กลุ่มสินค้า</div>
+                <div class="kpi-value" id="totalGroups">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">กลุ่มต้องสงสัย</div>
+                <div class="kpi-value text-danger" id="groupDiscrepancies">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">ความครบถ้วน</div>
+                <div class="kpi-value" id="completenessScore">-</div>
+                <div class="kpi-sub" id="completenessLabel">-</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab-order-audit">📋 ใบบันทึก</button>
+            <button class="tab-btn" data-tab="tab-group-audit">📦 กลุ่มสินค้า</button>
+            <button class="tab-btn" data-tab="tab-cost-audit">💰 ต้นทุน</button>
+            <button class="tab-btn" data-tab="tab-revenue-audit">📊 รายรับ</button>
+        </div>
+
+        <!-- TAB 1: Service Order Audit -->
+        <div id="tab-order-audit" class="tab-content active">
+            <div class="card">
+                <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: var(--space-2);
+                            flex-wrap: wrap;
+                        ">
+                    <h3 style="font-size: var(--text-lg)">🔎 รายการคลาดเคลื่อน</h3>
+                    <div style="display: flex; gap: var(--space-1); align-items: center">
+                        <input type="date" id="auditDateFrom" class="input" style="height: 32px; width: auto" />
+                        <span style="font-size: var(--text-xs)">-</span>
+                        <input type="date" id="auditDateTo" class="input" style="height: 32px; width: auto" />
+                        <button class="btn btn-ghost btn-sm" id="applyDateFilter">กรอง</button>
+                        <button class="btn btn-ghost btn-sm" id="clearDateFilter">ล้าง</button>
+                    </div>
+                </div>
+                <p style="font-size: var(--text-xs); color: var(--surface-500); margin-bottom: var(--space-4)">
+                    เปรียบเทียบยอดรวมรายได้/กำไร ของ Transaction vs Items
+                </p>
+
+                <!-- Visual Triage Dashboard -->
+                <div class="grid-auto" style="
+                            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                            gap: var(--space-3);
+                            margin-bottom: var(--space-4);
+                        ">
+                    <div class="kpi-card" style="padding: var(--space-3)">
+                        <div class="kpi-label" style="font-size: var(--text-sm)">รายการที่ยอดไม่ตรง</div>
+                        <div id="triageDiscrepantJobs" style="font-weight: 700; font-size: 1.5rem;">0</div>
+                    </div>
+                    <div class="kpi-card"
+                        style="padding: var(--space-3); border-color: var(--danger-200); background: var(--danger-50)">
+                        <div class="kpi-label" style="font-size: var(--text-sm); color: var(--danger-700)">
+                            ส่วนต่างรายได้ (รวม)</div>
+                        <div id="triageDiffRevenue"
+                            style="font-weight: 700; font-size: 1.5rem; color: var(--danger-700)">0.00</div>
+                    </div>
+                    <div class="kpi-card"
+                        style="padding: var(--space-3); border-color: var(--danger-200); background: var(--danger-50)">
+                        <div class="kpi-label" style="font-size: var(--text-sm); color: var(--danger-700)">ส่วนต่างกำไร
+                            (รวม)</div>
+                        <div id="triageDiffProfit"
+                            style="font-weight: 700; font-size: 1.5rem; color: var(--danger-700)">0.00</div>
+                    </div>
+                </div>
+
+                <!-- Batch action bar -->
+                <div id="batchBar" style="
+                            display: none;
+                            padding: var(--space-2);
+                            background: var(--surface-100);
+                            border-radius: var(--radius-md);
+                            margin-bottom: var(--space-2);
+                        ">
+                    <div style="display: flex; justify-content: space-between; align-items: center">
+                        <span style="font-size: var(--text-xs)">เลือก <strong id="batchCount">0</strong></span>
+                        <div style="display: flex; gap: var(--space-1)">
+                            <button class="btn btn-ghost btn-sm" id="selectAllBtn">All</button>
+                            <button class="btn btn-ghost btn-sm" id="deselectAllBtn">None</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="orderAuditTable" style="width: 100%; white-space: nowrap">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2); width: 30px">
+                                    <input type="checkbox" id="selectAllCheck" />
+                                </th>
+                                <th style="padding: var(--space-2)">Job ID</th>
+                                <th style="padding: var(--space-2)">ลูกค้า</th>
+                                <th style="padding: var(--space-2)">วันที่</th>
+                                <th style="padding: var(--space-2)">รายได้ (ใบ)</th>
+                                <th style="padding: var(--space-2)">รายได้ (สินค้า)</th>
+                                <th style="padding: var(--space-2)">ส่วนต่าง</th>
+                                <th style="padding: var(--space-2)">กำไร (ใบ)</th>
+                                <th style="padding: var(--space-2)">กำไร (สินค้า)</th>
+                                <th style="padding: var(--space-2)">ส่วนต่าง</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Anomaly Detection -->
+            <div class="card mt-2" style="padding: var(--space-4); margin-top: var(--space-4)">
+                <h3 class="mb-2" style="font-size: var(--text-lg)">🚨 รายการผิดปกติ (Anomaly)</h3>
+                <p style="font-size: var(--text-xs); color: var(--surface-500); margin-bottom: var(--space-2)">
+                    ยอดสูง/ต่ำผิดปกติ (>2 SD)
+                </p>
+                <div id="anomalySection"></div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Product Group Audit -->
+        <div id="tab-group-audit" class="tab-content" style="display: none">
+            <div class="card">
+                <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: var(--space-2);
+                        ">
+                    <h3 style="font-size: var(--text-lg)">🔎 เปรียบเทียบ 3 ตาราง</h3>
+                    <select id="auditMonthFilter" class="input" style="width: auto; height: 32px"></select>
+                </div>
+                <!-- Grand Total -->
+                <div id="groupGrandTotal" class="mb-3" style="margin-bottom: var(--space-4)"></div>
+
+                <h4 class="mb-2" style="font-size: var(--text-base)">📊 รายละเอียดแต่ละกลุ่ม</h4>
+                <div class="table-container">
+                    <table id="groupAuditTable" style="width: 100%; white-space: nowrap">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">รหัส</th>
+                                <th style="padding: var(--space-2)">ชื่อกลุ่ม</th>
+                                <th style="padding: var(--space-2)">จำนวน</th>
+                                <th style="padding: var(--space-2)">ยอดขาย</th>
+                                <th style="padding: var(--space-2)">กำไร</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Cost Verification -->
+        <div id="tab-cost-audit" class="tab-content" style="display: none">
+            <div class="card">
+                <h3 class="mb-2" style="font-size: var(--text-lg)">💰 ตรวจสอบต้นทุน (COGS)</h3>
+                <p style="font-size: var(--text-xs); color: var(--surface-500); margin-bottom: var(--space-2)">
+                    ต้นทุนสินค้า vs รายจ่ายหมวด "ค่าสินค้า"
+                </p>
+                <div id="costVerifySection"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Revenue Verification -->
+        <div id="tab-revenue-audit" class="tab-content" style="display: none">
+            <div class="card">
+                <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: var(--space-2);
+                            flex-wrap: wrap;
+                        ">
+                    <h3 style="font-size: var(--text-lg)">📊 ตรวจสอบรายรับ</h3>
+                    <div style="display: flex; gap: var(--space-1); align-items: center">
+                        <input type="date" id="revAuditDateFrom" class="input" style="height: 32px; width: auto" />
+                        <span style="font-size: var(--text-xs)">-</span>
+                        <input type="date" id="revAuditDateTo" class="input" style="height: 32px; width: auto" />
+                        <button class="btn btn-ghost btn-sm" id="applyRevAuditFilter">กรอง</button>
+                        <button class="btn btn-ghost btn-sm" id="clearRevAuditFilter">ล้าง</button>
+                    </div>
+                </div>
+                <p style="font-size: var(--text-xs); color: var(--surface-500); margin-bottom: var(--space-2)">
+                    ยอดบันทึกประจำวัน vs ยอดใบบันทึกบริการ
+                </p>
+                <div class="table-container">
+                    <table id="revAuditTable" style="width: 100%; white-space: nowrap">
+                        <thead>
+                            <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                                <th style="padding: var(--space-2)">วันที่</th>
+                                <th style="padding: var(--space-2); text-align: right">รายรับ (บันทึก)</th>
+                                <th style="padding: var(--space-2); text-align: right">รายรับ (ระบบ)</th>
+                                <th style="padding: var(--space-2); text-align: right">ส่วนต่าง</th>
+                                <th style="padding: var(--space-2); text-align: center">สถานะ</th>
+                                <th style="padding: var(--space-2)">หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="revAuditSummary" class="mt-2" style="font-size: var(--text-sm); margin-top: var(--space-2)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div class="modal-overlay" id="orderDetailModal">
+        <div class="card modal-content" style="
+                    max-width: 850px;
+                    width: 95%;
+                    margin: auto;
+                    max-height: 90vh;
+                    display: flex;
+                    flex-direction: column;
+                ">
+            <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: var(--space-4);
+                    ">
+                <h3 style="font-size: var(--text-lg)">📋 รายละเอียดใบบันทึก</h3>
+                <button class="btn btn-ghost btn-sm" id="closeDetailBtn">✕</button>
+            </div>
+
+            <div class="card mb-2"
+                style="background: var(--surface-50); padding: var(--space-3); margin-bottom: var(--space-4)">
+                <div class="grid-auto"
+                    style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2)">
+                    <div style="display: flex; align-items: center; gap: var(--space-1);">
+                        <span class="text-muted">Job:</span>
+                        <span id="detailJobId" style="font-weight: 600">-</span>
+                        <button class="btn btn-ghost btn-sm" id="btnEditTransaction"
+                            style="padding: 2px 6px; font-size: 0.8rem;" title="แก้ไขข้อมูลใบ">✏️</button>
+                    </div>
+                    <div><span class="text-muted">ลูกค้า:</span> <span id="detailCustomer">-</span></div>
+                    <div><span class="text-muted">ทะเบียน:</span> <span id="detailPlate">-</span></div>
+                    <div><span class="text-muted">วันที่:</span> <span id="detailDate">-</span></div>
+                </div>
+            </div>
+
+            <!-- Summary comparison -->
+            <div class="grid-auto" style="
+                        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                        gap: var(--space-2);
+                        margin-bottom: var(--space-4);
+                    ">
+                <div class="kpi-card" id="cardDetailTxRevenue"
+                    style="padding: var(--space-2); cursor: pointer; position: relative;" title="คลิกเพื่อแก้ไขรายได้">
+                    <div class="kpi-label" style="font-size: 0.7rem">รายได้ (ใบ)</div>
+                    <div id="detailTxRevenue" style="font-weight: 700">-</div>
+                    <input type="number" id="inputTxRevenue" class="input"
+                        style="display: none; width: 100%; height: 32px; font-weight: 700; text-align: center; margin-top: 4px;"
+                        step="0.01" />
+                </div>
+                <div class="kpi-card" style="padding: var(--space-2)">
+                    <div class="kpi-label" style="font-size: 0.7rem">รายได้ (สินค้า)</div>
+                    <div id="detailSiRevenue" style="font-weight: 700">-</div>
+                </div>
+                <div class="kpi-card"
+                    style="padding: var(--space-2); border-color: var(--danger-200); background: var(--danger-50)">
+                    <div class="kpi-label" style="font-size: 0.7rem; color: var(--danger)">ส่วนต่าง</div>
+                    <div id="detailDiffRevenue" style="font-weight: 700; color: var(--danger)">-</div>
+                </div>
+            </div>
+
+            <!-- Profit Summary comparison -->
+            <div class="grid-auto" style="
+                        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                        gap: var(--space-2);
+                        margin-bottom: var(--space-4);
+                    ">
+                <div class="kpi-card" id="cardDetailTxProfit"
+                    style="padding: var(--space-2); cursor: pointer; position: relative;" title="คลิกเพื่อแก้ไขกำไร">
+                    <div class="kpi-label" style="font-size: 0.7rem">กำไร (ใบ)</div>
+                    <div id="detailTxProfit" style="font-weight: 700">-</div>
+                    <input type="number" id="inputTxProfit" class="input"
+                        style="display: none; width: 100%; height: 32px; font-weight: 700; text-align: center; margin-top: 4px;"
+                        step="0.01" />
+                </div>
+                <div class="kpi-card" style="padding: var(--space-2)">
+                    <div class="kpi-label" style="font-size: 0.7rem">กำไร (สินค้า)</div>
+                    <div id="detailSiProfit" style="font-weight: 700">-</div>
+                </div>
+                <div class="kpi-card"
+                    style="padding: var(--space-2); border-color: var(--danger-200); background: var(--danger-50)">
+                    <div class="kpi-label" style="font-size: 0.7rem; color: var(--danger)">ส่วนต่าง</div>
+                    <div id="detailDiffProfit" style="font-weight: 700; color: var(--danger)">-</div>
+                </div>
+            </div>
+
+            <h4 class="mb-1" style="font-size: var(--text-base); margin-bottom: var(--space-2)">📦 รายการสินค้า</h4>
+            <div class="table-container" style="flex: 1; overflow-y: auto; margin-bottom: var(--space-4)">
+                <table style="width: 100%; font-size: var(--text-sm)">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid var(--surface-200)">
+                            <th style="padding: var(--space-2)">รหัส</th>
+                            <th style="padding: var(--space-2)">ชื่อสินค้า</th>
+                            <th style="padding: var(--space-2)">จำนวน</th>
+                            <th style="padding: var(--space-2)">ต้นทุน</th>
+                            <th style="padding: var(--space-2)">ขาย</th>
+                            <th style="padding: var(--space-2)">กำไร</th>
+                            <th style="padding: var(--space-2); text-align: center;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailItemsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: var(--space-2); justify-content: flex-end">
+                <button type="button" class="btn btn-outline" id="btnAutoSuggestFix"
+                    style="color: var(--accent-orange); border-color: var(--accent-orange);">💡
+                    ค้นหาการแก้ไขอัตโนมัติ</button>
+                <button type="button" class="btn btn-primary" id="btnAddMissingItem">➕ เพิ่มรายการขาดหาย</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div class="modal-overlay" id="quickAddModal">
+        <div class="card modal-content" style="max-width: 600px; width: 90%; margin: auto">
+            <h3 id="quickAddTitle" style="margin-bottom: var(--space-4)">➕ เพิ่มรายการสินค้า</h3>
+
+            <div class="card mb-2"
+                style="background: var(--surface-50); padding: var(--space-3); margin-bottom: var(--space-4)">
+                <div style="font-size: var(--text-sm)">
+                    <span style="margin-right: var(--space-4)"><strong>Job:</strong> <span id="qaJobId">-</span></span>
+                    <span style="margin-right: var(--space-4)"><strong>ลูกค้า:</strong> <span
+                            id="qaCustomer">-</span></span>
+                    <span><strong>ทะเบียน:</strong> <span id="qaPlate">-</span></span>
+                </div>
+            </div>
+
+            <div class="grid-auto"
+                style="grid-template-columns: 1fr 2fr; gap: var(--space-4); margin-bottom: var(--space-4)">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: var(--space-1)">รหัสสินค้า</label>
+                    <input type="text" id="qaItemCode" class="input" placeholder="SV001" />
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: var(--space-1)">ชื่อสินค้า *</label>
+                    <input type="text" id="qaItemName" class="input" placeholder="ชื่อรายการ" required />
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: var(--space-4)">
+                <label style="display: block; margin-bottom: var(--space-1)">ระบุกลุ่มสินค้า</label>
+                <select id="qaProductGroup" class="input">
+                    <option value="">-- ไม่ระบุ (ไม่ปรับยอดกลุ่ม) --</option>
+                </select>
+            </div>
+
+            <div class="grid-auto"
+                style="grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-6)">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: var(--space-1)">จำนวน</label>
+                    <input type="number" id="qaQuantity" class="input" value="1" min="1" />
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: var(--space-1)">ต้นทุน</label>
+                    <input type="number" id="qaCost" class="input" value="0" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: var(--space-1)">ราคาขาย</label>
+                    <input type="number" id="qaPrice" class="input" value="0" step="0.01" />
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: var(--space-2); justify-content: flex-end">
+                <button class="btn btn-ghost" id="cancelQuickAddBtn">ยกเลิก</button>
+                <button class="btn btn-primary" id="saveQuickAddBtn">💾 บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Row Modal (Imported for Audit page generic edits) -->
+    <div class="modal-overlay" id="editModal">
+        <div class="card modal-content" style="
+                    max-width: 550px;
+                    width: 90%;
+                    margin: auto;
+                    max-height: 90vh;
+                    display: flex;
+                    flex-direction: column;
+                ">
+            <h3 id="editModalTitle" style="margin-bottom: var(--space-4)">✏️ แก้ไขข้อมูล</h3>
+            <div id="editFields" style="overflow-y: auto; flex: 1; margin-bottom: var(--space-4)"></div>
+            <div class="modal-actions" style="display: flex; gap: var(--space-2); justify-content: flex-end">
+                <button class="btn btn-ghost" id="cancelEditBtn">ยกเลิก</button>
+                <button class="btn btn-primary" id="saveEditBtn">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple Tab Switcher
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => (c.style.display = 'none'));
+
+                btn.classList.add('active');
+                if (document.getElementById(btn.dataset.tab)) {
+                    document.getElementById(btn.dataset.tab).style.display = 'block';
+                }
+            });
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => { });
+        }
+    </script>
+    \n\n
+</body>
+
+</html>

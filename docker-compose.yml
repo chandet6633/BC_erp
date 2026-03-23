@@ -5,17 +5,17 @@
 #    - Management   (port 8092) — Back-office analytics & operations
 #    - MungkhudShop (port 8091) — Front-office shop ERP
 #
-#  AUTO-DEPLOY: Watchtower checks for new images every 5 minutes.
-#  Just push to `main` branch → GitHub Actions builds images →
-#  Watchtower pulls & restarts containers automatically.
+#  UPDATE: Push to `main` → GitHub Actions builds images →
+#  On this PC, run update.bat to pull & restart.
 #
-#  IMPORTANT: Database files live in local pb_data/ directories.
+#  IMPORTANT: Database files live in Docker named volumes.
 #  Rebuilding/updating containers will NEVER touch your data.
 #
 #  Quick commands:
-#    Start:  docker compose up -d
-#    Stop:   docker compose down
-#    Logs:   docker compose logs -f
+#    Start:   docker compose up -d
+#    Stop:    docker compose down
+#    Update:  .\update.bat
+#    Logs:    docker compose logs -f
 # ═══════════════════════════════════════════════════════════════
 
 services:
@@ -27,7 +27,7 @@ services:
     ports:
       - "8092:8092"
     volumes:
-      - ./Management/pb_data:/pb/pb_data
+      - erp-management-data:/pb/pb_data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8092/api/health"]
@@ -55,7 +55,7 @@ services:
     ports:
       - "8091:8091"
     volumes:
-      - ./MungkhudShop/pb_data:/pb/pb_data
+      - erp-mungkhud-data:/pb/pb_data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8091/api/health"]
@@ -76,35 +76,20 @@ services:
     networks:
       - erp-net
 
-  # ─── Auto-Deploy: Watchtower pulls new images automatically ───
-  watchtower:
-    image: containrrr/watchtower
-    container_name: bc-watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/config.json:/config.json:ro
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=30
-      - WATCHTOWER_LABEL_ENABLE=false
-      - WATCHTOWER_INCLUDE_STOPPED=false
-      - DOCKER_API_VERSION=1.44
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-    networks:
-      - erp-net
-
 # ─── Networking ───
 networks:
   erp-net:
     driver: bridge
 
 # ─── Data Persistence ───
-# Database files are stored in local pb_data/ directories:
-#   - ./Management/pb_data/   → Management database
-#   - ./MungkhudShop/pb_data/ → MungkhudShop database
-# These persist across container rebuilds as they live on the host filesystem.
+# Database files are stored in Docker named volumes:
+#   - erp-management-data → Management database
+#   - erp-mungkhud-data   → MungkhudShop database
+# These persist across container rebuilds.
+volumes:
+  erp-management-data:
+    name: erp-management-data
+    external: true
+  erp-mungkhud-data:
+    name: erp-mungkhud-data
+    external: true

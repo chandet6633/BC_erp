@@ -508,3 +508,79 @@ export function exportCSV(filename, headers, rows) {
     a.download = filename
     a.click()
 }
+
+/* ═══════════════════════════════════════════════════
+   Empty State Component
+   ═══════════════════════════════════════════════════ */
+
+/**
+ * Render an illustrated empty state.
+ * @param {object} opts
+ * @param {string} [opts.icon]    — Material Icons name (default: 'inbox')
+ * @param {string} [opts.title]   — heading text
+ * @param {string} [opts.message] — description text
+ * @param {string} [opts.action]  — optional action button HTML
+ * @returns {string} HTML string
+ */
+export function renderEmptyState({ icon = 'inbox', title = 'ไม่มีข้อมูล', message = '', action = '' } = {}) {
+    return `
+        <div class="empty-state" style="animation: fadeIn 0.3s ease;">
+            <span class="material-icons-outlined" style="font-size:72px;color:var(--color-accent,#C8A048);opacity:0.3;">${icon}</span>
+            <h3 style="margin-top:var(--sp-4);color:var(--color-text);font-weight:600;">${title}</h3>
+            ${message ? `<p style="margin-top:var(--sp-2);max-width:360px;">${message}</p>` : ''}
+            ${action}
+        </div>`
+}
+
+/* ═══════════════════════════════════════════════════
+   Skeleton Loader Component
+   ═══════════════════════════════════════════════════ */
+
+/**
+ * Render a skeleton loading placeholder.
+ * @param {string} [type] — 'table', 'cards', 'form', 'detail' (default: 'table')
+ * @returns {string} HTML string
+ */
+export function renderSkeleton(type = 'table') {
+    if (type === 'cards') {
+        return `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--sp-4);padding:var(--sp-4);">
+                ${Array(6).fill('').map(() => '<div class="skeleton skeleton-card"></div>').join('')}
+            </div>`
+    }
+    if (type === 'form') {
+        return `
+            <div style="padding:var(--sp-6);max-width:600px;">
+                <div class="skeleton skeleton-text" style="width:30%;height:24px;margin-bottom:20px;"></div>
+                ${Array(4).fill('').map(() => `
+                    <div style="margin-bottom:16px;">
+                        <div class="skeleton skeleton-text short" style="height:12px;margin-bottom:6px;"></div>
+                        <div class="skeleton" style="height:44px;border-radius:var(--radius-sm);"></div>
+                    </div>`).join('')}
+                <div class="skeleton" style="height:44px;width:120px;border-radius:var(--radius-sm);margin-top:8px;"></div>
+            </div>`
+    }
+    if (type === 'detail') {
+        return `
+            <div style="padding:var(--sp-6);">
+                <div class="skeleton skeleton-text" style="width:50%;height:28px;margin-bottom:20px;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:24px;">
+                    ${Array(4).fill('').map(() => '<div class="skeleton" style="height:60px;border-radius:var(--radius-sm);"></div>').join('')}
+                </div>
+                <div class="skeleton skeleton-card" style="margin-bottom:16px;"></div>
+                <div class="skeleton skeleton-card"></div>
+            </div>`
+    }
+    // Default: table skeleton
+    return `
+        <div style="padding:var(--sp-4);">
+            <div class="skeleton skeleton-text" style="width:40%;height:24px;margin-bottom:16px;"></div>
+            ${Array(5).fill('').map(() => `
+                <div class="skeleton-row">
+                    <div class="skeleton skeleton-cell"></div>
+                    <div class="skeleton skeleton-cell"></div>
+                    <div class="skeleton skeleton-cell"></div>
+                    <div class="skeleton skeleton-cell" style="flex:0.5;"></div>
+                </div>`).join('')}
+        </div>`
+}

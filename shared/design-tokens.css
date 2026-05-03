@@ -1,16 +1,81 @@
-/* ╔══════════════════════════════════════════════════╗
-   ║  Shared CSS Tokens — Structural Design System    ║
-   ║  Used by both Management and MungkhudShop        ║
-   ╚══════════════════════════════════════════════════╝
+/* ╔══════════════════════════════════════════════════════════╗
+   ║  BC AutoXperience — Unified Design Tokens              ║
+   ║  Shared across Management ERP and MungkhudShop         ║
+   ║  Brand: Navy (#1E2A4F) / Gold (#C8A048) / White        ║
+   ╚══════════════════════════════════════════════════════════╝
    
-   These tokens cover STRUCTURAL properties only:
-   spacing, border-radius, shadows, transitions, z-index.
-   
-   Colors and typography remain project-specific.
-   Import this file BEFORE your project's design system. */
+   Import BEFORE any project-specific CSS.
+   Both apps read the same variables for consistency. */
 
 :root {
-    /* ── Spacing Scale ── */
+    /* ══════════════════════════════
+       BRAND COLORS (Navy / Gold)
+       ══════════════════════════════ */
+    --bc-navy: #1E2A4F;
+    --bc-navy-dark: #151D3A;
+    --bc-navy-light: #2A3B6E;
+    --bc-navy-50: #E8EBF2;
+    --bc-navy-100: #C5CBE0;
+
+    --bc-gold: #C8A048;
+    --bc-gold-dark: #B08935;
+    --bc-gold-light: #D4B46A;
+    --bc-gold-50: #FDF8ED;
+    --bc-gold-100: #F5E8C7;
+
+    /* ══════════════════════════════
+       SEMANTIC COLORS
+       ══════════════════════════════ */
+    --bc-success: #10B981;
+    --bc-success-light: #D1FAE5;
+    --bc-danger: #EF4444;
+    --bc-danger-light: #FEE2E2;
+    --bc-warning: #F59E0B;
+    --bc-warning-light: #FEF3C7;
+    --bc-info: #3B82F6;
+    --bc-info-light: #DBEAFE;
+
+    /* ══════════════════════════════
+       NEUTRALS (Slate scale)
+       ══════════════════════════════ */
+    --bc-white: #FFFFFF;
+    --bc-bg: #F8FAFC;
+    --bc-surface: rgba(255, 255, 255, 0.85);
+    --bc-surface-solid: #FFFFFF;
+    --bc-border: rgba(30, 42, 79, 0.10);
+    --bc-border-light: rgba(30, 42, 79, 0.05);
+
+    --bc-text: #0F172A;
+    --bc-text-secondary: #475569;
+    --bc-text-muted: #94A3B8;
+    --bc-text-inverse: #FFFFFF;
+
+    --bc-slate-50: #F8FAFC;
+    --bc-slate-100: #F1F5F9;
+    --bc-slate-200: #E2E8F0;
+    --bc-slate-300: #CBD5E1;
+    --bc-slate-400: #94A3B8;
+    --bc-slate-500: #64748B;
+    --bc-slate-600: #475569;
+    --bc-slate-700: #334155;
+    --bc-slate-800: #1E293B;
+    --bc-slate-900: #0F172A;
+
+    /* ══════════════════════════════
+       SIDEBAR (Navy theme)
+       ══════════════════════════════ */
+    --bc-sidebar-bg: #1E2A4F;
+    --bc-sidebar-hover: #2A3B6E;
+    --bc-sidebar-active: #C8A048;
+    --bc-sidebar-text: #CBD5E1;
+    --bc-sidebar-text-active: #FFFFFF;
+    --bc-sidebar-width: 260px;
+    --bc-sidebar-collapsed: 64px;
+    --bc-topnav-height: 64px;
+
+    /* ══════════════════════════════
+       SPACING (4px grid)
+       ══════════════════════════════ */
     --sp-1: 4px;
     --sp-2: 8px;
     --sp-3: 12px;
@@ -21,31 +86,63 @@
     --sp-10: 40px;
     --sp-12: 48px;
 
-    /* ── Border Radius ── */
+    /* ══════════════════════════════
+       BORDER RADIUS
+       ══════════════════════════════ */
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
 
-    /* ── Shadows ── */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+    /* ══════════════════════════════
+       TYPOGRAPHY
+       ══════════════════════════════ */
+    --bc-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --bc-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
-    /* ── Transitions ── */
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.25s ease;
-    --transition-slow: 0.4s ease;
+    --bc-text-xs: 0.75rem;
+    --bc-text-sm: 0.875rem;
+    --bc-text-base: 1rem;
+    --bc-text-lg: 1.125rem;
+    --bc-text-xl: 1.25rem;
+    --bc-text-2xl: 1.5rem;
+    --bc-text-3xl: 1.875rem;
 
-    /* ── Z-Index Scale ── */
-    --z-dropdown: 100;
-    --z-sticky: 200;
-    --z-overlay: 300;
-    --z-modal: 400;
-    --z-toast: 500;
-
-    /* ── Glassmorphism (shared) ── */
+    /* ══════════════════════════════
+       GLASS & EFFECTS
+       ══════════════════════════════ */
     --glass-blur: blur(12px);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.12);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+
+    --shadow-sm: 0 1px 2px rgba(30, 42, 79, .06), 0 1px 3px rgba(30, 42, 79, .08);
+    --shadow-md: 0 4px 6px rgba(30, 42, 79, .07), 0 2px 4px rgba(30, 42, 79, .06);
+    --shadow-lg: 0 10px 15px rgba(30, 42, 79, .08), 0 4px 6px rgba(30, 42, 79, .05);
+    --shadow-xl: 0 20px 40px -12px rgba(30, 42, 79, .15);
+    --shadow-glass: 0 8px 32px 0 rgba(30, 42, 79, 0.05);
+
+    /* ══════════════════════════════
+       TRANSITIONS
+       ══════════════════════════════ */
+    --bc-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ══════════════════════════════
+       Z-INDEX LAYERS
+       ══════════════════════════════ */
+    --z-dropdown: 50;
+    --z-topnav: 90;
+    --z-sidebar: 100;
+    --z-overlay: 150;
+    --z-modal: 200;
+    --z-toast: 300;
+}
+
+/* ══════════════════════════════════════════
+   LOGIN GRADIENT (both apps)
+   ══════════════════════════════════════════ */
+.bc-login-bg {
+    background: linear-gradient(160deg, #151D3A 0%, #1E2A4F 40%, #2A3B6E 100%);
 }

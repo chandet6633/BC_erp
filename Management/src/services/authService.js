@@ -4,31 +4,37 @@ import { pb } from './pocketbase.js';
 /**
  * AuthService handles authentication, user identity, and role-based permissions.
  * Follows Poka-Yoke: prevents invalid states and unauthorized access by design.
+ *
+ * Migration: PocketBase auth → NocoDB-backed custom auth via PB-compatible wrapper.
+ * pb.authStore and pb.collection() are now provided by the NocoDB wrapper,
+ * so this service required minimal changes.
  */
 export const AuthService = {
     /**
      * Get the currently logged-in user and their role
      */
     getUser() {
-        // First check backend auth (PocketBase admin/manager)
+        // Check backend auth (NocoDB wrapper authStore)
         if (pb.authStore.isValid) {
             const model = pb.authStore.model;
-            // Poka-Yoke: Check if forced logout happened after last login
-            const lastForceLogout = model.last_force_logout ? new Date(model.last_force_logout) : null;
-            const lastLogin = sessionStorage.getItem('bcauto_last_login') ? new Date(sessionStorage.getItem('bcauto_last_login')) : null;
+            if (model) {
+                // Poka-Yoke: Check if forced logout happened after last login
+                const lastForceLogout = model.last_force_logout ? new Date(model.last_force_logout) : null;
+                const lastLogin = sessionStorage.getItem('bcauto_last_login') ? new Date(sessionStorage.getItem('bcauto_last_login')) : null;
 
-            if (lastForceLogout && (!lastLogin || lastForceLogout > lastLogin)) {
-                this.logout();
-                return null;
+                if (lastForceLogout && (!lastLogin || lastForceLogout > lastLogin)) {
+                    this.logout();
+                    return null;
+                }
+
+                return {
+                    id: model.id,
+                    email: model.email,
+                    name: sessionStorage.getItem('bcauto_user_name') || model.display_name || model.name || 'Admin',
+                    role: sessionStorage.getItem('bcauto_role') || model.role || 'sa',
+                    branch: model.branch || null
+                };
             }
-
-            return {
-                id: model.id,
-                email: model.email,
-                name: sessionStorage.getItem('bcauto_user_name') || model.display_name || model.name || 'Admin',
-                role: sessionStorage.getItem('bcauto_role') || model.role || (pb.authStore.isAdmin ? 'admin' : 'sa'),
-                branch: model.branch || null
-            };
         }
 
         // Fallback to session/PIN roles (Employees)
@@ -64,7 +70,7 @@ export const AuthService = {
      * Poka-Yoke: Strict gatekeeper for page access.
      * Redirects to index if the user doesn't meet the requirements.
      */
-    requireRole(allowedRoles, redirectPath = '/src/pages/main/index.html') {
+    requireRole(allowedRoles, redirectPath = '/pages/main/index.html') {
         if (!this.hasRole(allowedRoles)) {
             console.error('Access Denied: Insufficient permissions');
             window.location.href = redirectPath;
@@ -74,7 +80,8 @@ export const AuthService = {
     },
 
     /**
-     * Login with PocketBase (Admins/Managers with email)
+     * Login with email/password (Admins/Managers)
+     * Uses the NocoDB wrapper's authWithPassword method.
      */
     async login(email, password) {
         try {
@@ -96,14 +103,12 @@ export const AuthService = {
      */
     async registerEmployee(name, branch, pin) {
         try {
-            await pb.collection('users').create({
+            const record = await pb.collection('users').create({
                 name,
                 branch,
                 pin: pin,
                 active: true
             });
-            // creation is handled by pocketbase.js interceptor, but we keep this specific auth log too. Or remove it since interceptor handles create. We'll leave it out to avoid duplication. 
-            // window.AuditService?.log('create_user', `Registered new employee: ${name}`, 'auth');
             return { success: true, record };
         } catch (error) {
             return { success: false, error: error.message };
@@ -149,7 +154,6 @@ export const AuthService = {
     async updateEmployeePIN(id, newPin) {
         try {
             await pb.collection('users').update(id, { pin: newPin });
-            // The interceptor already logs update_users, so we remove this custom one.
             return { success: true };
         } catch (error) {
             return { success: false, error: error.message };
@@ -198,7 +202,7 @@ export const AuthService = {
     },
 
     /**
-     * Get the branch filter expression for PocketBase
+     * Get the branch filter expression for queries
      */
     getBranchFilter() {
         const b = this.getBranch();
@@ -220,14 +224,15 @@ export const AuthService = {
      * Check if user is admin
      */
     isAdmin() {
-        return pb.authStore.isValid && pb.authStore.model?.role === 'admin';
+        const model = pb.authStore.model;
+        return pb.authStore.isValid && model?.role === 'admin';
     },
 
     /**
      * Check if user is owner
      */
     isOwner() {
-        // Support both backend (PB) and legacy session roles
+        // Support both backend and legacy session roles
         if (pb.authStore.isValid && ['owner', 'manager', 'admin'].includes(pb.authStore.model?.role)) {
             return true;
         }
@@ -238,7 +243,7 @@ export const AuthService = {
     /**
      * Poka-Yoke: Strict gatekeeper for admin/owner pages.
      */
-    requireOwner(redirectPath = '/src/pages/main/index.html') {
+    requireOwner(redirectPath = '/pages/main/index.html') {
         if (!this.isOwner()) {
             window.location.href = redirectPath;
             return false;
@@ -260,7 +265,8 @@ export const AuthService = {
             display_name: user.name,
             role: user.role,
             branch_id: user.branch || 'main',
-            issued_at: Date.now()
+            issued_at: Date.now(),
+            jwt: localStorage.getItem('bcauto_jwt') || sessionStorage.getItem('bcauto_jwt') || ''
         };
 
         try {

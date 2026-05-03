@@ -1,0 +1,1 @@
+import{c as t}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const r=t({title:"ใบลดหนี้ (CN)",icon:"note_alt",prefix:"CN",collection:"credit_notes"});export{r as initCreditNotePage};

@@ -102,6 +102,70 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+/* --- Dark Mode (auto + manual) --- */
+[data-theme="dark"],
+:root:not([data-theme="light"]):is(.prefers-dark) {
+    --primary-50: #1e293b;
+    --primary-100: #1e3a5f;
+    --primary-200: #2a4a7a;
+    --primary-300: #3b6db0;
+    --primary-400: #60a5fa;
+    --primary-500: #93c5fd;
+    --primary-600: #bfdbfe;
+    --primary-700: #dbeafe;
+
+    --surface-0: #0f1117;
+    --surface-50: #141620;
+    --surface-100: #1a1c28;
+    --surface-200: #242736;
+    --surface-300: #363a4a;
+    --surface-400: #64748b;
+    --surface-500: #94a3b8;
+    --surface-600: #cbd5e1;
+    --surface-700: #e2e8f0;
+    --surface-800: #f1f5f9;
+    --surface-900: #f8fafc;
+
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --warning-bg: rgba(245, 158, 11, 0.15);
+    --info-bg: rgba(59, 130, 246, 0.15);
+
+    --glass-bg: rgba(20, 22, 32, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --overlay: rgba(0, 0, 0, 0.7);
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.3), 0 2px 4px rgba(0,0,0,.2);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.3), 0 4px 6px rgba(0,0,0,.2);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,.3), 0 10px 10px rgba(0,0,0,.2);
+}
+
+/* Auto-detect system dark mode preference */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --surface-0: #0f1117;
+        --surface-50: #141620;
+        --surface-100: #1a1c28;
+        --surface-200: #242736;
+        --surface-300: #363a4a;
+        --surface-400: #64748b;
+        --surface-500: #94a3b8;
+        --surface-600: #cbd5e1;
+        --surface-700: #e2e8f0;
+        --surface-800: #f1f5f9;
+        --surface-900: #f8fafc;
+
+        --glass-bg: rgba(20, 22, 32, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.06);
+        --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+        --shadow-md: 0 4px 6px rgba(0,0,0,.3);
+        --shadow-lg: 0 10px 15px rgba(0,0,0,.3);
+    }
+}
+
 /* --- Reset & Base --- */
 *,
 *::before,

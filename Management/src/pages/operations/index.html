@@ -132,7 +132,7 @@
         import { AuthService } from '../../services/authService.js';
 
         // The specific tools we want to show on this sub-page
-        const OPERATIONS_TOOLS_IDS = ['audit', 'entry', 'employee_entry', 'verification'];
+        const OPERATIONS_TOOLS_IDS = ['audit', 'entry', 'verification'];
 
         async function initPage() {
             await ConfigService.init();
@@ -149,7 +149,7 @@
             const grid = document.getElementById('tool-grid');
 
             if (!user) {
-                window.location.href = '../main/index.html'; // Redirect if not logged in
+                window.location.href = '/pages/main/index.html'; // Redirect if not logged in
                 return;
             }
 

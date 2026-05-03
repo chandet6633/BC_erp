@@ -336,3 +336,25 @@ h3 {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
 }
+
+/* ── Safe Area (iPhone notch) ── */
+@supports (padding: env(safe-area-inset-top)) {
+    .topnav {
+        padding-top: env(safe-area-inset-top);
+    }
+    .sidebar {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ── Focus visible for keyboard navigation ── */
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* ── Utility animations ── */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

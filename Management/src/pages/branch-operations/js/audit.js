@@ -576,14 +576,9 @@ window.showOrderDetail = function (jobId) {
     // Find the actual transaction ID from the global transactions list
     const txRecord = transactions.find(t => t.job_id === disc.job_id);
 
-    const handleEditTx = () => {
-        if (txRecord) window.editRow('transactions', txRecord.id);
-    };
-
     if (txRecord) {
         if (btnEditTx) {
-            btnEditTx.style.display = 'inline-block';
-            btnEditTx.onclick = handleEditTx;
+            btnEditTx.style.display = 'none';
         }
 
         // Card Click Events for Inline Edit
@@ -634,9 +629,7 @@ window.showOrderDetail = function (jobId) {
                 <td class="text-right" data-label="ทุนรวม">${formatCurrency(item.total_cost)}</td>
                 <td class="text-right" data-label="ขายรวม">${formatCurrency(item.total_price)}</td>
                 <td class="text-right ${Number(item.total_profit || 0) >= 0 ? 'text-green' : 'text-red'}" data-label="กำไร">${formatCurrency(item.total_profit)}</td>
-                <td class="text-center" data-label="จัดการ">
-                    <button class="btn btn-ghost btn-sm" onclick="window.editRow('service_items', '${item.id}')" title="แก้ไขสินค้า">✏️</button>
-                </td>
+                <td class="text-center" data-label="จัดการ">-</td>
             </tr>
         `
             )

@@ -8,11 +8,22 @@ import '../../services/authService.js';
 const ADMIN_PASSWORD = '280612';
 const LATE_THRESHOLD_HOUR = 8;   // After 08:00 = late
 const COLLECTION_ATT = 'hr_attendance';
-const COLLECTION_EMP = 'hr_employees';
+const COLLECTION_EMP = 'users';
+const GPS_RADIUS_M = 500; // Max distance in meters from branch
 
 let isAdminMode = false;
 let isSubmitting = false;
-let employeeRoster = [];   // { id, emp_id, name, department, sex }
+let employeeRoster = [];
+let branchGpsMap = {}; // { branchName: { lat, lng } }
+
+// Haversine distance (meters)
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TOAST
@@ -64,22 +75,6 @@ function updateStatus() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════════════════════════════
-document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-
-        // Sync dept dropdown on history tab
-        if (btn.dataset.tab === 'history') {
-            syncHistoryDepts();
-        }
-    });
-});
 
 // ═══════════════════════════════════════════════════════════════
 // LOAD ROSTER (Departments & Names from PB)
@@ -91,22 +86,61 @@ async function loadRoster() {
     deptSel.classList.add('loading-state');
 
     try {
-        const records = await window.pb.collection(COLLECTION_EMP).getFullList({ sort: 'name' });
-        employeeRoster = records.map(r => ({
+        const [empRecords, branchRecords] = await Promise.all([
+            window.pb.collection(COLLECTION_EMP).getFullList(),
+            window.pb.collection('branches').getFullList()
+        ]);
+        
+        employeeRoster = empRecords.filter(r => r.role !== 'admin').map(r => ({
             id: r.id,
-            emp_id: r.emp_id,
-            name: r.name,
-            department: r.department,
-            sex: r.sex
+            emp_id: r.username,
+            name: r.display_name || r.name || r.username,
+            branch_id: r.branch || r.Branch || 'ไม่ระบุ',
+            role: r.role
         }));
 
-        const depts = [...new Set(employeeRoster.map(e => e.department).filter(Boolean))].sort();
-        populateSelect(deptSel, depts, '– เลือกแผนก –');
-        deptSel.disabled = false;
+        // Build GPS map from branches
+        branchGpsMap = {};
+        branchRecords.forEach(b => {
+            const name = b.name || b.Name || b.title || '';
+            const lat = parseFloat(b.latitude || b.Latitude || b.lat || 0);
+            const lng = parseFloat(b.longitude || b.Longitude || b.lng || 0);
+            if (name && lat && lng) branchGpsMap[name] = { lat, lng };
+        });
+        console.log('Branch GPS map:', branchGpsMap);
+
+        const branches = branchRecords.map(b => b.name || b.Name || b.code || '');
+        
+        // Add fallback if some users have branch not in branches table
+        const allUserBranches = new Set(employeeRoster.map(e => e.branch_id).filter(Boolean));
+        branches.forEach(b => allUserBranches.add(b));
+        const sortedBranches = [...allUserBranches].sort();
+
+        populateSelect(deptSel, sortedBranches, '– เลือกสาขา –');
         deptsLoaded = true;
 
-        // Also populate history dept
-        syncHistoryDepts();
+        // Auto-select and lock if standard user
+        const currentUser = window.AuthService ? window.AuthService.getUser() : null;
+        const isOwnerOrAdmin = window.AuthService ? window.AuthService.isOwner() : false;
+
+        if (currentUser && !isOwnerOrAdmin && !isAdminMode) {
+            // Lock to this user's branch
+            deptSel.value = currentUser.branch || 'ไม่ระบุ';
+            deptSel.disabled = true;
+            onDeptChange(deptSel.value, 'nameSelect');
+            
+            // Lock to this user's name
+            const nameSel = document.getElementById('nameSelect');
+            if (employeeRoster.some(e => e.name === currentUser.name)) {
+                nameSel.value = currentUser.name;
+                nameSel.disabled = true;
+                namesLoaded = true;
+                updateButtons();
+            }
+        } else {
+            deptSel.disabled = false;
+        }
+
     } catch (e) {
         console.error('Load roster error:', e);
         deptSel.innerHTML = '<option>❌ โหลดข้อมูลไม่สำเร็จ</option>';
@@ -127,12 +161,7 @@ function populateSelect(sel, items, placeholder) {
     });
 }
 
-function syncHistoryDepts() {
-    const histDept = document.getElementById('histDept');
-    const depts = [...new Set(employeeRoster.map(e => e.department).filter(Boolean))].sort();
-    populateSelect(histDept, depts, '– เลือกแผนก –');
-    histDept.disabled = depts.length === 0;
-}
+
 
 // ═══════════════════════════════════════════════════════════════
 // DEPARTMENT → NAMES CASCADE
@@ -146,7 +175,7 @@ function onDeptChange(deptValue, nameSelectId) {
         updateButtons();
         return;
     }
-    const names = employeeRoster.filter(e => e.department === deptValue).map(e => e.name).sort();
+    const names = employeeRoster.filter(e => e.branch_id === deptValue).map(e => e.name).sort();
     populateSelect(nameSel, names, '– เลือกชื่อ –');
     nameSel.disabled = false;
     namesLoaded = true;
@@ -158,16 +187,6 @@ document.getElementById('deptSelect').addEventListener('change', e => {
 });
 
 document.getElementById('nameSelect').addEventListener('change', () => updateButtons());
-
-document.getElementById('histDept').addEventListener('change', e => {
-    onDeptChange(e.target.value, 'histName');
-    hideHistoryCards();
-});
-
-document.getElementById('histName').addEventListener('change', e => {
-    const dept = document.getElementById('histDept').value;
-    if (dept && e.target.value) loadHistory(dept, e.target.value);
-});
 
 // ═══════════════════════════════════════════════════════════════
 // DEVICE-LEVEL DAILY GATE
@@ -204,20 +223,35 @@ window.updateButtons = updateButtons;
 window.toggleAdmin = function () {
     if (isAdminMode) {
         isAdminMode = false;
-        document.getElementById('adminToggle').textContent = '🔐 เข้าสู่ระบบผู้ดูแล';
+        document.getElementById('adminToggle').innerHTML = '<span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">admin_panel_settings</span> เข้าสู่ระบบผู้ดูแล';
         document.getElementById('adminToggle').classList.remove('active');
         document.getElementById('adminBar').classList.remove('show');
         document.getElementById('adminFields').classList.remove('show');
         showToast('ออกจากโหมดผู้ดูแลแล้ว', 'info');
+        
+        // Relock dropdowns if standard user
+        const currentUser = window.AuthService ? window.AuthService.getUser() : null;
+        const isOwnerOrAdmin = window.AuthService ? window.AuthService.isOwner() : false;
+        if (currentUser && !isOwnerOrAdmin) {
+            const deptSel = document.getElementById('deptSelect');
+            const nameSel = document.getElementById('nameSelect');
+            deptSel.disabled = true;
+            nameSel.disabled = true;
+        }
+        
         updateButtons();
     } else {
         const pw = prompt('กรุณาใส่รหัสผ่านผู้ดูแลระบบ:');
         if (pw === ADMIN_PASSWORD) {
             isAdminMode = true;
-            document.getElementById('adminToggle').textContent = '🔓 ออกจากโหมดผู้ดูแล';
+            document.getElementById('adminToggle').innerHTML = '<span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">lock_open</span> ออกจากโหมดผู้ดูแล';
             document.getElementById('adminToggle').classList.add('active');
             document.getElementById('adminBar').classList.add('show');
             document.getElementById('adminFields').classList.add('show');
+            
+            // Unlock dropdowns
+            document.getElementById('deptSelect').disabled = false;
+            document.getElementById('nameSelect').disabled = false;
             const now = new Date();
             document.getElementById('overrideDate').value = now.toISOString().split('T')[0];
             document.getElementById('overrideTime').value = now.toTimeString().slice(0, 5);
@@ -263,11 +297,10 @@ window.doPunch = async function (type) {
             }
 
             await window.pb.collection(COLLECTION_ATT).create({
-                employee_id: name,
-                name: name,
-                department: dept,
-                status: type,
-                date: timestamp,
+                employee_id: name, // In this system we use Name as employee_id for simplicity since users table lacks a clean ID
+                department: dept, // actually branch
+                type: type, // IN or OUT
+                timestamp: timestamp,
                 store: store || ''
             });
 
@@ -293,103 +326,58 @@ window.doPunch = async function (type) {
         return;
     }
 
-    // Normal: require geolocation
+    // Get branch GPS coords
+    const branchGps = branchGpsMap[dept];
+
+    // Normal: try geolocation
     if (!navigator.geolocation) {
-        showToast('เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง', 'error');
-        btn.classList.remove('submitting');
-        isSubmitting = false;
-        updateButtons();
+        if (branchGps) {
+            showToast('เบราว์เซอร์ไม่รองรับ GPS — ไม่สามารถตรวจสอบตำแหน่งได้', 'error');
+            btn.classList.remove('submitting');
+            isSubmitting = false;
+            updateButtons();
+            return;
+        }
+        await sendRecord('', '');
         return;
     }
 
     navigator.geolocation.getCurrentPosition(
-        async pos => { await sendRecord(pos.coords.latitude, pos.coords.longitude); },
-        err => {
-            showToast('ไม่สามารถตรวจหาตำแหน่งได้ กรุณาอนุญาตการเข้าถึง', 'error');
-            btn.classList.remove('submitting');
-            isSubmitting = false;
-            updateButtons();
+        async pos => {
+            const userLat = pos.coords.latitude;
+            const userLng = pos.coords.longitude;
+
+            // If branch has GPS set, validate distance
+            if (branchGps) {
+                const dist = haversine(userLat, userLng, branchGps.lat, branchGps.lng);
+                if (dist > GPS_RADIUS_M) {
+                    showToast(`ตำแหน่งของคุณห่างจากสาขา ${Math.round(dist)} เมตร (เกินรัศมี ${GPS_RADIUS_M}m)`, 'error', 6000);
+                    btn.classList.remove('submitting');
+                    isSubmitting = false;
+                    updateButtons();
+                    return;
+                }
+                showToast(`ตำแหน่งถูกต้อง (ห่าง ${Math.round(dist)}m)`, 'success');
+            }
+
+            await sendRecord(userLat, userLng);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        async err => {
+            if (branchGps) {
+                showToast('ไม่สามารถระบุตำแหน่งได้ — กรุณาเปิด GPS', 'error');
+                btn.classList.remove('submitting');
+                isSubmitting = false;
+                updateButtons();
+                return;
+            }
+            showToast('ไม่สามารถระบุตำแหน่งได้ (ข้าม GPS)', 'warning');
+            await sendRecord('', '');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
     );
 };
 
-// ═══════════════════════════════════════════════════════════════
-// HISTORY
-// ═══════════════════════════════════════════════════════════════
-function hideHistoryCards() {
-    ['statsCard', 'historyCard', 'historyEmpty', 'historyLoading'].forEach(id =>
-        document.getElementById(id).style.display = 'none'
-    );
-}
 
-async function loadHistory(dept, name) {
-    hideHistoryCards();
-    document.getElementById('historyLoading').style.display = 'block';
-
-    try {
-        // Get current month range
-        const now = new Date();
-        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01 00:00:00`;
-        const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-31 23:59:59`;
-
-        const records = await window.pb.collection(COLLECTION_ATT).getFullList({
-            filter: `name='${name}' && date >= '${monthStart}' && date <= '${monthEnd}'`,
-            sort: '-date'
-        });
-
-        document.getElementById('historyLoading').style.display = 'none';
-
-        if (records.length === 0) {
-            document.getElementById('historyEmpty').style.display = 'block';
-            return;
-        }
-
-        // Stats
-        const checkIns = records.filter(r => (r.status || r.type || '').toUpperCase() === 'IN');
-        const uniqueDays = new Set(checkIns.map(r => (r.date || '').slice(0, 10))).size;
-        let lateCount = 0;
-        checkIns.forEach(r => {
-            const d = new Date(r.date);
-            if (d.getHours() >= LATE_THRESHOLD_HOUR) lateCount++;
-        });
-        const onTimePct = uniqueDays > 0 ? Math.round(((uniqueDays - lateCount) / uniqueDays) * 100) : 0;
-
-        document.getElementById('statCheckIns').textContent = uniqueDays;
-        document.getElementById('statLate').textContent = lateCount;
-        document.getElementById('statOnTime').textContent = onTimePct + '%';
-        document.getElementById('statsCard').style.display = 'block';
-
-        // History list
-        const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        const list = document.getElementById('historyList');
-        list.innerHTML = records.slice(0, 50).map(r => {
-            const d = new Date(r.date);
-            const typeVal = (r.status || r.type || '').toUpperCase();
-            const isIn = typeVal === 'IN';
-            return `
-                <div class="history-item">
-                    <div class="history-icon ${isIn ? 'in' : 'out'}">${isIn ? '🟢' : '🔴'}</div>
-                    <div class="history-info">
-                        <div class="history-type">${isIn ? 'เข้างาน' : 'ออกงาน'}</div>
-                        <div class="history-store">${r.store || '-'}</div>
-                    </div>
-                    <div class="history-time">
-                        <div class="history-date">${d.getDate()} ${months[d.getMonth()]}</div>
-                        <div class="history-hour">${d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        document.getElementById('historyCard').style.display = 'block';
-
-    } catch (e) {
-        console.error('History error:', e);
-        document.getElementById('historyLoading').style.display = 'none';
-        showToast('โหลดประวัติไม่สำเร็จ: ' + (e.message || ''), 'error');
-        document.getElementById('historyEmpty').style.display = 'block';
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════
 // INIT

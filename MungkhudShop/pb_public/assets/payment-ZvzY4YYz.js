@@ -1,0 +1,1 @@
+import{c as t}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const c=t({title:"จ่ายเงิน (P)",icon:"account_balance_wallet",prefix:"PAY",collection:"payments"});export{c as initPaymentPage};

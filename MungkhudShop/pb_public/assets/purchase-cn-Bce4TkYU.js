@@ -1,0 +1,1 @@
+import{c as e}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const r=e({title:"ใบลดหนี้ซื้อ (CN)",icon:"playlist_remove",prefix:"PCN",collection:"purchase_credit_notes"});export{r as initPurchaseCNPage};

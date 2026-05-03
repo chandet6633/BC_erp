@@ -1,0 +1,1 @@
+import{c as t}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const i=t({title:"ใบคืน (RE)",icon:"assignment_return",prefix:"RE",collection:"stock_returns"});export{i as initStockReturnPage};

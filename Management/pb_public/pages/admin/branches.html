@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Branch Management - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        .branch-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+        .branch-table th { text-align: left; padding: var(--space-3); border-bottom: 2px solid var(--surface-200); color: var(--surface-600); font-weight: 600; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em; }
+        .branch-table td { padding: var(--space-3); border-bottom: 1px solid var(--surface-100); }
+        .branch-table tr:hover td { background: var(--surface-50); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-overlay.active { display: flex !important; }
+        .modal-box { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 480px; box-shadow: 0 32px 64px -12px rgba(0,0,0,0.2); animation: popIn 0.3s ease; }
+        @keyframes popIn { from { opacity:0; transform: translateY(20px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--surface-700); margin-bottom: 4px; }
+        .form-group .input { width: 100%; }
+        .emp-count { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-100); padding: 2px 10px; border-radius: 99px; font-size: var(--text-xs); font-weight: 600; color: var(--surface-600); }
+    </style>
+  <script type="module" crossorigin src="../../assets/admin_branches-CcQNHbL-.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-DruINWZs.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-B7yCEaIZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/auditService-OL5IOGvx.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-BnpIurk9.css">
+  <link rel="stylesheet" crossorigin href="../../assets/page-header-B6HlsY86.css">
+  <link rel="stylesheet" crossorigin href="../../assets/style-DPwNr2Bh.css">
+</head>
+<body class="page-bg">
+    <div class="container" style="max-width: 900px; padding: 20px;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><span class="material-icons-outlined" style="font-size:1.6rem;vertical-align:bottom">store</span> จัดการสาขา</h1>
+                <p class="page-subtitle">เพิ่ม แก้ไข ลบ สาขาของ Bancha Group</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-primary btn-sm" id="addBranchBtn"><span class="material-icons-outlined" style="font-size:1rem;vertical-align:text-bottom">add</span> เพิ่มสาขา</button>
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
+        </div>
+
+        <div class="card p-0" style="overflow: hidden; border: 1px solid var(--surface-200);">
+            <div style="overflow-x: auto;">
+                <table class="branch-table">
+                    <thead><tr><th>ชื่อสาขา</th><th>สถานที่</th><th>เบอร์โทร</th><th>📍 GPS</th><th>พนักงาน</th><th>สถานะ</th><th style="text-align:center">จัดการ</th></tr></thead>
+                    <tbody id="branch-body"><tr><td colspan="7" style="text-align:center;padding:40px;">กำลังโหลด...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="branchModal">
+        <div class="modal-box">
+            <h3 style="margin-bottom:20px;font-size:1.1rem;font-weight:700" id="modalTitle"><span class="material-icons-outlined" style="vertical-align:bottom">add_business</span> เพิ่มสาขาใหม่</h3>
+            <form id="branchForm">
+                <div class="form-group"><label>ชื่อสาขา *</label><input type="text" id="bName" class="input" placeholder="เช่น BC Auto เมืองสุพรรณ" required /></div>
+                <div class="form-group"><label>สถานที่ / ที่อยู่</label><input type="text" id="bLocation" class="input" placeholder="เช่น 123 ถ.สุพรรณ" /></div>
+                <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="text" id="bPhone" class="input" placeholder="เช่น 035-123456" /></div>
+                
+                <div style="border-top:1px solid var(--surface-200);padding-top:14px;margin-top:14px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                        <label style="font-size:var(--text-sm);font-weight:600;color:var(--surface-700);display:flex;align-items:center;gap:6px">
+                            <span class="material-icons-outlined" style="font-size:1rem;color:#15803d">location_on</span> GPS สำหรับลงเวลา
+                        </label>
+                        <button type="button" class="btn btn-sm btn-outline" id="getGpsBtn" style="font-size:0.7rem;padding:3px 10px">
+                            <span class="material-icons-outlined" style="font-size:0.9rem;vertical-align:text-bottom">my_location</span> ใช้ตำแหน่งปัจจุบัน
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:10px">
+                        <div style="flex:1">
+                            <label style="font-size:var(--text-xs);color:var(--surface-500)">Latitude</label>
+                            <input type="text" id="bLat" class="input" placeholder="เช่น 14.8821" style="font-family:monospace" />
+                        </div>
+                        <div style="flex:1">
+                            <label style="font-size:var(--text-xs);color:var(--surface-500)">Longitude</label>
+                            <input type="text" id="bLng" class="input" placeholder="เช่น 100.1278" style="font-family:monospace" />
+                        </div>
+                    </div>
+                    <div style="font-size:0.65rem;color:var(--surface-400);margin-top:4px">* ใช้สำหรับตรวจสอบว่าพนักงานลงเวลาจากตำแหน่งที่ถูกต้อง (รัศมี 500m)</div>
+                </div>
+
+                <input type="hidden" id="bEditId" value="" />
+                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+                    <button type="button" class="btn btn-outline btn-sm" id="cancelBtn">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="saveBtn">💾 บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

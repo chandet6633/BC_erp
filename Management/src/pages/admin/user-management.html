@@ -333,7 +333,7 @@
                 <p class="page-subtitle">จัดการบัญชี สิทธิ์ และข้อมูลผู้ใช้ระบบ</p>
             </div>
             <div class="page-actions">
-                <button class="btn btn-primary btn-sm" id="addUserBtn">➕ ลงทะเบียนผู้ใช้ใหม่</button>
+                <button class="btn btn-primary btn-sm" id="addUserBtn" onclick="addUser()">➕ ลงทะเบียนผู้ใช้ใหม่</button>
                 <a href="index.html" class="page-back-btn">← กลับ</a>
             </div>
         </div>
@@ -409,6 +409,14 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label>ชื่อผู้ใช้ (Username) *</label>
+                        <div class="validation-wrapper">
+                            <input type="text" id="regUsername" class="input" placeholder="username" required />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label>อีเมล</label>
                         <div class="validation-wrapper">
                             <input type="email" id="regEmail" class="input" placeholder="example@email.com" />
@@ -442,9 +450,7 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <label>สาขา *</label>
                             <select id="regBranch" class="input" required>
-                                <option value="BC Auto Service">BC Auto service (วิริยะเซอร์วิส)</option>
-                                <option value="suphanburi">BC Auto เมืองสุพรรณ</option>
-                                <option value="samchuk">BC AUTO XPERIENCE (สามชุก)</option>
+                                <option value="">– กำลังโหลด –</option>
                             </select>
                         </div>
                     </div>
@@ -502,12 +508,35 @@
         }
 
         // ==========================================
+        // LOAD DYNAMIC BRANCHES
+        // ==========================================
+        async function loadBranchDropdown() {
+            const sel = document.getElementById('regBranch');
+            try {
+                const branches = await pb.collection('branches').getFullList();
+                sel.innerHTML = '<option value="">– เลือกสาขา –</option>';
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.name || b.Name || '';
+                    opt.textContent = opt.value;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                console.warn('Could not load branches, using fallback:', e.message);
+                sel.innerHTML = `<option value="BC Auto Service">BC Auto Service</option><option value="suphanburi">สุพรรณบุรี</option><option value="samchuk">สามชุก</option>`;
+            }
+        }
+        loadBranchDropdown();
+
+        // ==========================================
         // USER TABLE
         // ==========================================
         async function loadUsers() {
             const userBody = document.getElementById('user-body');
             try {
-                const users = await pb.collection('users').getFullList({ sort: '-created' });
+                const users = await pb.collection('users').getFullList();
+                // Client-side sort by created_at desc if available
+                users.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
                 // Stats
                 document.getElementById('statTotal').textContent = users.length;
@@ -545,6 +574,7 @@
                             <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
                                 <button class="action-btn" onclick="editUser('${user.id}')" title="แก้ไข">✏️</button>
                                 <button class="action-btn warning" onclick="resetPin('${user.id}', '${user.name || ''}')" title="รีเซ็ต PIN">🔑</button>
+                                <button class="action-btn warning" onclick="resetPassword('${user.id}', '${user.name || ''}')" title="รีเซ็ตรหัสผ่าน">🔒</button>
                                 <button class="action-btn ${isActive ? 'danger' : ''}" onclick="toggleActive('${user.id}', ${isActive})" title="${isActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}">
                                     ${isActive ? '🚫' : '✅'}
                                 </button>
@@ -566,20 +596,20 @@
         const regModal = document.getElementById('regModal');
         const regForm = document.getElementById('regForm');
 
-        document.getElementById('addUserBtn').addEventListener('click', () => {
+        window.addUser = () => {
             document.getElementById('regModalTitle').textContent = '➕ ลงทะเบียนผู้ใช้ใหม่';
             document.getElementById('submitRegBtn').textContent = '💾 ลงทะเบียน';
-            document.getElementById('regPasswordLabel').textContent = 'รหัสผ่านบัญชีจัดการ (ตัวเลือก)';
-            regForm.reset();
+            document.getElementById('regPasswordLabel').textContent = 'รหัสผ่านเริ่มต้น (อย่างน้อย 8 ตัวอักษร) *';
+            document.getElementById('regPassword').required = true;
+            document.getElementById('regForm').reset();
             document.getElementById('regEditId').value = '';
-            document.getElementById('regPassword').required = false;
-
+            
             // Reset Wizard to Step 1 & clear validation visuals
             if (window.showStep) window.showStep(1);
             document.querySelectorAll('.input').forEach(el => el.classList.remove('valid', 'invalid'));
 
             regModal.classList.add('active');
-        });
+        };
 
         document.getElementById('cancelRegBtn').addEventListener('click', () => {
             regModal.classList.remove('active');
@@ -594,41 +624,33 @@
             const editId = document.getElementById('regEditId').value;
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             const role = document.getElementById('regRole').value;
             const branch = document.getElementById('regBranch').value;
             const pin = document.getElementById('regPin').value.trim();
 
-            if (!name || !pin || pin.length < 4) {
-                alert('กรุณากรอก ชื่อ และ PIN (อย่างน้อย 4 หลัก)');
+            if (!name || !username || !pin || pin.length < 4) {
+                alert('กรุณากรอก ชื่อ, Username และ PIN (อย่างน้อย 4 หลัก)');
                 return;
             }
 
             try {
                 const data = {
                     name,
+                    email,
+                    username,
                     role,
                     branch,
                     pin,
                     active: true
                 };
 
-                if (email) data.email = email;
-                if (password) {
-                    data.password = password;
-                    data.passwordConfirm = password;
-                }
-
-                // SECURITY BYPASS: ManageRule for Users collection requires Admin privileges
-                // Standard managers cannot update email/password fields of other users normally.
-                // We authenticate as a system admin briefly to perform the mutation.
-                const sysAuth = await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
-
                 if (editId) {
                     // Update existing user
-                    if (!password) {
-                        delete data.password;
-                        delete data.passwordConfirm;
+                    if (password) {
+                        data.password = password;
+                        data.passwordConfirm = password;
                     }
                     await pb.collection('users').update(editId, data);
                     AuditService.log('user_updated', `Updated user: ${name} (${role}, ${branch})`, 'admin');
@@ -636,10 +658,12 @@
                 } else {
                     // Create new user
                     if (!password) {
-                        // Generate a random password if not provided
-                        data.password = Math.random().toString(36).slice(-10) + 'A1!';
-                        data.passwordConfirm = data.password;
+                        alert('กรุณากำหนดรหัสผ่านเริ่มต้น (อย่างน้อย 8 ตัวอักษร)');
+                        return;
                     }
+                    data.password = password;
+                    data.passwordConfirm = password;
+                    
                     await pb.collection('users').create(data);
                     AuditService.log('user_created', `New user registered: ${name} (${role}, ${branch})`, 'admin');
                     alert('ลงทะเบียนผู้ใช้ใหม่สำเร็จ');
@@ -663,8 +687,9 @@
                 document.getElementById('submitRegBtn').textContent = '💾 บันทึกการแก้ไข';
                 document.getElementById('regPasswordLabel').textContent = 'รหัสผ่านใหม่ (ว่างไว้ไม่เปลี่ยน)';
                 document.getElementById('regEditId').value = id;
-                document.getElementById('regName').value = user.name || user.display_name || '';
+                document.getElementById('regName').value = user.name || '';
                 document.getElementById('regEmail').value = user.email || '';
+                document.getElementById('regUsername').value = user.username || '';
                 document.getElementById('regPassword').value = '';
                 document.getElementById('regPassword').required = false;
                 document.getElementById('regRole').value = user.role || 'sa';
@@ -691,7 +716,6 @@
                 return;
             }
             try {
-                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
                 await pb.collection('users').update(id, { pin: newPin });
                 AuditService.log('pin_reset', `PIN reset for user: ${name}`, 'admin');
                 alert('รีเซ็ต PIN สำเร็จ');
@@ -704,11 +728,33 @@
         // ==========================================
         // TOGGLE ACTIVE
         // ==========================================
+        // RESET PASSWORD TO PHONE NUMBER
+        // ==========================================
+        window.resetPassword = async (id, name) => {
+            const phone = prompt(`กรุณาระบุเบอร์โทรศัพท์มือถือของ "${name}" เพื่อตั้งเป็นรหัสผ่านเริ่มต้น:`, '');
+            if (!phone || phone.trim().length < 8) {
+                if (phone !== null) alert('กรุณาระบุเบอร์โทรศัพท์ให้ถูกต้อง');
+                return;
+            }
+            try {
+                // We send password and passwordConfirm. The backend should update the password.
+                await pb.collection('users').update(id, { 
+                    password: phone.trim(),
+                    passwordConfirm: phone.trim()
+                });
+                AuditService.log('password_reset', `Password reset to phone number for user: ${name}`, 'admin');
+                alert(`รีเซ็ตรหัสผ่านสำเร็จ! รหัสผ่านชั่วคราวคือ: ${phone}`);
+                loadUsers();
+            } catch (error) {
+                alert('เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน: ' + (error.message || JSON.stringify(error)));
+            }
+        };
+
+        // ==========================================
         window.toggleActive = async (id, currentlyActive) => {
             const action = currentlyActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน';
             if (!confirm(`ต้องการ${action}ผู้ใช้นี้หรือไม่?`)) return;
             try {
-                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
                 await pb.collection('users').update(id, { active: !currentlyActive });
                 AuditService.log('user_status_change', `User ${id} ${action}`, 'admin');
                 loadUsers();
@@ -723,7 +769,6 @@
         window.deleteUser = async (id, name) => {
             if (!confirm(`⚠️ ต้องการลบ "${name}" จริงหรือไม่?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้`)) return;
             try {
-                await pb.admins.authWithPassword('admin@bcas.com', 'adminpassword123');
                 await pb.collection('users').delete(id);
                 AuditService.log('user_deleted', `Deleted user: ${name} (${id})`, 'admin');
                 alert('ลบผู้ใช้สำเร็จ');
@@ -759,13 +804,13 @@
             // Validate current step before proceeding
             if (window.currentStep === 1) {
                 const name = document.getElementById('regName').value.trim();
-                const email = document.getElementById('regEmail').value.trim();
+                const username = document.getElementById('regUsername').value.trim();
                 if (!name || name.length < 2) {
                     alert('กรุณากรอกชื่อที่แสดงให้ถูกต้อง');
                     return;
                 }
-                if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    alert('รูปแบบอีเมลไม่ถูกต้อง');
+                if (!username || username.length < 3) {
+                    alert('กรุณากรอก Username ให้ถูกต้อง (อย่างน้อย 3 ตัวอักษร)');
                     return;
                 }
             }
@@ -807,15 +852,17 @@
             });
         }
 
+        // Setup live validation
         setupValidation('regName', val => val.length >= 2);
-        setupValidation('regEmail', val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val));
+        setupValidation('regUsername', val => val.length >= 3);
+        setupValidation('regEmail', val => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val));
         setupValidation('regPin', val => /^[0-9]{4,6}$/.test(val));
-        setupValidation('regPassword', val => val.length >= 8);
+        setupValidation('regPassword', val => !val || val.length >= 8);
 
         loadUsers();
     </script>
-    \n
-    <script type="module" src="../../assets/js/app-shell.js"></script>\n
+    
+    <script type="module" src="../../assets/js/app-shell.js"></script>
 </body>
 
 </html>

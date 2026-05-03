@@ -1,1 +1,0 @@
-import"./app-shell-CYVhfPAb.js";/* empty css                      *//* empty css                 */import{A as r}from"./authService-DYxqLk7o.js";r.hasRole(["admin","manager","owner"])||r.requireRole(["admin","manager","owner"]);

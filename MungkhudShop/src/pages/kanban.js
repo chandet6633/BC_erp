@@ -114,7 +114,7 @@ function createJobCard(job) {
         </div>
     `
 
-    // Drag events
+    // Drag events (desktop)
     card.addEventListener('dragstart', (e) => {
         draggedCard = card
         card.classList.add('dragging')
@@ -125,8 +125,99 @@ function createJobCard(job) {
     card.addEventListener('dragend', () => {
         card.classList.remove('dragging')
         draggedCard = null
-        // Remove all drop highlights
         document.querySelectorAll('.kanban-column-body').forEach(el => el.classList.remove('drag-over'))
+    })
+
+    // Touch drag-and-drop (mobile)
+    let touchTimer = null
+    let touchDragging = false
+    let touchClone = null
+    let startX = 0, startY = 0
+
+    card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX
+        startY = e.touches[0].clientY
+        touchTimer = setTimeout(() => {
+            touchDragging = true
+            draggedCard = card
+            card.classList.add('dragging')
+
+            // Create floating clone
+            touchClone = card.cloneNode(true)
+            touchClone.style.cssText = `position:fixed;z-index:999;width:${card.offsetWidth}px;pointer-events:none;opacity:0.85;transform:rotate(2deg);box-shadow:0 8px 24px rgba(0,0,0,0.2);`
+            document.body.appendChild(touchClone)
+
+            // Vibrate feedback
+            if (navigator.vibrate) navigator.vibrate(30)
+        }, 300)
+    }, { passive: true })
+
+    card.addEventListener('touchmove', (e) => {
+        // Cancel long-press if finger moves too much before drag starts
+        if (!touchDragging && touchTimer) {
+            const dx = Math.abs(e.touches[0].clientX - startX)
+            const dy = Math.abs(e.touches[0].clientY - startY)
+            if (dx > 10 || dy > 10) {
+                clearTimeout(touchTimer)
+                touchTimer = null
+            }
+            return
+        }
+
+        if (!touchDragging) return
+        e.preventDefault()
+
+        const touch = e.touches[0]
+        if (touchClone) {
+            touchClone.style.left = (touch.clientX - 60) + 'px'
+            touchClone.style.top = (touch.clientY - 30) + 'px'
+        }
+
+        // Highlight drop target
+        document.querySelectorAll('.kanban-column-body').forEach(col => {
+            const rect = col.getBoundingClientRect()
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                col.classList.add('drag-over')
+            } else {
+                col.classList.remove('drag-over')
+            }
+        })
+    }, { passive: false })
+
+    card.addEventListener('touchend', (e) => {
+        clearTimeout(touchTimer)
+        touchTimer = null
+
+        if (touchClone) {
+            touchClone.remove()
+            touchClone = null
+        }
+
+        if (!touchDragging) return
+        touchDragging = false
+        card.classList.remove('dragging')
+
+        // Find drop target
+        const touch = e.changedTouches[0]
+        const dropTarget = document.querySelectorAll('.kanban-column-body')
+        let targetCol = null
+
+        dropTarget.forEach(col => {
+            col.classList.remove('drag-over')
+            const rect = col.getBoundingClientRect()
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                targetCol = col
+            }
+        })
+
+        if (targetCol && draggedCard) {
+            // Simulate drop
+            const fakeEvent = { preventDefault: () => {}, currentTarget: targetCol }
+            handleDrop(fakeEvent)
+        }
+        draggedCard = null
     })
 
     return card

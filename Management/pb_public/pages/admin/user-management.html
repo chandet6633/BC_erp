@@ -320,14 +320,13 @@
         }
     </style>
     \n\n
-  <script type="module" crossorigin src="../../assets/admin_users-Bek1xnkG.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
-  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <script type="module" crossorigin src="../../assets/admin_users-B63cN8tq.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-DruINWZs.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-B7yCEaIZ.js">
   <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
-  <link rel="modulepreload" crossorigin href="../../assets/entry-CsCD-e0B.js">
-  <link rel="modulepreload" crossorigin href="../../assets/auditService-BS08mIiJ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/auditService-OL5IOGvx.js">
   <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
-  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-BnpIurk9.css">
   <link rel="stylesheet" crossorigin href="../../assets/page-header-B6HlsY86.css">
 </head>
 
@@ -339,7 +338,7 @@
                 <p class="page-subtitle">จัดการบัญชี สิทธิ์ และข้อมูลผู้ใช้ระบบ</p>
             </div>
             <div class="page-actions">
-                <button class="btn btn-primary btn-sm" id="addUserBtn">➕ ลงทะเบียนผู้ใช้ใหม่</button>
+                <button class="btn btn-primary btn-sm" id="addUserBtn" onclick="addUser()">➕ ลงทะเบียนผู้ใช้ใหม่</button>
                 <a href="index.html" class="page-back-btn">← กลับ</a>
             </div>
         </div>
@@ -415,6 +414,14 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label>ชื่อผู้ใช้ (Username) *</label>
+                        <div class="validation-wrapper">
+                            <input type="text" id="regUsername" class="input" placeholder="username" required />
+                            <span class="validation-icon icon-valid">✅</span>
+                            <span class="validation-icon icon-invalid">❌</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label>อีเมล</label>
                         <div class="validation-wrapper">
                             <input type="email" id="regEmail" class="input" placeholder="example@email.com" />
@@ -448,9 +455,7 @@
                         <div class="form-group" style="margin-bottom: 0;">
                             <label>สาขา *</label>
                             <select id="regBranch" class="input" required>
-                                <option value="BC Auto Service">BC Auto service (วิริยะเซอร์วิส)</option>
-                                <option value="suphanburi">BC Auto เมืองสุพรรณ</option>
-                                <option value="samchuk">BC AUTO XPERIENCE (สามชุก)</option>
+                                <option value="">– กำลังโหลด –</option>
                             </select>
                         </div>
                     </div>
@@ -497,7 +502,7 @@
         </div>
     </div>
 
-    \n\n
+    
 </body>
 
 </html>

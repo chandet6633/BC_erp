@@ -28,28 +28,20 @@ export const TOOLS = [
     // ─────────────── FINANCIAL ───────────────
     {
         id: 'dashboard',
-        title: '📊 แดชบอร์ดสรุป',
+        title: 'แดชบอร์ดสรุป',
         description: 'ภาพรวมรายรับ-รายจ่าย กำไร-ขาดทุน',
-        path: '../dashboard/index.html',
-        icon: '📊',
+        path: '/pages/dashboard/index.html',
+        icon: '<span class="material-icons-outlined">bar_chart</span>',
         roles: ['owner', 'manager', 'admin'],
         group: 'financial'
     },
-    {
-        id: 'database',
-        title: '💾 ฐานข้อมูล',
-        description: 'ดูและค้นหาข้อมูลธุรกรรมทั้งหมด',
-        path: '../branch-operations/database.html',
-        icon: '💾',
-        roles: ['owner', 'manager', 'admin'],
-        group: 'financial'
-    },
+
     {
         id: 'audit',
-        title: '🔍 ตรวจสอบรายการ',
+        title: 'ตรวจสอบรายการ',
         description: 'Audit Log และตรวจสอบความถูกต้อง',
-        path: '../branch-operations/audit.html',
-        icon: '🔍',
+        path: '/pages/branch-operations/audit.html',
+        icon: '<span class="material-icons-outlined">search</span>',
         roles: ['owner', 'manager', 'admin'],
         group: 'financial',
         hidden: true // Moved to Operations Menu
@@ -58,39 +50,29 @@ export const TOOLS = [
     // ─────────────── OPERATIONS ───────────────
     {
         id: 'operations_menu',
-        title: '📂 จัดการรายการ',
+        title: 'จัดการรายการ',
         description: 'บันทึก, ตรวจสอบ และยืนยันรายการ',
-        path: '../operations/index.html',
-        icon: '📂',
+        path: '/pages/operations/index.html',
+        icon: '<span class="material-icons-outlined">folder_open</span>',
         roles: ['owner', 'manager', 'admin', 'sa'],
         group: 'operations'
     },
     {
         id: 'entry',
-        title: '📝 บันทึกรายการ',
-        description: 'บันทึกรายรับ-รายจ่ายประจำวัน',
-        path: '../branch-operations/entry.html',
-        icon: '📝',
-        roles: ['owner', 'manager', 'sa'],
-        group: 'operations',
-        hidden: true // Moved to Operations Menu
+        title: 'บันทึกรายจ่าย',
+        description: 'บันทึกค่าใช้จ่ายประจำวัน',
+        path: '/pages/branch-operations/entry.html',
+        icon: '<span class="material-icons-outlined">receipt_long</span>',
+        roles: ['owner', 'manager', 'admin', 'sa'],
+        group: 'financial'
     },
-    {
-        id: 'employee_entry',
-        title: '🛠️ บันทึก (พนักงาน)',
-        description: 'หน้าบันทึกสำหรับพนักงาน',
-        path: '../branch-operations/employee-entry.html',
-        icon: '🛠️',
-        roles: ['sa', 'manager', 'admin'],
-        group: 'operations',
-        hidden: true // Moved to Operations Menu
-    },
+
     {
         id: 'verification',
-        title: '✅ ยืนยันรายการ',
+        title: 'ยืนยันรายการ',
         description: 'ตรวจสอบและยืนยันรายการที่บันทึก',
-        path: '../branch-operations/verification.html',
-        icon: '✅',
+        path: '/pages/branch-operations/verification.html',
+        icon: '<span class="material-icons-outlined">check_circle</span>',
         roles: ['owner', 'manager', 'admin'],
         group: 'operations',
         hidden: true // Moved to Operations Menu
@@ -99,19 +81,19 @@ export const TOOLS = [
     // ─────────────── EXTERNAL TOOLS ───────────────
     {
         id: 'bctool_external',
-        title: '🔗 BC Tool',
+        title: 'BC Tool',
         description: 'เครื่องมือระบบจัดการ (ภายนอก)',
         path: 'https://bctool.netlify.app/',
-        icon: '🔗',
+        icon: '<span class="material-icons-outlined">link</span>',
         roles: ['owner', 'manager', 'admin', 'sa'],
         group: 'operations'
     },
     {
         id: 'mungkhudshop',
-        title: '🏪 ระบบจัดการร้าน',
+        title: 'ระบบจัดการร้าน',
         description: 'ใบงาน สต็อก เอกสาร จัดซื้อ',
         path: '__mungkhudshop__',
-        icon: '🏪',
+        icon: '<span class="material-icons-outlined">store</span>',
         roles: ['owner', 'manager', 'admin', 'sa'],
         group: 'operations'
     },
@@ -119,19 +101,19 @@ export const TOOLS = [
     // ─────────────── HR ───────────────
     {
         id: 'checkin',
-        title: '⏰ เข้า-ออกงาน',
+        title: 'เข้า-ออกงาน',
         description: 'ลงเวลาเข้า-ออกพนักงาน',
-        path: '../hr/checkin.html',
-        icon: '⏰',
+        path: '/pages/hr/checkin.html',
+        icon: '<span class="material-icons-outlined">schedule</span>',
         roles: ['mechanic', 'sa', 'owner', 'manager', 'admin'],
         group: 'hr'
     },
     {
         id: 'hr_dashboard',
-        title: '👥 HR Dashboard',
+        title: 'HR Dashboard',
         description: 'จัดการพนักงาน เวลาทำงาน เงินเดือน',
-        path: '../hr/index.html',
-        icon: '👥',
+        path: '/pages/hr/index.html',
+        icon: '<span class="material-icons-outlined">groups</span>',
         roles: ['owner', 'manager', 'admin'],
         group: 'hr'
     },
@@ -139,10 +121,10 @@ export const TOOLS = [
     // ─────────────── ADMIN ───────────────
     {
         id: 'admin_suite',
-        title: '⚙️ ตั้งค่าระบบ',
+        title: 'ตั้งค่าระบบ',
         description: 'จัดการผู้ใช้ สิทธิ์ และระบบ',
-        path: '../admin/index.html',
-        icon: '⚙️',
+        path: '/pages/admin/index.html',
+        icon: '<span class="material-icons-outlined">settings</span>',
         roles: ['admin'],
         group: 'admin'
     }

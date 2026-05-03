@@ -4,11 +4,11 @@
  */
 import '../../assets/js/app-shell.js';
 
-const MUNGKHUD_PORT = 8091;
-
 function getMungkhudBaseUrl() {
-    // Use the same hostname as the current page but on MungkhudShop's port
-    return `${window.location.protocol}//${window.location.hostname}:${MUNGKHUD_PORT}`;
+    // Auto-detect: Management 9092 → MungkhudShop 9091, Management 8092 → 8091
+    const currentPort = window.location.port || '8092';
+    const shopPort = currentPort === '9092' ? '9091' : '8091';
+    return `${window.location.protocol}//${window.location.hostname}:${shopPort}`;
 }
 
 function getSSOToken() {

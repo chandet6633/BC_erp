@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "chart.js": "^4.4.1",
-    "pocketbase": "^0.26.8",
     "xlsx": "^0.18.5"
   }
 }

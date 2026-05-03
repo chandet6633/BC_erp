@@ -1,0 +1,1 @@
+import{c as e}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const c=e({title:"ใบเสร็จรับเงิน",icon:"paid",prefix:"RC",collection:"receipts"});export{c as initReceiptPage};

@@ -295,13 +295,44 @@
         width: 100%;
     }
 
+    /* ── Notification Panel: Bottom-sheet on mobile ── */
+    .notif-panel {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-height: 60vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+        animation: slideUpSheet 0.25s ease-out;
+    }
+
+    @keyframes slideUpSheet {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+
     /* ── Stat Cards (Dashboard) ── */
     .stat-grid,
+    .stats-grid,
     .stats-row,
     .dashboard-stats {
         display: grid !important;
         grid-template-columns: 1fr 1fr;
         gap: var(--sp-3);
+    }
+
+    .stat-card {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .stat-card:active {
+        transform: scale(0.97);
     }
 
     /* ── Empty State ── */
@@ -366,6 +397,7 @@
 @media (max-width: 480px) {
 
     .stat-grid,
+    .stats-grid,
     .stats-row,
     .dashboard-stats {
         grid-template-columns: 1fr !important;
@@ -397,8 +429,18 @@
         font-size: 0.8rem;
     }
 
-    /* ── Branch selector on very small screens ── */
+    /* ── Branch selector on very small screens: compact mode ── */
     .branch-selector {
+        max-width: 120px;
+    }
+
+    .branch-selector select {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        min-height: 32px;
+    }
+
+    .branch-selector .branch-icon {
         display: none;
     }
 }

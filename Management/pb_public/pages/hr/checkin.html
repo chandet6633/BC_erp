@@ -8,8 +8,9 @@
     <link rel="manifest" href="../../manifest.json" />
     <meta name="theme-color" content="#1e40af" />
     <link rel="icon" type="image/x-icon" href="../../favicon.ico?v=7" />
-
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 
     <style>
         :root {
@@ -501,13 +502,13 @@
             .stat-value { font-size: 1.3rem; }
         }
     </style>
-    \n\n
-  <script type="module" crossorigin src="../../assets/hr_checkin-GIqxY8No.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/app-shell-CYVhfPAb.js">
+    \n\n
+  <script type="module" crossorigin src="../../assets/hr_checkin-D1_yiwEl.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-DruINWZs.js">
   <link rel="modulepreload" crossorigin href="../../assets/helpers-DHRWRroM.js">
-  <link rel="modulepreload" crossorigin href="../../assets/authService-DYxqLk7o.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-B7yCEaIZ.js">
   <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
-  <link rel="stylesheet" crossorigin href="../../assets/design-system-CHxrV8OE.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-BnpIurk9.css">
   <link rel="stylesheet" crossorigin href="../../assets/glass-ui-BB2-B0XT.css">
 </head>
 
@@ -517,26 +518,19 @@
     <div class="page-container">
         <div class="back-row">
             <a href="index.html" class="back-link">← เมนู HR</a>
-            <a href="hrdashboard.html" class="back-link">📊 แดชบอร์ด</a>
         </div>
 
         <!-- Clock -->
         <div class="clock-hero">
             <h1>ลงเวลาเข้า-ออกพนักงาน</h1>
             <div class="live-clock">
-                <span>🕐</span>
+                <span class="material-icons-outlined" style="font-size: 2rem;">schedule</span>
                 <span id="liveClock">--:--:--</span>
             </div>
             <div class="live-date" id="liveDate"></div>
         </div>
 
-        <!-- Tabs -->
-        <div class="tab-row">
-            <button class="tab-btn active" data-tab="punch">⏰ ลงเวลา</button>
-            <button class="tab-btn" data-tab="history">📋 ประวัติ</button>
-        </div>
-
-        <!-- ========== PUNCH TAB ========== -->
+        <!-- PUNCH SECTION -->
         <div class="tab-content active" id="tab-punch">
             <div class="checkin-card">
                 <div class="status-indicator">
@@ -544,9 +538,9 @@
                     <span id="statusText">กำลังโหลด...</span>
                 </div>
 
-                <div class="admin-bar" id="adminBar">🔧 โหมดผู้ดูแลระบบ</div>
+                <div class="admin-bar" id="adminBar"><span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">build</span> โหมดผู้ดูแลระบบ</div>
 
-                <label class="field-label" for="deptSelect">แผนก</label>
+                <label class="field-label" for="deptSelect">สาขา</label>
                 <select class="field-select" id="deptSelect" disabled>
                     <option>กำลังโหลดข้อมูล…</option>
                 </select>
@@ -557,7 +551,7 @@
                 </select>
 
                 <div class="admin-fields" id="adminFields">
-                    <div class="admin-fields-title">⏰ กำหนดเวลาแทนพนักงาน</div>
+                    <div class="admin-fields-title"><span class="material-icons-outlined" style="font-size:1rem;vertical-align:text-bottom">edit_calendar</span> กำหนดเวลาแทนพนักงาน</div>
                     <div class="admin-row">
                         <div>
                             <label class="field-label" for="overrideDate">วันที่</label>
@@ -573,60 +567,19 @@
                 <div class="action-buttons">
                     <button class="btn-punch btn-in" id="btnIn" disabled onclick="doPunch('IN')">
                         <span class="spinner"></span>
-                        <span class="btn-label">🟢 เข้างาน</span>
+                        <span class="btn-label"><span class="material-icons-outlined" style="font-size:1rem;vertical-align:text-bottom">login</span> เข้างาน</span>
                     </button>
                     <button class="btn-punch btn-out" id="btnOut" disabled onclick="doPunch('OUT')">
                         <span class="spinner"></span>
-                        <span class="btn-label">🔴 ออกงาน</span>
+                        <span class="btn-label"><span class="material-icons-outlined" style="font-size:1rem;vertical-align:text-bottom">logout</span> ออกงาน</span>
                     </button>
                 </div>
 
                 <button class="admin-toggle" id="adminToggle" onclick="toggleAdmin()">
-                    🔐 เข้าสู่ระบบผู้ดูแล
+                    <span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">admin_panel_settings</span> เข้าสู่ระบบผู้ดูแล
                 </button>
             </div>
         </div>
-
-        <!-- ========== HISTORY TAB ========== -->
-        <div class="tab-content" id="tab-history">
-            <div class="checkin-card">
-                <label class="field-label" for="histDept">แผนก</label>
-                <select class="field-select" id="histDept" disabled>
-                    <option>กำลังโหลด...</option>
-                </select>
-
-                <label class="field-label" for="histName">ชื่อพนักงาน</label>
-                <select class="field-select" id="histName" disabled>
-                    <option value="">– เลือกชื่อ –</option>
-                </select>
-            </div>
-
-            <div class="checkin-card" id="statsCard" style="display: none;">
-                <h3 style="font-size: 0.9rem; color: var(--surface-600); margin-bottom: 0.75rem;">📊 สถิติเดือนนี้</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="statCheckIns">0</div>
-                        <div class="stat-label">วันเข้างาน</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="statLate">0</div>
-                        <div class="stat-label">มาสาย</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="statOnTime">0%</div>
-                        <div class="stat-label">ตรงเวลา</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="checkin-card" id="historyCard" style="display: none;">
-                <h3 style="font-size: 0.9rem; color: var(--surface-600); margin-bottom: 0.75rem;">📅 ประวัติล่าสุด</h3>
-                <div class="history-list" id="historyList"></div>
-            </div>
-
-            <div class="checkin-card" id="historyEmpty" style="display: none;">
-                <div class="empty-state">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📭</div>
                     <div>ยังไม่มีข้อมูลการลงเวลา</div>
                 </div>
             </div>
@@ -640,7 +593,7 @@
         </div>
     </div>
 
-    <!-- Scripts: PocketBase services -->
+    <!-- Scripts: PocketBase services -->
 </body>
 
 </html>

@@ -14,76 +14,221 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BC Auto Admin">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/design-system.css">
     <link rel="stylesheet" href="../../assets/css/glass-ui.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         body {
-            padding: var(--space-8);
+            padding: var(--space-4);
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 30%, #dbeafe 60%, #eff6ff 100%);
+            min-height: 100vh;
         }
 
-        .admin-header {
-            margin-bottom: var(--space-8);
+        .hub {
+            max-width: 800px;
+            margin: 0 auto;
         }
+
+        .hub h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: var(--space-2);
+            color: var(--surface-900);
+        }
+
+        .hub .subtitle {
+            text-align: center;
+            color: var(--surface-500);
+            margin-bottom: var(--space-5);
+            font-size: var(--text-sm);
+        }
+
+        /* KPI Row */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .kpi-tile {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3);
+            text-align: center;
+            border: 1px solid rgba(148,163,184,0.15);
+        }
+
+        .kpi-tile .kpi-icon { font-size: 1.3rem; margin-bottom: 4px; }
+        .kpi-tile .kpi-val { font-size: 1.5rem; font-weight: 800; color: var(--surface-900); }
+        .kpi-tile .kpi-label { font-size: var(--text-xs); color: var(--surface-500); font-weight: 600; }
+
+        /* Menu Grid */
+        .menu-list {
+            display: grid;
+            gap: var(--space-3);
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 640px) {
+            .menu-list { grid-template-columns: 1fr 1fr; }
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(8px);
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            border: 1px solid rgba(148,163,184,0.15);
+        }
+
+        .menu-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(59,130,246,0.12);
+            background: white;
+            border-color: rgba(59,130,246,0.3);
+        }
+
+        .menu-link .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: var(--space-4);
+            flex-shrink: 0;
+        }
+
+        .menu-link .text .title {
+            font-weight: 700;
+            font-size: var(--text-base);
+            margin-bottom: 2px;
+            color: var(--surface-900);
+        }
+
+        .menu-link .text .desc {
+            font-size: var(--text-xs);
+            color: var(--surface-500);
+            line-height: 1.4;
+        }
+
+        .back-link { text-align: center; margin-top: var(--space-6); }
+        .back-link a { color: var(--surface-400); font-size: var(--text-sm); text-decoration: none; }
     </style>
-    \n
-    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n
+    
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
 </head>
 
-<body class="bg-transparent">
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
-    <div class="container mx-auto max-w-4xl">
-        <div class="admin-header flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">Admin Suite</h1>
-                <p class="text-sub">Control Center for BC Auto Group</p>
-            </div>
-            <a href="../main/index.html" class="btn btn-ghost">⬅ Back to Menu</a>
+<body>
+    <div class="hub" style="padding-top: var(--space-8); padding-bottom: var(--space-8);">
+        <h1><span class="material-icons-outlined" style="font-size:2rem;vertical-align:bottom;color:var(--primary-600)">admin_panel_settings</span> ระบบผู้ดูแลระบบ</h1>
+        <p class="subtitle">Control Center for BC Auto Group</p>
+
+        <!-- Live KPIs -->
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-tile"><div class="kpi-icon"><span class="material-icons-outlined" style="color:#3b82f6">people</span></div><div class="kpi-val" id="kTotal">—</div><div class="kpi-label">ผู้ใช้ทั้งหมด</div></div>
+            <div class="kpi-tile"><div class="kpi-icon"><span class="material-icons-outlined" style="color:#15803d">store</span></div><div class="kpi-val" id="kBranches">—</div><div class="kpi-label">สาขา</div></div>
+            <div class="kpi-tile"><div class="kpi-icon"><span class="material-icons-outlined" style="color:#a16207">receipt_long</span></div><div class="kpi-val" id="kRecords">—</div><div class="kpi-label">รายการเดือนนี้</div></div>
+            <div class="kpi-tile"><div class="kpi-icon"><span class="material-icons-outlined" style="color:#7c3aed">cloud_done</span></div><div class="kpi-val" id="kBackup" style="font-size:0.85rem">—</div><div class="kpi-label">Backup ล่าสุด</div></div>
         </div>
 
-        <div class="grid-auto">
-            <a href="RoleManager.html" class="card p-6 border hover:border-primary-500 transition-all">
-                <div class="text-3xl mb-4">🔐</div>
-                <h3 class="text-lg font-semibold">Role Manager</h3>
-                <p class="text-sm text-sub">Manage dynamic RBAC permissions and role-based tool assignments.</p>
-            </a>
-
-            <a href="audit-logs.html" class="card p-6 border hover:border-primary-500 transition-all">
-                <div class="text-3xl mb-4">📜</div>
-                <h3 class="text-lg font-semibold">Audit Logs</h3>
-                <p class="text-sm text-sub">Track actions and security events</p>
-            </a>
-
-            <a href="user-management.html" class="card p-6 border hover:border-primary-500 transition-all">
-                <div class="text-3xl mb-4">👥</div>
-                <h3 class="text-lg font-semibold">User Management</h3>
-                <p class="text-sm text-sub">Manage roles and permissions</p>
-            </a>
-
-            <a href="system-health.html" class="card p-6 border hover:border-primary-500 transition-all">
-                <div class="text-3xl mb-4">💓</div>
-                <h3 class="text-lg font-semibold">System Health</h3>
-                <p class="text-sm text-sub">Monitor API and Database status</p>
-            </a>
-
-            <a href="backup-center.html" class="card p-6 border hover:border-primary-500 transition-all">
-                <div class="text-3xl mb-4">💾</div>
-                <h3 class="text-lg font-semibold">Backup & Export</h3>
-                <p class="text-sm text-sub">Data safety and master reports</p>
-            </a>
+        <div class="card" style="padding: var(--space-5); background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border-radius: var(--radius-xl);">
+            <div class="menu-list">
+                <a href="user-management.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#fdf4ff,#fae8ff); color: #a21caf;"><span class="material-icons-outlined">manage_accounts</span></div>
+                    <div class="text"><div class="title">จัดการผู้ใช้</div><div class="desc">เพิ่ม แก้ไข รีเซ็ตรหัสผ่าน</div></div>
+                </a>
+                <a href="branches.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#f0fdf4,#dcfce7); color: #15803d;"><span class="material-icons-outlined">store</span></div>
+                    <div class="text"><div class="title">จัดการสาขา</div><div class="desc">เพิ่ม แก้ไข ลบ สาขา</div></div>
+                </a>
+                <a href="RoleManager.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#eff6ff,#dbeafe); color: #1d4ed8;"><span class="material-icons-outlined">policy</span></div>
+                    <div class="text"><div class="title">Role Manager</div><div class="desc">จัดการ Permission ตาม Role</div></div>
+                </a>
+                <a href="settings.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#fefce8,#fef9c3); color: #a16207;"><span class="material-icons-outlined">settings</span></div>
+                    <div class="text"><div class="title">ตั้งค่าระบบ</div><div class="desc">เวลาทำงาน GPS ข้อมูลบริษัท</div></div>
+                </a>
+                <a href="audit-logs.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#f8fafc,#f1f5f9); color: #475569;"><span class="material-icons-outlined">history_edu</span></div>
+                    <div class="text"><div class="title">Audit Logs</div><div class="desc">ประวัติกิจกรรมและ Security</div></div>
+                </a>
+                <a href="data-check.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#fef2f2,#fee2e2); color: #dc2626;"><span class="material-icons-outlined">fact_check</span></div>
+                    <div class="text"><div class="title">ตรวจสอบข้อมูล</div><div class="desc">หาข้อมูลผิดปกติ / ซ้ำซ้อน</div></div>
+                </a>
+                <a href="system-health.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#f0fdf4,#dcfce7); color: #15803d;"><span class="material-icons-outlined">monitor_heart</span></div>
+                    <div class="text"><div class="title">System Health</div><div class="desc">ตรวจสอบสถานะ API / Database</div></div>
+                </a>
+                <a href="backup-center.html" class="menu-link">
+                    <div class="icon" style="background: linear-gradient(135deg,#fffbeb,#fef3c7); color: #b45309;"><span class="material-icons-outlined">cloud_download</span></div>
+                    <div class="text"><div class="title">Backup & Export</div><div class="desc">ดาวน์โหลดข้อมูลทั้งระบบ</div></div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="../main/index.html">← กลับเมนูหลัก</a>
         </div>
     </div>
 
     <script type="module" src="../../assets/js/app-shell.js"></script>
     <script type="module">
+        import { pb } from '../../services/pocketbase.js';
         import { AuthService } from '../../services/authService.js';
-        // Poka-Yoke: Allow Admin, Manager, and Owner (all verified via backend or PIN)
+        
         if (!AuthService.hasRole(['admin', 'manager', 'owner'])) {
             AuthService.requireRole(['admin', 'manager', 'owner']);
         }
+
+        // Load Live KPIs
+        async function loadKPIs() {
+            try {
+                const users = await pb.collection('users').getFullList();
+                document.getElementById('kTotal').textContent = users.length;
+            } catch (e) { document.getElementById('kTotal').textContent = '—'; }
+
+            try {
+                const branches = await pb.collection('branches').getFullList();
+                document.getElementById('kBranches').textContent = branches.length;
+            } catch (e) { document.getElementById('kBranches').textContent = '—'; }
+
+            try {
+                const records = await pb.collection('bc_records').getFullList();
+                const now = new Date();
+                const monthStr = now.toISOString().slice(0, 7); // "2026-05"
+                const thisMonth = records.filter(r => (r.date || r.created_at || r.CreatedAt || '').startsWith(monthStr));
+                document.getElementById('kRecords').textContent = thisMonth.length;
+            } catch (e) { document.getElementById('kRecords').textContent = '—'; }
+
+            try {
+                const logs = await pb.collection('audit_logs').getFullList();
+                const backupLogs = logs.filter(l => l.action === 'db_backup');
+                if (backupLogs.length > 0) {
+                    backupLogs.sort((a,b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
+                    const lastDate = new Date(backupLogs[0].timestamp || backupLogs[0].created_at);
+                    document.getElementById('kBackup').textContent = lastDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+                } else {
+                    document.getElementById('kBackup').textContent = 'ยังไม่เคย';
+                }
+            } catch (e) { document.getElementById('kBackup').textContent = '—'; }
+        }
+
+        loadKPIs();
     </script>
 </body>
 

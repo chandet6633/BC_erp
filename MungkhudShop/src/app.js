@@ -5,11 +5,12 @@
  */
 import { initDashboardPage } from './pages/dashboard.js'
 import { initLoginPage } from './pages/login.js'
-import { getCurrentUser, setCurrentUser, hasAccess, logout, getRoleLabel, getBranch, setBranch, isSSO, isEmployeeRestricted } from './services/auth.js'
+import { getCurrentUser, setCurrentUser, hasAccess, logout, getRoleLabel, getBranch, setBranch, isSSO, tryAutoLogin } from './services/auth.js'
 import { showHelp } from './components/help.js'
 import { initChangelog } from './components/changelog.js'
 import { sanitizeFilter } from './utils/sanitize.js'
-import { fetchFullList, managementPB, getManagementUrl } from './services/pb.js'
+import { fetchFullList, getManagementUrl } from './services/pb.js'
+import { setAuthToken } from '@shared/nocodb-adapter.js'
 
 /* ── P3: Route → Lazy init function map ── */
 const ROUTES = {
@@ -116,16 +117,27 @@ async function navigate(route) {
         item.classList.toggle('active', item.dataset.route === route)
     })
 
-    // Clear and render
+    // Clear and render with transition
+    content.classList.remove('page-enter')
     content.innerHTML = ''
+    // Force reflow then add animation class
+    void content.offsetWidth
+    content.classList.add('page-enter')
+
     const routeEntry = ROUTES[route]
     if (routeEntry) {
         try {
             // P3: Support both sync functions and async lazy loaders
             let initFn = routeEntry
             if (typeof routeEntry === 'function' && routeEntry.length === 0 && routeEntry !== initDashboardPage) {
-                // Lazy loader — show loading state
-                content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:var(--sp-8);gap:var(--sp-3);color:var(--color-text-muted);"><span class="material-icons-outlined spin">hourglass_empty</span> กำลังโหลด...</div>'
+                // Lazy loader — show skeleton loading state
+                content.innerHTML = `
+                    <div style="padding:var(--sp-6);">
+                        <div class="skeleton skeleton-text" style="width:40%;height:24px;margin-bottom:16px;"></div>
+                        <div class="skeleton skeleton-text" style="width:100%;height:16px;margin-bottom:8px;"></div>
+                        <div class="skeleton skeleton-text" style="width:80%;height:16px;margin-bottom:8px;"></div>
+                        <div class="skeleton skeleton-card" style="margin-top:16px;"></div>
+                    </div>`
                 initFn = await routeEntry()
             }
             content.innerHTML = ''
@@ -354,8 +366,10 @@ async function handleSSO() {
     if (!token) return
 
     try {
-        // Base64 decode with Unicode support
-        const json = decodeURIComponent(escape(atob(token)))
+        // Base64 decode with Unicode support.
+        // URLSearchParams converts '+' to ' ' when not URL-encoded. Fix it here:
+        const cleanToken = token.replace(/ /g, '+')
+        const json = decodeURIComponent(escape(atob(cleanToken)))
         const data = JSON.parse(json)
         
         // Token expiry check (5 minutes)
@@ -394,9 +408,18 @@ async function handleSSO() {
             permissions: '{}'
         }
 
-        setCurrentUser(session)
+        setCurrentUser(session, data.jwt)
         if (data.branch_id) setBranch(data.branch_id)
         
+        // Update NocoDB adapter token if present
+        if (data.jwt) {
+            try {
+                setAuthToken(data.jwt)
+            } catch (err) {
+                console.warn('SSO: Failed to set adapter token', err)
+            }
+        }
+
         console.log('✅ SSO Login successful:', session.display_name)
 
         // Clean URL to prevent re-use/sharing
@@ -484,18 +507,29 @@ async function boot() {
     filterSidebarByRole()
     await initBranchSwitcher()
     if (isEmbedded) applyEmbeddedMode()
+    // Auto-login: if no session but stored JWT exists, validate it
+    if (!getCurrentUser()) {
+        const session = await tryAutoLogin()
+        if (session) {
+            console.log('[Auth] Auto-login successful:', session.display_name)
+        }
+    }
+
     navigate(getRouteFromHash())
     window.addEventListener('hashchange', () => navigate(getRouteFromHash()))
 
-    // Non-blocking: changelog + low-stock alert
+    // Non-blocking: changelog + low-stock alert + notification panel
     if (getCurrentUser()) {
         initChangelog()
+        initNotificationPanel()
         checkLowStock()
         setInterval(checkLowStock, 5 * 60 * 1000) // Every 5 minutes
     }
 }
 
 /* ── Low-Stock Alert Checker ── */
+let _lowStockItems = []
+
 async function checkLowStock() {
     try {
         const products = await fetchFullList('products', { requestKey: 'lowstock_check' })
@@ -504,18 +538,17 @@ async function checkLowStock() {
         for (const l of ledgers) {
             stockMap[l.product_id] = (stockMap[l.product_id] || 0) + (l.qty || 0)
         }
-        const lowCount = products.filter(p => {
+        _lowStockItems = products.filter(p => {
             const qty = stockMap[p.code] || stockMap[p.id] || 0
             return qty <= (p.min_stock || 5)
-        }).length
+        }).map(p => ({ name: p.name, code: p.code, qty: stockMap[p.code] || stockMap[p.id] || 0 }))
 
         // Update notification badge
         const badge = document.getElementById('notifBadge')
         if (badge) {
-            if (lowCount > 0) {
-                badge.textContent = lowCount
+            if (_lowStockItems.length > 0) {
+                badge.textContent = _lowStockItems.length
                 badge.style.display = ''
-                // Play subtle beep on first detection
                 if (!window._lowStockAlerted) {
                     window._lowStockAlerted = true
                     try {
@@ -540,9 +573,73 @@ async function checkLowStock() {
     }
 }
 
+/* ── Notification Panel (bell click) ── */
+function initNotificationPanel() {
+    const btn = document.getElementById('notifBtn')
+    if (!btn) return
+
+    // Create dropdown panel
+    const panel = document.createElement('div')
+    panel.id = 'notifPanel'
+    panel.className = 'notif-panel'
+    panel.style.cssText = `
+        display:none; position:absolute; top:100%; right:0; width:320px;
+        background:var(--color-surface,#fff); border-radius:12px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.15); z-index:9999;
+        border:1px solid var(--color-border,#e2e8f0); overflow:hidden;
+    `
+    btn.style.position = 'relative'
+    btn.appendChild(panel)
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const isOpen = panel.style.display !== 'none'
+        if (isOpen) {
+            panel.style.display = 'none'
+            return
+        }
+
+        if (_lowStockItems.length === 0) {
+            panel.innerHTML = `
+                <div style="padding:20px;text-align:center;">
+                    <span class="material-icons-outlined" style="font-size:36px;color:#22c55e;">check_circle</span>
+                    <p style="margin:8px 0 0;color:var(--color-text-muted);">ไม่มีการแจ้งเตือน</p>
+                </div>`
+        } else {
+            const items = _lowStockItems.slice(0, 8).map(p => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--color-border,#f1f5f9);">
+                    <div>
+                        <div style="font-weight:500;font-size:0.85rem;">${p.name}</div>
+                        <div style="font-size:0.75rem;color:var(--color-text-muted);">${p.code}</div>
+                    </div>
+                    <span style="color:${p.qty <= 0 ? '#ef4444' : '#f59e0b'};font-weight:700;font-size:0.85rem;">
+                        ${p.qty <= 0 ? 'หมด' : `เหลือ ${p.qty}`}
+                    </span>
+                </div>
+            `).join('')
+
+            panel.innerHTML = `
+                <div style="padding:12px 16px;font-weight:600;border-bottom:1px solid var(--color-border,#e2e8f0);display:flex;align-items:center;gap:8px;">
+                    <span class="material-icons-outlined" style="color:#ef4444;font-size:18px;">warning</span>
+                    สินค้าใกล้หมด (${_lowStockItems.length})
+                </div>
+                ${items}
+                ${_lowStockItems.length > 8 ? `<div style="padding:8px 16px;font-size:0.75rem;color:var(--color-text-muted);">+${_lowStockItems.length - 8} รายการ</div>` : ''}
+                <a href="#/stock-list" style="display:block;padding:10px 16px;text-align:center;font-size:0.85rem;color:var(--color-primary,#2563eb);font-weight:500;border-top:1px solid var(--color-border,#e2e8f0);text-decoration:none;">
+                    ดูทั้งหมด →
+                </a>
+            `
+        }
+        panel.style.display = 'block'
+    })
+
+    // Close on outside click
+    document.addEventListener('click', () => { panel.style.display = 'none' })
+}
 
 
-/* ── Branch Switcher (queries Management PB) ── */
+
+/* ── Branch Switcher (queries shared database directly) ── */
 async function initBranchSwitcher() {
     const select = document.getElementById('branchSelect')
     if (!select) return
@@ -551,17 +648,19 @@ async function initBranchSwitcher() {
     const isEmployee = user && ['employee', 'employee_main', 'employee_sup', 'sa'].includes(user.role)
 
     try {
-        // Get unique branches from Management's users collection
-        const allUsers = await managementPB.collection('users').getFullList({
+        // Get unique branches from shared users table (same database now)
+        const allUsers = await fetchFullList('users', {
             fields: 'branch',
             requestKey: 'branch_list'
         })
 
-        // Extract unique non-empty branch values  
+        // Extract unique non-empty branch values (skip 'all' — ทุกสาขา covers that)
+        const SKIP_BRANCHES = ['all', 'main', '']
         const branchSet = new Map()
         allUsers.forEach(u => {
-            if (u.branch && u.branch.trim()) {
-                branchSet.set(u.branch.trim(), u.branch.trim())
+            const b = (u.branch || '').trim()
+            if (b && !SKIP_BRANCHES.includes(b.toLowerCase())) {
+                branchSet.set(b, b)
             }
         })
 

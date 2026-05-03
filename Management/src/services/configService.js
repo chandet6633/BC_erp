@@ -31,23 +31,37 @@ export const ConfigService = {
 
             // Map role permissions (tool IDs)
             rolesData.forEach(r => {
-                this.rolePermissions[r.role_name] = r.allowed_tools || [];
+                if (Array.isArray(r.allowed_tools) && r.allowed_tools.length > 0) {
+                    this.rolePermissions[r.role_name] = r.allowed_tools;
+                }
             });
 
-            localStorage.setItem('bc_rolePermissions', JSON.stringify(this.rolePermissions));
+            // If no dynamic roles were loaded, clear stale cache to prevent
+            // old cached permissions from hiding newly-added tools
+            if (rolesData.length === 0) {
+                this.rolePermissions = {};
+                localStorage.removeItem('bc_rolePermissions');
+            } else {
+                localStorage.setItem('bc_rolePermissions', JSON.stringify(this.rolePermissions));
+            }
             localStorage.setItem('bc_settings', JSON.stringify(this.settings));
 
             console.log('⚙️ ConfigService Initialized');
         } catch (error) {
             console.warn('⚠️ Failed to load dynamic config, using defaults:', error.message);
+            // On fetch failure, clear dynamic permissions so static registry is used
+            this.rolePermissions = {};
         }
     },
 
     /**
-     * Check if a role has access to a tool ID
+     * Check if a role has access to a tool ID.
+     * Strategy: dynamic permissions are ADDITIVE on top of static registry.
+     * If either dynamic or static grants access, the tool is shown.
      */
     hasAccess(role, toolId, branch = null) {
         if (toolId === 'bctool_external') {
+            if (role === 'mechanic' || role === 'employee') return false;
             if (role === 'admin' || role === 'owner') return true;
             return branch === 'samchuk' || branch === 'suphanburi';
         }
@@ -55,13 +69,12 @@ export const ConfigService = {
         let effectiveRole = role;
         if (role === 'sa' && branch) {
             effectiveRole = `sa_${branch}`;
-            // If branch-specific role doesn't exist, fallback to generic sa
             if (!this.rolePermissions[effectiveRole]) {
                 effectiveRole = role;
             }
         }
 
-        // If dynamic permissions exist for this role, use them
+        // Check dynamic permissions first (if they exist)
         if (this.rolePermissions[effectiveRole]) {
             if (toolId === 'operations_menu') {
                 const opsTools = ['audit', 'entry', 'employee_entry', 'verification'];
@@ -69,10 +82,12 @@ export const ConfigService = {
                     return true;
                 }
             }
-            return this.rolePermissions[effectiveRole].includes(toolId);
+            if (this.rolePermissions[effectiveRole].includes(toolId)) {
+                return true;
+            }
         }
 
-        // Fallback to static defaults in registry
+        // Always fall back to static registry — dynamic perms are additive, not exclusive
         const tool = TOOLS.find(t => t.id === toolId);
         return tool ? tool.roles.includes(role) : false;
     },

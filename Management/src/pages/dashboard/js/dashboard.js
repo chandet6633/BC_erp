@@ -1,1206 +1,738 @@
-// @ts-nocheck
-// Imports removed for global variable usage
+/**
+ * Financial Dashboard — BC Auto Xperience
+ * ════════════════════════════════════════
+ * Fetches ALL data upfront, then filters client-side.
+ * No fragile date filters in API calls.
+ */
 
-// Chart instances
-window.revenueTrendChart = null;
-window.expenseBreakdownChart = null;
-window.profitByGroupChart = null;
-window.peakHourChart = null;
-window.peakDayChart = null;
-window.starProductChart = null;
-window.lossProductChart = null;
-window.monthlyTrendChart = null;
-window.monthlyMarginChart = null;
-window.topCustomerChart = null;
+const THAI_MONTHS = {1:'ม.ค.',2:'ก.พ.',3:'มี.ค.',4:'เม.ย.',5:'พ.ค.',6:'มิ.ย.',7:'ก.ค.',8:'ส.ค.',9:'ก.ย.',10:'ต.ค.',11:'พ.ย.',12:'ธ.ค.'};
+const charts = {};
+let timeframe = 'monthly';
+let selectedDate = '', selectedWeek = '', selectedMonth, selectedYear, selectedQuarter = 1;
+let selectedBranch = '';
+let allJobs = [], allJobItems = [], allExpenses = [], allProducts = [], allBranches = [];
 
-// State
-window.currentPeriod = 'month';
-window.selectedYear = window.getCurrentYear();
-window.selectedMonth = window.getCurrentMonth();
-window.selectedQuarter = Math.ceil(window.getCurrentMonth() / 3);
+// ── Helpers ──
+const fmt = v => '฿' + Number(v||0).toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+const pct = (a,b) => b > 0 ? ((a/b)*100).toFixed(1) : '0.0';
+const safeText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+const safeHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+const destroyChart = k => { if (charts[k]) { charts[k].destroy(); delete charts[k]; } };
 
-// ==========================================
-// HELPERS
-// ==========================================
-window.safeSetText = function (id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-};
+// Get job date as YYYY-MM-DD string
+function jobDate(j) {
+    return (j.start_date || j.end_date || j.CreatedAt || '').slice(0, 10);
+}
+function jobMonth(j) {
+    const d = jobDate(j);
+    return d ? d.slice(0, 7) : ''; // YYYY-MM
+}
 
-window.safeSetClass = function (id, className) {
-    const el = document.getElementById(id);
-    if (el) el.className = className;
-};
+// ── Init month/year selectors ──
+function initSelectors() {
+    const now = new Date();
+    selectedDate = now.toISOString().slice(0, 10);
+    
+    // Weekly - ISO Week calculation
+    const getISOWeekStr = (d) => {
+        const date = new Date(d.getTime());
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+        const week1 = new Date(date.getFullYear(), 0, 4);
+        const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    };
+    selectedWeek = getISOWeekStr(now);
+    
+    selectedMonth = now.getMonth() + 1;
+    selectedYear = now.getFullYear();
+    selectedQuarter = Math.floor(now.getMonth() / 3) + 1;
 
-window.safeSetStyle = function (id, prop, value) {
-    const el = document.getElementById(id);
-    if (el) el.style[prop] = value;
-};
-
-window.safeSetVal = function (id, val) {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-};
-
-// ==========================================
-// INITIALIZATION
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    if (!requireOwner()) return;
-
-    Chart.defaults.color = getChartDefaults().color;
-    Chart.defaults.borderColor = getChartDefaults().borderColor;
-    Chart.defaults.font.family = getChartDefaults().font.family;
-
-    setupTabs(document.querySelectorAll('.tab-btn'), document.querySelectorAll('.tab-content'));
-    setupPeriodFilter();
-    setupYearMonthSelectors();
-    document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
-    loadDashboard();
-});
-
-// ==========================================
-// PERIOD FILTER
-// ==========================================
-window.setupPeriodFilter = function () {
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            window.currentPeriod = btn.dataset.period;
-
-            const monthSel = document.getElementById('monthSelect');
-            const quarterSel = document.getElementById('quarterSelect');
-            monthSel.style.display = window.currentPeriod === 'month' ? '' : 'none';
-            quarterSel.style.display = window.currentPeriod === 'quarter' ? '' : 'none';
-
-            window.loadDashboard();
+    // Timeframe selector
+    const tfSel = document.getElementById('timeframeSelect');
+    if (tfSel) {
+        tfSel.addEventListener('change', () => {
+            timeframe = tfSel.value;
+            document.querySelectorAll('.tf-controls').forEach(el => el.style.display = 'none');
+            const map = {
+                'daily': 'controlsDaily', 'weekly': 'controlsWeekly',
+                'monthly': 'controlsMonthly', 'quarterly': 'controlsQuarterly', 'yearly': 'controlsYearly'
+            };
+            const active = document.getElementById(map[timeframe]);
+            if (active) {
+                active.style.display = (timeframe === 'monthly' || timeframe === 'quarterly') ? 'flex' : 'block';
+            }
+            renderAll();
         });
-    });
-};
-
-window.setupYearMonthSelectors = function () {
-    const yearSel = document.getElementById('yearSelect');
-    const monthSel = document.getElementById('monthSelect');
-    const quarterSel = document.getElementById('quarterSelect');
-
-    // Year options (current year ± 2)
-    for (let y = window.getCurrentYear() + 1; y >= window.getCurrentYear() - 3; y--) {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y + 543; // Buddhist year
-        if (y === window.selectedYear) opt.selected = true;
-        yearSel.appendChild(opt);
     }
 
-    // Month options
-    for (let m = 1; m <= 12; m++) {
-        const opt = document.createElement('option');
-        opt.value = m;
-        opt.textContent = window.getMonthName(m);
-        if (m === window.selectedMonth) opt.selected = true;
-        monthSel.appendChild(opt);
+    // Daily
+    const dInput = document.getElementById('dailyDate');
+    if (dInput) { dInput.value = selectedDate; dInput.addEventListener('change', () => { selectedDate = dInput.value; renderAll(); }); }
+
+    // Weekly
+    const wInput = document.getElementById('weeklyWeek');
+    if (wInput) { wInput.value = selectedWeek; wInput.addEventListener('change', () => { selectedWeek = wInput.value; renderAll(); }); }
+
+    // Monthly
+    const mSel = document.getElementById('monthSelect');
+    const ySelM = document.getElementById('yearSelectMonthly');
+    if (mSel && ySelM) {
+        for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option'); opt.value = m; opt.textContent = THAI_MONTHS[m];
+            if (m === selectedMonth) opt.selected = true;
+            mSel.appendChild(opt);
+        }
+        for (let y = selectedYear - 2; y <= selectedYear + 1; y++) {
+            const opt = document.createElement('option'); opt.value = y; opt.textContent = y + 543;
+            if (y === selectedYear) opt.selected = true;
+            ySelM.appendChild(opt);
+        }
+        mSel.addEventListener('change', () => { selectedMonth = +mSel.value; renderAll(); });
+        ySelM.addEventListener('change', () => { selectedYear = +ySelM.value; renderAll(); });
     }
 
-    // Quarter default
-    quarterSel.value = window.selectedQuarter;
+    // Quarterly
+    const qSel = document.getElementById('quarterSelect');
+    const ySelQ = document.getElementById('yearSelectQuarterly');
+    if (qSel && ySelQ) {
+        qSel.value = selectedQuarter;
+        for (let y = selectedYear - 2; y <= selectedYear + 1; y++) {
+            const opt = document.createElement('option'); opt.value = y; opt.textContent = y + 543;
+            if (y === selectedYear) opt.selected = true;
+            ySelQ.appendChild(opt);
+        }
+        qSel.addEventListener('change', () => { selectedQuarter = +qSel.value; renderAll(); });
+        ySelQ.addEventListener('change', () => { selectedYear = +ySelQ.value; renderAll(); });
+    }
 
-    yearSel.addEventListener('change', () => {
-        window.selectedYear = parseInt(yearSel.value);
-        window.loadDashboard();
-    });
-    monthSel.addEventListener('change', () => {
-        window.selectedMonth = parseInt(monthSel.value);
-        window.loadDashboard();
-    });
-    quarterSel.addEventListener('change', () => {
-        window.selectedQuarter = parseInt(quarterSel.value);
-        window.loadDashboard();
-    });
-};
+    // Yearly
+    const ySelY = document.getElementById('yearSelectYearly');
+    if (ySelY) {
+        for (let y = selectedYear - 2; y <= selectedYear + 1; y++) {
+            const opt = document.createElement('option'); opt.value = y; opt.textContent = y + 543;
+            if (y === selectedYear) opt.selected = true;
+            ySelY.appendChild(opt);
+        }
+        ySelY.addEventListener('change', () => { selectedYear = +ySelY.value; renderAll(); });
+    }
 
-window.getDateRange = function () {
-    const { startDate, endDate, startDay, endDay } = window.RevenueService.getDateRange(window.currentPeriod, window.selectedYear, window.selectedMonth, window.selectedQuarter);
-    return { startDate, endDate, startDay, endDay };
-};
+    const branchSel = document.getElementById('branchSelect');
+    if (branchSel) branchSel.addEventListener('change', () => { selectedBranch = branchSel.value; renderAll(); });
 
-// ==========================================
-// DATA LOADING
-// ==========================================
-window.loadDashboard = async function (forceRefresh = false) {
-    window.showLoading();
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => fetchAndRender());
+}
+
+// ── Data Fetching ──
+async function fetchAndRender() {
+    const loading = document.getElementById('loadingState');
+    const errorEl = document.getElementById('errorState');
+    const tabs = document.querySelectorAll('.tab-content');
+
+    loading.style.display = 'block';
+    errorEl.style.display = 'none';
+    tabs.forEach(t => t.style.display = 'none');
+
     try {
-        const { startDate, endDate, startDay, endDay } = window.getDateRange();
-        const cacheKey = `bcauto_dash_${window.currentPeriod}_${window.selectedYear}_${window.selectedMonth}_${window.selectedQuarter}_${window.getBranch()}`;
-        const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+        const results = await Promise.allSettled([
+            window.pb.collection('jobs').getFullList(),
+            window.pb.collection('job_items').getFullList(),
+            window.pb.collection('financial_ledger').getFullList(),
+            window.pb.collection('products').getFullList(),
+            window.pb.collection('branches').getFullList()
+        ]);
 
-        let transactions, expenses, ownerExpenses, productGroups, serviceItems, manualRevenues;
+        allJobs = results[0].status === 'fulfilled' ? results[0].value : [];
+        allJobItems = results[1].status === 'fulfilled' ? results[1].value : [];
+        allExpenses = results[2].status === 'fulfilled' ? results[2].value : [];
+        allProducts = results[3].status === 'fulfilled' ? results[3].value : [];
+        allBranches = results[4].status === 'fulfilled' ? results[4].value : [];
 
-        // Try cache first
-        if (!forceRefresh) {
-            try {
-                const cached = JSON.parse(localStorage.getItem(cacheKey));
-                if (cached && Date.now() - cached.ts < CACHE_TTL) {
-                    transactions = cached.tx;
-                    expenses = cached.exp;
-                    ownerExpenses = cached.ownerExp;
-                    productGroups = cached.pg;
-                    serviceItems = cached.si;
-                    console.log('📦 Using cached dashboard data');
-                }
-            } catch (e) {
-                /* ignore corrupt cache */
-            }
-        }
+        console.log(`[Dashboard] Jobs: ${allJobs.length}, Items: ${allJobItems.length}, Expenses: ${allExpenses.length}, Products: ${allProducts.length}, Branches: ${allBranches.length}`);
 
-        // Fetch fresh if no cache
-        if (!transactions) {
-            const [txResult, expResult, ownerExpResult, pgResult, siResult, revResult] = await Promise.all([
-                window.TransactionService.getFullTransactions({
-                    filter: `open_date >= '${startDate}' && open_date <= '${endDate}' && ${window.getBranchFilter()}`,
-                    sort: 'open_date'
-                }),
-                window.EntryService.getExpenses(1, 10000, {
-                    filter: `date >= '${startDay} 00:00:00' && date <= '${endDay} 23:59:59' && ${window.getBranchFilter()}`
-                }).then(r => r.items),
-                window.EntryService.getOwnerExpenses(1, 10000, {
-                    filter: `date >= '${startDay} 00:00:00' && date <= '${endDay} 23:59:59' && ${window.getBranchFilter()}`
-                }).then(r => r.items),
-                window.TransactionService.getFullProductGroups({
-                    filter: `${window.getBranchFilter()}`
-                }),
-                window.TransactionService.getFullServiceItems({
-                    filter: `open_date >= '${startDate}' && open_date <= '${endDate}' && ${window.getBranchFilter()}`
-                }),
-                window.EntryService.getRevenues(1, 10000, {
-                    filter: `date >= '${startDay}' && date <= '${endDay}' && ${window.getBranchFilter()}`
-                }).then(r => r.items)
-            ]);
+        // Populate branch selector
+        populateBranchSelector();
 
-            transactions = txResult || [];
-            expenses = expResult || [];
-            ownerExpenses = ownerExpResult || [];
-            productGroups = pgResult || [];
-            serviceItems = siResult || [];
-            manualRevenues = revResult || [];
+        loading.style.display = 'none';
 
-            // Save to cache
-            try {
-                localStorage.setItem(
-                    cacheKey,
-                    JSON.stringify({
-                        ts: Date.now(),
-                        tx: transactions,
-                        exp: expenses,
-                        ownerExp: ownerExpenses,
-                        pg: productGroups,
-                        si: serviceItems,
-                        manRev: manualRevenues
-                    })
-                );
-            } catch (e) {
-                /* storage full, ignore */
-            }
-        } else {
-            const cached = JSON.parse(localStorage.getItem(cacheKey));
-            manualRevenues = cached.manRev || [];
-        }
+        // Show active tab
+        const activeBtn = document.querySelector('.tab-btn.active');
+        const activeTab = activeBtn?.dataset?.tab || 'overview';
+        const activeEl = document.getElementById(activeTab);
+        if (activeEl) activeEl.style.display = 'block';
 
-        window.updateKPIs(transactions, expenses, ownerExpenses, serviceItems, manualRevenues);
-        window.updatePNL(transactions, expenses, ownerExpenses, serviceItems, manualRevenues);
-        window.updateRevenueTrend(transactions, manualRevenues);
-        window.updateExpenseBreakdown(expenses);
-        window.updateProfitByGroup(productGroups, serviceItems);
-        window.updateInsights(transactions, manualRevenues);
-        window.updateProducts(serviceItems, productGroups);
-        window.updatePNL(transactions, expenses, ownerExpenses, serviceItems, manualRevenues);
-        window.updateMonthlyTrend();
-        window.updateYoYComparison(transactions, expenses, ownerExpenses, manualRevenues);
-        window.updateTopCustomers(transactions);
-        window.updateProductGrowth(serviceItems);
-        window.updateBranchComparison();
-        window.showToast('ข้อมูลอัปเดตแล้ว', 'success');
+        renderAll();
     } catch (err) {
-        console.error(err);
-        window.showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'error');
+        loading.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.innerHTML = `<span class="material-icons-outlined" style="font-size:36px;display:block;margin-bottom:8px;">error_outline</span>ไม่สามารถโหลดข้อมูลได้: ${err.message}`;
+        console.error('[Dashboard] Fetch error:', err);
     }
-    window.hideLoading();
-};
+}
 
-// ==========================================
-// KPIs
-// ==========================================
-window.updateKPIs = function (transactions, expenses, ownerExpenses, serviceItems) {
-    const kpis = window.RevenueService.calculateKPIs(transactions, expenses, ownerExpenses);
-    const { totalRevenue, grossProfit, totalAllExpense, netProfit, grossMargin, netMargin, expRatio, jobCount } = kpis;
+// ── Populate branch dropdown ──
+function populateBranchSelector() {
+    const branchSel = document.getElementById('branchSelect');
+    if (!branchSel) return;
+    branchSel.innerHTML = '';
 
-    window.safeSetText('kpiRevenue', window.formatCurrency(totalRevenue));
-    window.safeSetText('kpiGrossProfit', window.formatCurrency(grossProfit));
-    window.safeSetText('kpiGrossMargin', `${grossMargin.toFixed(1)}% Margin`);
-    window.safeSetText('kpiExpense', window.formatCurrency(totalAllExpense));
+    // "All branches" option
+    const allOpt = document.createElement('option');
+    allOpt.value = ''; allOpt.textContent = 'ทุกสาขา';
+    branchSel.appendChild(allOpt);
 
-    const netVal = window.formatCurrency(netProfit);
-    window.safeSetText('kpiNetProfit', netVal);
-    window.safeSetClass('kpiNetProfit', `kpi-value ${netProfit >= 0 ? 'positive' : 'negative'}`);
-
-    window.safeSetText('kpiNetMargin', `${netMargin.toFixed(1)}% Net Margin`);
-    window.safeSetText('kpiNetRate', `${netMargin.toFixed(1)}%`);
-    window.safeSetText('kpiJobCount', jobCount.toLocaleString());
-
-    // Expense-to-Revenue Ratio
-    const ratioVal = `${expRatio.toFixed(1)}%`;
-    window.safeSetText('kpiExpRatio', ratioVal);
-
-    const ratioEl = document.getElementById('kpiExpRatio');
-    if (ratioEl) {
-        if (expRatio < 50) {
-            ratioEl.className = 'kpi-value positive';
-            window.safeSetText('kpiExpRatioLabel', '✅ ดี');
-        } else if (expRatio < 70) {
-            ratioEl.className = 'kpi-value';
-            ratioEl.style.color = '#f59e0b';
-            window.safeSetText('kpiExpRatioLabel', '⚠️ ควรระวัง');
-        } else {
-            ratioEl.className = 'kpi-value negative';
-            window.safeSetText('kpiExpRatioLabel', '🔴 สูงเกินไป');
-        }
-    }
-};
-
-// ==========================================
-// CHARTS
-// ==========================================
-window.updateRevenueTrend = function (transactions) {
-    const dailyData = {};
-    transactions.forEach(t => {
-        const day = new Date(t.open_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        dailyData[day] = (dailyData[day] || 0) + Number(t.total_revenue || 0);
+    // Dynamic branches from DB
+    allBranches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.code || b.name;
+        opt.textContent = b.name || b.code;
+        branchSel.appendChild(opt);
     });
 
-    const labels = Object.keys(dailyData);
-    const data = Object.values(dailyData);
+    // If no branches from DB, fall back to unique branch_ids from jobs
+    if (allBranches.length === 0) {
+        const uniq = [...new Set(allJobs.map(j => j.branch_id).filter(Boolean))];
+        uniq.forEach(code => {
+            const opt = document.createElement('option');
+            opt.value = code; opt.textContent = code;
+            branchSel.appendChild(opt);
+        });
+    }
 
-    if (window.revenueTrendChart) window.revenueTrendChart.destroy();
-    const chartEl = document.getElementById('revenueTrendChart');
-    if (!chartEl) return;
-    revenueTrendChart = new Chart(chartEl, {
+    // Auto-lock for branch-scoped users (SA, mechanic)
+    try {
+        const user = JSON.parse(localStorage.getItem('bc_user') || '{}');
+        const role = (user.role || '').toLowerCase();
+        const userBranch = user.branch || '';
+        if ((role === 'sa' || role === 'mechanic') && userBranch) {
+            branchSel.value = userBranch;
+            branchSel.disabled = true;
+            selectedBranch = userBranch;
+        }
+    } catch(e) { /* ignore */ }
+
+    // Restore previous selection
+    if (selectedBranch) branchSel.value = selectedBranch;
+}
+
+// ── Filter helpers ──
+function filterByBranch(items, branchField = 'branch_id') {
+    if (!selectedBranch) return items;
+    return items.filter(i => i[branchField] === selectedBranch);
+}
+
+const getISOWeekStr = (d) => {
+    const date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    const weekNum = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+    return `${date.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+};
+
+function filterByTimeframe(items, dateGetter) {
+    return items.filter(i => {
+        const dStr = dateGetter(i);
+        if (!dStr) return false;
+        
+        if (timeframe === 'daily') {
+            return dStr.slice(0, 10) === selectedDate;
+        } else if (timeframe === 'weekly') {
+            const itemWeek = getISOWeekStr(new Date(dStr));
+            return itemWeek === selectedWeek;
+        } else if (timeframe === 'monthly') {
+            const expected = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+            return dStr.slice(0, 7) === expected;
+        } else if (timeframe === 'quarterly') {
+            const y = parseInt(dStr.slice(0, 4));
+            const m = parseInt(dStr.slice(5, 7));
+            const q = Math.floor((m - 1) / 3) + 1;
+            return y === selectedYear && q === selectedQuarter;
+        } else if (timeframe === 'yearly') {
+            return parseInt(dStr.slice(0, 4)) === selectedYear;
+        }
+        return true;
+    });
+}
+
+// ── Master Render ──
+function renderAll() {
+    let periodStr = '';
+    if (timeframe === 'daily') periodStr = new Date(selectedDate).toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    else if (timeframe === 'weekly') periodStr = `สัปดาห์ที่ ${selectedWeek.split('-W')[1]} ปี ${parseInt(selectedWeek.split('-W')[0]) + 543}`;
+    else if (timeframe === 'monthly') periodStr = `${THAI_MONTHS[selectedMonth]} ${selectedYear + 543}`;
+    else if (timeframe === 'quarterly') periodStr = `ไตรมาสที่ ${selectedQuarter} ${selectedYear + 543}`;
+    else if (timeframe === 'yearly') periodStr = `ปี ${selectedYear + 543}`;
+
+    const branchLabel = selectedBranch || 'ทุกสาขา';
+    safeText('periodLabel', `${periodStr} • ${branchLabel}`);
+
+    // Apply branch filter first
+    const branchJobs = filterByBranch(allJobs);
+    const branchExpenses = filterByBranch(allExpenses);
+
+    // Apply timeframe filter
+    const periodJobs = filterByTimeframe(branchJobs, j => j.start_date || j.end_date || j.CreatedAt);
+    const periodExpenses = filterByTimeframe(branchExpenses, e => e.date || e.CreatedAt);
+
+    const completedJobs = periodJobs.filter(j => j.status === 'completed' || j.status === 'invoiced');
+    const opExpenses = periodExpenses.filter(e => e.entry_type === 'expense');
+    const ownerExp = periodExpenses.filter(e => e.entry_type === 'owner_withdrawal');
+
+    // Revenue from completed jobs
+    const revenue = completedJobs.reduce((s, j) => s + Number(j.grand_total || 0), 0);
+
+    // COGS from job items — coerce IDs to string for comparison
+    const jobIds = new Set(completedJobs.map(j => String(j.id || j.Id)));
+    const relevantItems = allJobItems.filter(i => jobIds.has(String(i.job_id)));
+    const productMap = {};
+    allProducts.forEach(p => { productMap[p.name] = p; productMap[p.code] = p; });
+    const cogs = relevantItems.reduce((s, i) => {
+        const itemName = i.product_name || i.item_name || '';
+        const prod = productMap[itemName];
+        const unitCost = prod ? Number(prod.cost || 0) : Number(i.cost || 0);
+        return s + unitCost * Number(i.qty || 1);
+    }, 0);
+
+    const gross = revenue - cogs;
+    const totalExp = opExpenses.reduce((s, e) => s + Number(e.amount || 0), 0) + ownerExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const net = gross - totalExp;
+
+    // KPIs
+    safeText('kpiRevenue', fmt(revenue));
+    safeText('kpiJobCount', `${completedJobs.length} ใบงาน`);
+    safeText('kpiGrossProfit', fmt(gross));
+    safeText('kpiGrossMargin', `${pct(gross, revenue)}% margin`);
+    safeText('kpiExpense', fmt(totalExp));
+    safeText('kpiExpRatio', `${pct(totalExp, revenue)}% ของรายรับ`);
+    safeText('kpiNetProfit', fmt(net));
+    safeText('kpiNetMargin', `${pct(net, revenue)}% net margin`);
+
+    // Color net profit
+    const netEl = document.getElementById('kpiNetProfit');
+    if (netEl) netEl.style.color = net >= 0 ? '#16a34a' : '#dc2626';
+    const netCard = netEl?.closest('.kpi-card');
+    if (netCard) { netCard.classList.remove('kpi-green', 'kpi-red'); netCard.classList.add(net >= 0 ? 'kpi-green' : 'kpi-red'); }
+
+    renderRevenueTrend(completedJobs);
+    renderExpenseDonut(opExpenses);
+    renderPnl(revenue, cogs, gross, totalExp, net);
+    renderBreakEven(revenue, gross, totalExp);
+    renderBranchComparison(completedJobs, opExpenses);
+    renderHistoricalTrend();
+    renderInsights(completedJobs);
+    renderProducts(relevantItems);
+    renderRecentJobs(periodJobs);
+}
+
+// ── Charts ──
+function renderRevenueTrend(jobs) {
+    const dataPoints = {};
+    
+    jobs.forEach(j => {
+        const dStr = j.start_date || j.end_date || j.CreatedAt;
+        if (!dStr) return;
+        const d = new Date(dStr);
+        let label = '';
+        
+        if (timeframe === 'daily') {
+            label = `${String(d.getHours()).padStart(2, '0')}:00`;
+        } else if (timeframe === 'weekly') {
+            const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+            label = days[d.getDay()];
+        } else if (timeframe === 'monthly') {
+            label = `${d.getDate()} ${THAI_MONTHS[d.getMonth() + 1]}`;
+        } else if (timeframe === 'quarterly' || timeframe === 'yearly') {
+            label = THAI_MONTHS[d.getMonth() + 1];
+        }
+        
+        dataPoints[label] = (dataPoints[label] || 0) + Number(j.grand_total || 0);
+    });
+
+    // Ensure ordering for weekly and others if needed
+    let sortedKeys = Object.keys(dataPoints);
+    if (timeframe === 'weekly') {
+        const dayOrder = {'จ.':1, 'อ.':2, 'พ.':3, 'พฤ.':4, 'ศ.':5, 'ส.':6, 'อา.':7};
+        sortedKeys = sortedKeys.sort((a,b) => dayOrder[a] - dayOrder[b]);
+    } else if (timeframe === 'quarterly' || timeframe === 'yearly') {
+        const mOrder = {'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};
+        sortedKeys = sortedKeys.sort((a,b) => mOrder[a] - mOrder[b]);
+    } else {
+        sortedKeys.sort(); // String sort is fine for HH:00 or DD Mon
+    }
+
+    destroyChart('revenue');
+    const el = document.getElementById('revenueTrendChart'); if (!el) return;
+    charts.revenue = new Chart(el, {
         type: 'line',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'รายรับ (บาท)',
-                    data,
-                    borderColor: '#4f8cff',
-                    backgroundColor: 'rgba(79,140,255,0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 3,
-                    pointBackgroundColor: '#4f8cff'
-                }
-            ]
-        },
+        data: { labels: sortedKeys, datasets: [{
+            label: 'รายรับ', data: sortedKeys.map(k => dataPoints[k]),
+            borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)',
+            fill: true, tension: 0.4, pointRadius: 3
+        }]},
         options: {
-            responsive: true,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } }
-            }
+            scales: { y: { beginAtZero: true, ticks: { callback: v => '฿' + v.toLocaleString() } } }
         }
     });
-};
+}
 
-window.updateExpenseBreakdown = function (expenses) {
-    const catData = {};
-    expenses
-        .filter(e => !e.excluded)
-        .forEach(e => {
-            catData[e.category] = (catData[e.category] || 0) + Number(e.amount || 0);
+function renderExpenseDonut(expenses) {
+    destroyChart('expense');
+    const el = document.getElementById('expenseDonutChart'); 
+    if (!el) return;
+
+    if (!expenses || expenses.length === 0) {
+        charts.expense = new Chart(el, {
+            type: 'doughnut',
+            data: { labels: ['ไม่มีค่าใช้จ่าย'], datasets: [{ data: [1], backgroundColor: ['#e2e8f0'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
         });
-
-    const labels = Object.keys(catData);
-    const data = Object.values(catData);
-    const total = data.reduce((s, v) => s + v, 0);
-    const colors = [
-        '#4f8cff',
-        '#22c55e',
-        '#ef4444',
-        '#f59e0b',
-        '#a855f7',
-        '#06b6d4',
-        '#ec4899',
-        '#84cc16',
-        '#f97316',
-        '#6366f1',
-        '#14b8a6',
-        '#e11d48',
-        '#8b5cf6'
-    ];
-
-    // Store for drill-down
-    window._expenseDrillData = expenses.filter(e => !e.excluded);
-
-    if (window.expenseBreakdownChart) window.expenseBreakdownChart.destroy();
-    window.expenseBreakdownChart = new Chart(document.getElementById('expenseBreakdownChart'), {
-        type: 'doughnut',
-        data: {
-            labels,
-            datasets: [
-                {
-                    data,
-                    backgroundColor: colors.slice(0, labels.length),
-                    borderWidth: 2,
-                    borderColor: 'rgba(255,255,255,0.8)',
-                    hoverBorderWidth: 3,
-                    hoverOffset: 8
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            cutout: '55%',
-            plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
-                tooltip: {
-                    callbacks: {
-                        label: function (ctx) {
-                            const val = ctx.parsed;
-                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-                            return ` ${ctx.label}: ${window.formatCurrency(val)} (${pct}%)`;
-                        }
-                    }
-                }
-            },
-            onClick: (evt, elements) => {
-                if (elements.length > 0) {
-                    const idx = elements[0].index;
-                    const category = labels[idx];
-                    window.showExpenseDrillDown(category);
-                }
-            }
-        },
-        plugins: [
-            {
-                // Center text plugin — shows total
-                id: 'centerText',
-                afterDraw(chart) {
-                    const {
-                        ctx,
-                        chartArea: { width, height, top, left }
-                    } = chart;
-                    ctx.save();
-                    ctx.font = 'bold 14px system-ui';
-                    ctx.fillStyle = '#64748b';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('รวม', left + width / 2, top + height / 2 - 10);
-                    ctx.font = 'bold 16px system-ui';
-                    ctx.fillStyle = '#1e293b';
-                    ctx.fillText(window.formatCurrency(total), left + width / 2, top + height / 2 + 12);
-                    ctx.restore();
-                }
-            }
-        ]
-    });
-};
-
-// Expense drill-down modal
-window.showExpenseDrillDown = function (category) {
-    const items = (window._expenseDrillData || []).filter(e => e.category === category);
-    const total = items.reduce((s, e) => s + Number(e.amount || 0), 0);
-
-    // Build or reuse modal
-    let modal = document.getElementById('expenseDrillModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'expenseDrillModal';
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width:750px; max-height:80vh; overflow-y:auto;">
-                <div class="d-flex justify-between align-center mb-2">
-                    <h3 id="drillTitle"></h3>
-                    <button class="btn btn-text" onclick="document.getElementById('expenseDrillModal').classList.remove('active')">✕</button>
-                </div>
-                <div id="drillSummary" class="mb-2" style="font-size:0.9rem;"></div>
-                <div class="table-container"><table id="drillTable"><thead><tr>
-                    <th>วันที่</th><th>หมวดหมู่</th><th class="text-right">จำนวนเงิน</th><th class="text-center">หลักฐาน</th><th>หมายเหตุ</th>
-                </tr></thead><tbody></tbody></table></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    document.getElementById('drillTitle').textContent = `📋 ${category}`;
-    document.getElementById('drillSummary').innerHTML =
-        `รวม <strong>${window.formatCurrency(total)}</strong> (${items.length} รายการ)`;
-
-    const tbody = document.querySelector('#drillTable tbody');
-    tbody.innerHTML =
-        items
-            .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-            .map(
-                e => `
-        <tr>
-            <td data-label="วันที่">${window.formatDate(e.date)}</td>
-            <td data-label="หมวดหมู่">${e.category || '-'}</td>
-            <td class="text-right" data-label="จำนวนเงิน">${window.formatCurrency(Number(e.amount || 0))}</td>
-            <td class="text-center" data-label="หลักฐาน">${e.receipt_url ? `<button class="btn btn-sm btn-outline" style="padding:2px 8px; font-size:0.75rem;" onclick="showImage('${e.receipt_url}')">📄 ดูรูป</button>` : '-'}</td>
-            <td data-label="หมายเหตุ">${e.notes || '-'}</td>
-        </tr>
-    `
-            )
-            .join('') || '<tr><td colspan="5" class="text-center text-muted">ไม่มีข้อมูล</td></tr>';
-
-    modal.classList.add('active');
-};
-
-window.updateProfitByGroup = function (productGroups, serviceItems) {
-    // Aggregate from service items by product group
-    const groupProfit = {};
-    serviceItems.forEach(item => {
-        const groupName = item.item_name || 'ไม่ระบุ';
-        // Group by first part of item name or use product group
-        groupProfit[groupName] = (groupProfit[groupName] || 0) + Number(item.total_profit || 0);
-    });
-
-    // If product groups have data, use them
-    if (productGroups.length > 0) {
-        const pgProfit = {};
-        productGroups.forEach(pg => {
-            pgProfit[pg.name] = (pgProfit[pg.name] || 0) + Number(pg.total_profit || 0);
-        });
-        if (Object.keys(pgProfit).length > 0) {
-            Object.keys(groupProfit).forEach(k => delete groupProfit[k]);
-            Object.assign(groupProfit, pgProfit);
-        }
-    }
-
-    // Sort by profit desc and take top 10
-    const sorted = Object.entries(groupProfit)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
-    const labels = sorted.map(s => s[0]);
-    const data = sorted.map(s => s[1]);
-
-    if (window.profitByGroupChart) window.profitByGroupChart.destroy();
-    window.profitByGroupChart = new Chart(document.getElementById('profitByGroupChart'), {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'กำไร (บาท)',
-                    data,
-                    backgroundColor: data.map(v => (v >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)')),
-                    borderColor: data.map(v => (v >= 0 ? '#22c55e' : '#ef4444')),
-                    borderWidth: 1,
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { callback: v => window.formatCurrency(v) } }
-            }
-        }
-    });
-};
-
-window.updateInsights = function (transactions) {
-    const { avgRevenuePerJob, avgRepairTime, hourCounts, dayCounts } = window.RevenueService.getInsights(transactions);
-
-    document.getElementById('kpiAvgRevenue').textContent = window.formatCurrency(avgRevenuePerJob);
-    document.getElementById('kpiAvgRepair').textContent = avgRepairTime > 0 ? avgRepairTime.toFixed(1) : '-';
-
-    // Peak Hours Chart
-    if (window.peakHourChart) window.peakHourChart.destroy();
-    window.peakHourChart = new Chart(document.getElementById('peakHourChart'), {
-        type: 'bar',
-        data: {
-            labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
-            datasets: [
-                {
-                    label: 'จำนวนงาน',
-                    data: hourCounts,
-                    backgroundColor: hourCounts.map((v, i) => {
-                        const max = Math.max(...hourCounts);
-                        return v === max && v > 0 ? 'rgba(79,140,255,0.8)' : 'rgba(79,140,255,0.3)';
-                    }),
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-    });
-
-    // Peak Days Chart
-    if (window.peakDayChart) window.peakDayChart.destroy();
-    window.peakDayChart = new Chart(document.getElementById('peakDayChart'), {
-        type: 'bar',
-        data: {
-            labels: [0, 1, 2, 3, 4, 5, 6].map(d => window.getDayName(d)),
-            datasets: [
-                {
-                    label: 'จำนวนงาน',
-                    data: dayCounts,
-                    backgroundColor: dayCounts.map(v => {
-                        const max = Math.max(...dayCounts);
-                        return v === max && v > 0 ? 'rgba(168,85,247,0.8)' : 'rgba(168,85,247,0.3)';
-                    }),
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-    });
-};
-
-window.updateProducts = function (serviceItems, productGroups) {
-    const { stars, losers } = window.RevenueService.getProductStats(serviceItems, productGroups);
-    const starBody = document.querySelector('#starTable tbody');
-    starBody.innerHTML =
-        stars
-            .map(
-                s => `
-        <tr>
-            <td data-label="สินค้า">${s.name}</td>
-            <td class="text-right" data-label="ยอดขาย">${window.formatCurrency(s.sales)}</td>
-            <td class="text-right text-green" data-label="กำไร">${window.formatCurrency(s.profit)}</td>
-            <td class="text-right" data-label="% กำไร">${s.sales > 0 ? ((s.profit / s.sales) * 100).toFixed(1) : 0}%</td>
-        </tr>
-    `
-            )
-            .join('') || '<tr><td colspan="4" class="text-center text-muted">ไม่มีข้อมูล</td></tr>';
-
-    if (window.starProductChart) window.starProductChart.destroy();
-    window.starProductChart = new Chart(document.getElementById('starProductChart'), {
-        type: 'bar',
-        data: {
-            labels: stars.map(s => s.name),
-            datasets: [
-                {
-                    label: 'กำไร (บาท)',
-                    data: stars.map(s => s.profit),
-                    backgroundColor: 'rgba(34,197,94,0.6)',
-                    borderColor: '#22c55e',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: { x: { ticks: { callback: v => formatCurrency(v) } } }
-        }
-    });
-
-    // Losers (negative profit) already processed by getProductStats
-    const lossBody = document.querySelector('#lossTable tbody');
-    lossBody.innerHTML =
-        losers
-            .map(
-                s => `
-        <tr>
-            <td data-label="สินค้า">${s.name}</td>
-            <td class="text-right" data-label="ยอดขาย">${window.formatCurrency(s.sales)}</td>
-            <td class="text-right text-red" data-label="กำไร">${window.formatCurrency(s.profit)}</td>
-        </tr>
-    `
-            )
-            .join('') || '<tr><td colspan="3" class="text-center text-muted">ไม่มีรายการขาดทุน 🎉</td></tr>';
-
-    if (window.lossProductChart) window.lossProductChart.destroy();
-    window.lossProductChart = new Chart(document.getElementById('lossProductChart'), {
-        type: 'bar',
-        data: {
-            labels: losers.map(s => s.name),
-            datasets: [
-                {
-                    label: 'ขาดทุน (บาท)',
-                    data: losers.map(s => Math.abs(s.profit)),
-                    backgroundColor: 'rgba(239,68,68,0.6)',
-                    borderColor: '#ef4444',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: { x: { ticks: { callback: v => window.formatCurrency(v) } } }
-        }
-    });
-};
-
-// ==========================================
-// P&L BREAKDOWN
-// ==========================================
-window.updatePNL = function (transactions, expenses, ownerExpenses, serviceItems, manualRevenues = []) {
-    const { totalRevenue, grossProfit, netProfit, totalAllExpense, grossMargin, netMargin, expRatio, jobCount } = window.RevenueService.calculateKPIs(transactions, expenses, ownerExpenses, manualRevenues);
-    // The following lines were part of the original manual calculation and are now redundant
-    // as the values are provided by calculateKPIs.
-    // const grossProfit = totalRevenue - cogs;
-    // const opExpense = expenses.filter(e => !e.excluded).reduce((s, e) => s + Number(e.amount || 0), 0);
-    // const ownerExp = ownerExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-    // const totalOpEx = opExpense + ownerExp;
-    // const netProfit = grossProfit - totalOpEx;
-
-    // Re-calculating cogs and totalOpEx for display purposes, as they are not directly returned by calculateKPIs
-    // but are needed for the P&L breakdown display.
-    const cogs = transactions.reduce((s, t) => s + Number(t.total_cost || 0), 0);
-    const opExpense = expenses.filter(e => !e.excluded).reduce((s, e) => s + Number(e.amount || 0), 0);
-    const ownerExp = ownerExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-    const totalOpEx = opExpense + ownerExp;
-
-
-    const maxVal = Math.max(totalRevenue, 1);
-    const barPct = v => Math.max((Math.abs(v) / maxVal) * 100, 2).toFixed(1);
-    const barColor = v => (v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
-
-    const rows = [
-        { label: '💰 รายได้ (Revenue)', value: totalRevenue, color: 'rgba(59,130,246,0.7)' },
-        { label: '📦 ต้นทุนสินค้า (COGS)', value: -cogs, color: 'rgba(239,68,68,0.5)' },
-        { label: '📈 กำไรขั้นต้น (Gross Profit)', value: grossProfit, color: barColor(grossProfit) },
-        { label: '🏢 ค่าใช้จ่ายดำเนินงาน (OpEx)', value: -totalOpEx, color: 'rgba(239,68,68,0.5)' },
-        { label: '🎯 กำไรสุทธิ (Net Profit)', value: netProfit, color: barColor(netProfit) }
-    ];
-
-    const grossMarginPct = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0.0';
-    const netMarginPct = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0';
-
-    const div = document.getElementById('pnlBreakdown');
-    div.innerHTML =
-        rows
-            .map(
-                r => `
-        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.6rem;">
-            <div style="flex:0 0 220px; font-size:0.85rem; color:var(--text-secondary);">${r.label}</div>
-            <div style="flex:1; background:var(--bg-primary); border-radius:4px; height:24px; position:relative; overflow:hidden;">
-                <div style="width:${barPct(r.value)}%; height:100%; background:${r.color}; border-radius:4px; transition:width 0.5s;"></div>
-            </div>
-            <div style="flex:0 0 120px; text-align:right; font-weight:700; font-size:0.9rem; color:${r.value >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
-                ${r.value < 0 ? '-' : ''}${window.formatCurrency(Math.abs(r.value))}
-            </div>
-        </div>
-    `
-            )
-            .join('') +
-        `
-        <div style="display:flex; gap:1rem; margin-top:0.75rem; font-size:0.85rem; color:var(--text-muted);">
-            <span>Gross Margin: <strong style="color:var(--text-primary);">${grossMarginPct}%</strong></span>
-            <span>Net Margin: <strong style="color:${netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${netMarginPct}%</strong></span>
-        </div>
-    `;
-
-    // ==========================================
-    // BREAK-EVEN CALCULATION
-    // ==========================================
-    const beDiv = document.getElementById('breakEvenContent');
-    const grossMarginRatio = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
-    const bepRevenue = grossMarginRatio > 0 ? totalOpEx / grossMarginRatio : 0;
-    const avgRevenuePerJob = transactions.length > 0 ? totalRevenue / transactions.length : 0;
-    const bepJobs = avgRevenuePerJob > 0 ? Math.ceil(bepRevenue / avgRevenuePerJob) : 0;
-    const progressPct = bepRevenue > 0 ? Math.min((totalRevenue / bepRevenue) * 100, 100) : 0;
-    const isAboveBEP = totalRevenue >= bepRevenue && bepRevenue > 0;
-
-    if (grossMarginRatio <= 0) {
-        beDiv.innerHTML = `
-            <div style="padding:1.5rem; text-align:center; background:rgba(239,68,68,0.1); border-radius:8px;">
-                <p style="font-size:1rem;">⚠️ ไม่สามารถคำนวณจุดคุ้มทุนได้</p>
-                <p class="text-muted" style="font-size:0.85rem;">กำไรขั้นต้นเป็นลบ — ต้นทุนสินค้าสูงกว่ารายได้</p>
-            </div>
-        `;
         return;
     }
 
-    beDiv.innerHTML = `
-        <div class="kpi-grid" style="margin-bottom:1rem;">
-            <div class="kpi-card" style="text-align:center;">
-                <div class="kpi-label">💰 รายได้ที่ต้องทำ (BEP)</div>
-                <div class="kpi-value" style="font-size:1.3rem;">${window.formatCurrency(bepRevenue)}</div>
-                <div class="kpi-sub">Break-Even Revenue</div>
-            </div>
-            <div class="kpi-card" style="text-align:center;">
-                <div class="kpi-label">🔧 จำนวนงานที่ต้องทำ</div>
-                <div class="kpi-value" style="font-size:1.3rem;">${bepJobs.toLocaleString()}</div>
-                <div class="kpi-sub">งาน (เฉลี่ย ${window.formatCurrency(avgRevenuePerJob)}/งาน)</div>
-            </div>
-            <div class="kpi-card" style="text-align:center;">
-                <div class="kpi-label">📊 Gross Margin</div>
-                <div class="kpi-value" style="font-size:1.3rem;">${grossMarginPct}%</div>
-                <div class="kpi-sub">ใช้คำนวณจุดคุ้มทุน</div>
-            </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div style="margin-bottom:0.75rem;">
-            <div class="d-flex justify-between" style="font-size:0.85rem; margin-bottom:0.3rem;">
-                <span class="text-muted">ความคืบหน้าสู่จุดคุ้มทุน</span>
-                <strong style="color:${isAboveBEP ? 'var(--accent-green)' : 'var(--accent-yellow)'};">${progressPct.toFixed(1)}%</strong>
-            </div>
-            <div style="background:var(--bg-primary); border-radius:8px; height:28px; overflow:hidden; position:relative;">
-                <div style="width:${progressPct}%; height:100%; background:${isAboveBEP ? 'linear-gradient(90deg, rgba(34,197,94,0.6), rgba(34,197,94,0.9))' : 'linear-gradient(90deg, rgba(245,158,11,0.5), rgba(245,158,11,0.8))'}; border-radius:8px; transition:width 0.6s ease;">
-                </div>
-                <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:0.8rem; font-weight:600; color:var(--text-primary);">
-                    ${formatCurrency(totalRevenue)} / ${formatCurrency(bepRevenue)}
-                </div>
-            </div>
-        </div>
-
-        <div style="font-size:0.85rem; padding:0.75rem; border-radius:8px; background:${isAboveBEP ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)'};">
-            ${isAboveBEP
-            ? `✅ <strong>เกินจุดคุ้มทุนแล้ว!</strong> รายได้เกิน BEP อยู่ <strong style="color:var(--accent-green);">${formatCurrency(totalRevenue - bepRevenue)}</strong>`
-            : `⏳ <strong>ยังไม่ถึงจุดคุ้มทุน</strong> — ต้องการรายได้อีก <strong style="color:var(--accent-yellow);">${formatCurrency(bepRevenue - totalRevenue)}</strong> (${bepJobs - transactions.length > 0 ? bepJobs - transactions.length : 0} งาน)`
-        }
-        </div>
-
-        <p class="text-muted mt-1" style="font-size:0.75rem;">
-            สูตร: BEP Revenue = ค่าใช้จ่ายดำเนินงาน (${formatCurrency(totalOpEx)}) ÷ Gross Margin (${grossMarginPct}%)
-        </p>
-    `;
-};
-
-// ==========================================
-// MONTHLY TREND (last 6 months)
-// ==========================================
-window.updateMonthlyTrend = async function () {
-    try {
-        const monthData = await window.RevenueService.getMonthlyTrendData(window.getBranchFilter());
-
-        // Convert simplified service labels back to readable Thai months
-        const formattedData = monthData.map(m => {
-            const [y, mm] = m.key.split('-');
-            return {
-                ...m,
-                label: window.getMonthName(parseInt(mm)) + ' ' + (parseInt(y) + 543).toString().slice(-2)
-            };
-        });
-
-        // Trend chart
-        if (window.monthlyTrendChart) window.monthlyTrendChart.destroy();
-        window.monthlyTrendChart = new Chart(document.getElementById('monthlyTrendChart'), {
-            type: 'bar',
-            data: {
-                labels: formattedData.map(m => m.label),
-                datasets: [
-                    {
-                        label: 'รายได้',
-                        data: formattedData.map(m => m.revenue),
-                        backgroundColor: 'rgba(59,130,246,0.6)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        order: 2
-                    },
-                    {
-                        label: 'กำไรขั้นต้น',
-                        data: formattedData.map(m => m.grossProfit),
-                        backgroundColor: 'rgba(34,197,94,0.6)',
-                        borderColor: '#22c55e',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        order: 2
-                    },
-                    {
-                        label: 'ค่าใช้จ่าย',
-                        data: formattedData.map(m => m.opex),
-                        backgroundColor: 'rgba(239,68,68,0.5)',
-                        borderColor: '#ef4444',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        order: 2
-                    },
-                    {
-                        label: 'กำไรสุทธิ',
-                        type: 'line',
-                        data: formattedData.map(m => m.netProfit),
-                        borderColor: '#a855f7',
-                        backgroundColor: 'rgba(168,85,247,0.1)',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        fill: true,
-                        tension: 0.3,
-                        order: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'top' }
-                },
-                scales: {
-                    y: { ticks: { callback: v => window.formatCurrency(v) } }
+    const cats = {};
+    expenses.forEach(e => { const c = e.category || 'อื่นๆ'; cats[c] = (cats[c] || 0) + Number(e.amount || 0); });
+    const colors = ['#3b82f6','#f59e0b','#10b981','#8b5cf6','#ef4444','#ec4899','#06b6d4','#84cc16'];
+    charts.expense = new Chart(el, {
+        type: 'doughnut',
+        data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: colors.slice(0, Object.keys(cats).length), borderWidth: 2, borderColor: '#fff' }] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '55%', 
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+            onClick: (e, elements) => {
+                if (elements.length > 0) {
+                    const idx = elements[0].index;
+                    const catName = Object.keys(cats)[idx];
+                    const matched = expenses.filter(exp => (exp.category || 'อื่นๆ') === catName);
+                    
+                    const headers = ['วันที่', 'รายการ', 'สาขา', 'ยอดเงิน'];
+                    const rows = matched.map(exp => {
+                        const d = (exp.date || exp.CreatedAt) ? new Date(exp.date || exp.CreatedAt).toLocaleDateString('th-TH') : '-';
+                        return `<tr>
+                            <td>${d}</td>
+                            <td>${exp.description || exp.notes || '-'}</td>
+                            <td>${exp.branch_id || '-'}</td>
+                            <td style="text-align:right; font-weight:600; color:#ef4444;">${fmt(exp.amount)}</td>
+                        </tr>`;
+                    }).join('');
+                    
+                    openDetailModal(`รายการค่าใช้จ่าย: ${catName}`, headers, rows);
                 }
             }
-        });
-
-        // Margin chart
-        if (window.monthlyMarginChart) window.monthlyMarginChart.destroy();
-        window.monthlyMarginChart = new Chart(document.getElementById('monthlyMarginChart'), {
-            type: 'line',
-            data: {
-                labels: formattedData.map(m => m.label),
-                datasets: [
-                    {
-                        label: 'Gross Margin %',
-                        data: formattedData.map(m => m.grossMargin.toFixed(1)),
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34,197,94,0.1)',
-                        borderWidth: 2,
-                        pointRadius: 5,
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Net Margin %',
-                        data: formattedData.map(m => m.netMargin.toFixed(1)),
-                        borderColor: '#a855f7',
-                        backgroundColor: 'rgba(168,85,247,0.1)',
-                        borderWidth: 2,
-                        pointRadius: 5,
-                        fill: true,
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'top' }
-                },
-                scales: {
-                    y: {
-                        ticks: { callback: v => v + '%' },
-                        suggestedMin: 0,
-                        suggestedMax: 100
-                    }
-                }
-            }
-        });
-    } catch (err) {
-        console.error('Monthly trend error:', err);
-    }
-};
-
-// ==========================================
-// YEAR-OVER-YEAR COMPARISON
-// ==========================================
-window.updateYoYComparison = async function (currentTx, currentExp, currentOwnerExp) {
-    const div = document.getElementById('yoyContent');
-    try {
-        const { year: prevYear, revenue: lyRevenue, profit: lyProfit, opex: lyExpenseTotal, jobCount: lyJobs } =
-            await window.RevenueService.getYoYComparison(window.currentPeriod, window.selectedYear, window.selectedMonth, window.selectedQuarter, window.getBranchFilter());
-
-        const curRevenue = currentTx.reduce((s, t) => s + Number(t.total_revenue || 0), 0);
-        const curProfit = currentTx.reduce((s, t) => s + Number(t.total_profit || 0), 0);
-        const curExpense =
-            currentExp.filter(e => !e.excluded).reduce((s, e) => s + Number(e.amount || 0), 0) +
-            currentOwnerExp.reduce((s, e) => s + Number(e.amount || 0), 0);
-        const curJobs = currentTx.length;
-
-        const pctChange = (cur, prev) =>
-            prev > 0 ? (((cur - prev) / prev) * 100).toFixed(1) : cur > 0 ? '+100.0' : '0.0';
-        const arrow = (cur, prev, inverse = false) => {
-            const diff = cur - prev;
-            const isGood = inverse ? diff < 0 : diff > 0;
-            return diff === 0 ? '➡️' : isGood ? '📈' : '📉';
-        };
-        const changeColor = (cur, prev, inverse = false) => {
-            const diff = cur - prev;
-            const isGood = inverse ? diff < 0 : diff > 0;
-            return diff === 0 ? 'var(--text-muted)' : isGood ? 'var(--accent-green)' : 'var(--accent-red)';
-        };
-
-        const items = [
-            { label: '💰 รายได้', cur: curRevenue, prev: lyRevenue },
-            { label: '📈 กำไร', cur: curProfit, prev: lyProfit },
-            { label: '💸 ค่าใช้จ่าย', cur: curExpense, prev: lyExpenseTotal, inverse: true },
-            { label: '🔧 จำนวนงาน', cur: curJobs, prev: lyJobs, isCount: true }
-        ];
-
-        if (lyRevenue === 0 && lyProfit === 0 && lyJobs === 0) {
-            div.innerHTML = `<p class="text-muted" style="text-align:center;">ไม่มีข้อมูลปีก่อนสำหรับเปรียบเทียบ</p>`;
-            return;
         }
+    });
+}
 
-        div.innerHTML = `
-            <div class="kpi-grid">
-                ${items
-                .map(
-                    i => `
-                    <div class="kpi-card" style="text-align:center;">
-                        <div class="kpi-label">${i.label}</div>
-                        <div class="kpi-value" style="font-size:1.1rem;">${i.isCount ? i.cur.toLocaleString() : window.formatCurrency(i.cur)}</div>
-                        <div style="font-size:0.8rem; color:${changeColor(i.cur, i.prev, i.inverse)}; font-weight:600;">
-                            ${arrow(i.cur, i.prev, i.inverse)} ${pctChange(i.cur, i.prev)}%
-                            <span style="font-weight:400; color:var(--text-muted);"> vs ปีก่อน (${i.isCount ? i.prev.toLocaleString() : window.formatCurrency(i.prev)})</span>
-                        </div>
-                    </div>
-                `
-                )
-                .join('')}
-            </div>
-        `;
-    } catch (err) {
-        console.error('YoY comparison error:', err);
-        div.innerHTML = `<p class="text-muted">ไม่สามารถโหลดข้อมูลเปรียบเทียบปีได้</p>`;
+function renderPnl(revenue, cogs, gross, totalExp, net) {
+    const maxVal = Math.max(revenue, cogs, gross, totalExp, Math.abs(net), 1);
+    const rows = [
+        { label: '<span class="material-icons-outlined">payments</span> รายได้', val: revenue, color: '#3b82f6', cls: '' },
+        { label: '<span class="material-icons-outlined">shopping_cart</span> ต้นทุน (COGS)', val: cogs, color: '#f59e0b', cls: '' },
+        { label: '<span class="material-icons-outlined">trending_up</span> กำไรขั้นต้น', val: gross, color: '#10b981', cls: '' },
+        { label: '<span class="material-icons-outlined">receipt</span> ค่าใช้จ่ายรวม', val: totalExp, color: '#ef4444', cls: '' },
+        { label: '<span class="material-icons-outlined">savings</span> กำไรสุทธิ', val: net, color: net >= 0 ? '#10b981' : '#ef4444', cls: net >= 0 ? '' : 'negative' }
+    ];
+    safeHTML('pnlBreakdown', rows.map(r => `
+        <div class="pnl-row">
+            <div class="pnl-label">${r.label}</div>
+            <div class="pnl-bar"><div class="pnl-bar-fill" style="width:${Math.abs(r.val)/maxVal*100}%;background:${r.color}"></div></div>
+            <div class="pnl-val ${r.cls}">${fmt(r.val)}</div>
+        </div>
+    `).join('') + `<div style="margin-top:8px;font-size:0.78rem;color:#64748b;">Gross: ${pct(gross,revenue)}% &nbsp; Net: ${pct(net,revenue)}%</div>`);
+}
+
+function renderBreakEven(revenue, gross, totalExp) {
+    const marginPct = revenue > 0 ? gross / revenue : 0;
+    const bep = marginPct > 0 ? totalExp / marginPct : 0;
+    const bepJobs = revenue > 0 && allJobs.length > 0 ? Math.ceil(bep / (revenue / Math.max(allJobs.length, 1))) : 0;
+    const prog = bep > 0 ? Math.min((revenue / bep) * 100, 200) : 0;
+    const above = revenue >= bep && bep > 0;
+    safeHTML('breakEvenContent', `
+    <div class="bep-card">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;text-align:center">
+            <div><div style="font-size:0.72rem;color:#475569">BEP Revenue</div><div style="font-size:1.1rem;font-weight:800">${fmt(bep)}</div></div>
+            <div><div style="font-size:0.72rem;color:#475569">BEP Jobs</div><div style="font-size:1.1rem;font-weight:800">${bepJobs}</div></div>
+            <div><div style="font-size:0.72rem;color:#475569">Gross Margin</div><div style="font-size:1.1rem;font-weight:800">${pct(gross,revenue)}%</div></div>
+        </div>
+        <div class="bep-bar"><div class="bep-bar-fill" style="width:${Math.min(prog,100)}%;background:${above?'linear-gradient(90deg,#22c55e,#16a34a)':'linear-gradient(90deg,#f59e0b,#d97706)'}"></div></div>
+        <div style="text-align:center;font-size:0.82rem;margin-top:6px">${fmt(revenue)} / ${fmt(bep)} (${prog.toFixed(1)}%)</div>
+        <div style="text-align:center;margin-top:8px;font-size:0.82rem;padding:8px;border-radius:8px;background:${above?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'}">
+            ${above ? `✅ เกิน BEP แล้ว <strong style="color:#16a34a">${fmt(revenue-bep)}</strong>` : `⏳ ต้องการอีก <strong style="color:#d97706">${fmt(bep-revenue)}</strong>`}
+        </div>
+    </div>`);
+}
+
+function renderBranchComparison(jobs, expenses) {
+    const branches = {};
+    jobs.forEach(j => {
+        const b = j.branch_id || 'ไม่ระบุ';
+        if (!branches[b]) branches[b] = { rev: 0, jobs: 0, exp: 0 };
+        branches[b].rev += Number(j.grand_total || 0);
+        branches[b].jobs++;
+    });
+    expenses.forEach(e => {
+        const b = e.branch_id || 'ไม่ระบุ';
+        if (!branches[b]) branches[b] = { rev: 0, jobs: 0, exp: 0 };
+        branches[b].exp += Number(e.amount || 0);
+    });
+    const labels = Object.keys(branches);
+    destroyChart('branch');
+    const el = document.getElementById('branchChart'); if (!el) return;
+    charts.branch = new Chart(el, {
+        type: 'bar',
+        data: { labels, datasets: [
+            { label: 'รายรับ', data: labels.map(b => branches[b].rev), backgroundColor: 'rgba(59,130,246,0.7)' },
+            { label: 'ค่าใช้จ่าย', data: labels.map(b => branches[b].exp), backgroundColor: 'rgba(239,68,68,0.5)' }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => fmt(v) } } } }
+    });
+    const totalRev = Object.values(branches).reduce((s, b) => s + b.rev, 0);
+    safeHTML('branchTable', `<table class="recent-table" style="margin-top:12px"><thead><tr><th>สาขา</th><th style="text-align:right">รายรับ</th><th style="text-align:right">งาน</th><th style="text-align:right">สัดส่วน</th></tr></thead><tbody>${labels.map(b => `<tr><td>${b}</td><td style="text-align:right">${fmt(branches[b].rev)}</td><td style="text-align:right">${branches[b].jobs}</td><td style="text-align:right">${pct(branches[b].rev,totalRev)}%</td></tr>`).join('')}</tbody></table>`);
+}
+
+function renderHistoricalTrend() {
+    const periods = [];
+    const bJobs = filterByBranch(allJobs);
+    const bExp = filterByBranch(allExpenses);
+    
+    // Determine the historical buckets based on current timeframe
+    if (timeframe === 'daily') {
+        // Last 7 days
+        const end = new Date(selectedDate);
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(end); d.setDate(end.getDate() - i);
+            periods.push({
+                key: d.toISOString().slice(0, 10),
+                label: `${d.getDate()} ${THAI_MONTHS[d.getMonth()+1]}`,
+                matchJob: j => jobDate(j) === d.toISOString().slice(0, 10),
+                matchExp: e => (e.date || e.CreatedAt || '').slice(0, 10) === d.toISOString().slice(0, 10)
+            });
+        }
+    } else if (timeframe === 'weekly') {
+        // Last 6 weeks
+        const [yStr, wStr] = selectedWeek.split('-W');
+        let y = parseInt(yStr), w = parseInt(wStr);
+        for (let i = 5; i >= 0; i--) {
+            let cw = w - i, cy = y;
+            while(cw <= 0) { cy--; cw += 52; } // approximate rollover
+            const kw = `${cy}-W${String(cw).padStart(2,'0')}`;
+            periods.push({
+                key: kw, label: `W${cw} ${(cy+543).toString().slice(-2)}`,
+                matchJob: j => { const d = jobDate(j); return d ? getISOWeekStr(new Date(d)) === kw : false; },
+                matchExp: e => { const d = (e.date || e.CreatedAt || '').slice(0, 10); return d ? getISOWeekStr(new Date(d)) === kw : false; }
+            });
+        }
+    } else if (timeframe === 'monthly') {
+        // Last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(selectedYear, selectedMonth - 1 - i, 1);
+            const mKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            periods.push({
+                key: mKey, label: `${THAI_MONTHS[d.getMonth()+1]} ${(d.getFullYear()+543).toString().slice(-2)}`,
+                matchJob: j => jobMonth(j) === mKey,
+                matchExp: e => (e.date || e.CreatedAt || '').slice(0, 7) === mKey
+            });
+        }
+    } else if (timeframe === 'quarterly') {
+        // Last 4 quarters
+        for (let i = 3; i >= 0; i--) {
+            let cq = selectedQuarter - i, cy = selectedYear;
+            while(cq <= 0) { cy--; cq += 4; }
+            periods.push({
+                key: `${cy}-Q${cq}`, label: `Q${cq} ${(cy+543).toString().slice(-2)}`,
+                matchJob: j => { const dStr = jobDate(j); if(!dStr) return false; const d=new Date(dStr); return d.getFullYear()===cy && Math.floor(d.getMonth()/3)+1===cq; },
+                matchExp: e => { const dStr = (e.date || e.CreatedAt || '').slice(0, 10); if(!dStr) return false; const d=new Date(dStr); return d.getFullYear()===cy && Math.floor(d.getMonth()/3)+1===cq; }
+            });
+        }
+    } else if (timeframe === 'yearly') {
+        // Last 3 years
+        for (let i = 2; i >= 0; i--) {
+            const cy = selectedYear - i;
+            periods.push({
+                key: `${cy}`, label: `ปี ${cy+543}`,
+                matchJob: j => jobDate(j).startsWith(`${cy}`),
+                matchExp: e => (e.date || e.CreatedAt || '').startsWith(`${cy}`)
+            });
+        }
     }
-};
 
-// ==========================================
-// TOP CUSTOMERS
-// ==========================================
-window.updateTopCustomers = function (transactions) {
-    const customerMap = {};
-    transactions.forEach(tx => {
-        const name = (tx.customer_name || '').trim() || 'ไม่ระบุ';
-        if (!customerMap[name]) customerMap[name] = { jobCount: 0, revenue: 0 };
-        customerMap[name].jobCount++;
-        customerMap[name].revenue += Number(tx.total_revenue || 0);
+    const revData = [], expData = [], marginData = [];
+    for (const p of periods) {
+        const mJobs = bJobs.filter(j => p.matchJob(j) && (j.status === 'completed' || j.status === 'invoiced'));
+        const mExp = bExp.filter(e => p.matchExp(e) && e.entry_type === 'expense');
+        const rev = mJobs.reduce((a, j) => a + Number(j.grand_total || 0), 0);
+        const exp = mExp.reduce((a, e) => a + Number(e.amount || 0), 0);
+        revData.push(rev); expData.push(exp);
+        marginData.push(rev > 0 ? ((rev - exp) / rev * 100) : 0);
+    }
+
+    destroyChart('monthly');
+    const el = document.getElementById('monthlyTrendChart'); if (!el) return;
+    charts.monthly = new Chart(el, {
+        type: 'bar',
+        data: { labels: periods.map(p => p.label), datasets: [
+            { label: 'รายรับ', data: revData, backgroundColor: 'rgba(59,130,246,0.7)' },
+            { label: 'ค่าใช้จ่าย', data: expData, backgroundColor: 'rgba(239,68,68,0.4)' }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => fmt(v) } } } }
     });
 
-    const sorted = Object.entries(customerMap)
-        .map(([name, data]) => ({ name, ...data, avg: data.jobCount > 0 ? data.revenue / data.jobCount : 0 }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10);
+    destroyChart('margin');
+    const el2 = document.getElementById('monthlyMarginChart'); if (!el2) return;
+    charts.margin = new Chart(el2, {
+        type: 'line',
+        data: { labels: periods.map(p => p.label), datasets: [{ label: 'Margin %', data: marginData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3, pointRadius: 5, pointBackgroundColor: '#10b981' }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v => v.toFixed(0) + '%' } } } }
+    });
+}
 
-    // Table
+function renderInsights(jobs) {
+    const avg = jobs.length > 0 ? jobs.reduce((s, j) => s + Number(j.grand_total || 0), 0) / jobs.length : 0;
+    safeText('kpiAvgRevenue', fmt(avg));
+
+    const hours = new Array(24).fill(0), days = new Array(7).fill(0);
+    jobs.forEach(j => {
+        const ds = j.start_date || j.CreatedAt;
+        if (!ds) return;
+        const d = new Date(ds);
+        if (!isNaN(d)) { hours[d.getHours()]++; days[d.getDay()]++; }
+    });
+
+    destroyChart('peak_hour'); destroyChart('peak_day');
+    const maxH = Math.max(...hours, 1), maxD = Math.max(...days, 1);
+    const el1 = document.getElementById('peakHourChart');
+    if (el1) charts.peak_hour = new Chart(el1, { type: 'bar', data: { labels: Array.from({length:24},(_,i)=>`${i}:00`), datasets: [{ data: hours, backgroundColor: hours.map(h => h===maxH?'#3b82f6':'rgba(59,130,246,0.25)'), borderRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+
+    const dayNames = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+    const el2 = document.getElementById('peakDayChart');
+    if (el2) charts.peak_day = new Chart(el2, { type: 'bar', data: { labels: dayNames, datasets: [{ data: days, backgroundColor: days.map(d => d===maxD?'#f59e0b':'rgba(245,158,11,0.25)'), borderRadius: 3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+
+    // Top customers
+    const custMap = {};
+    jobs.forEach(j => {
+        const c = j.customer_name || 'ไม่ระบุ';
+        if (!custMap[c]) custMap[c] = { count: 0, rev: 0 };
+        custMap[c].count++; custMap[c].rev += Number(j.grand_total || 0);
+    });
+    const top5 = Object.entries(custMap).sort((a, b) => b[1].rev - a[1].rev).slice(0, 5);
+
+    destroyChart('topCust');
+    const el3 = document.getElementById('topCustomerChart');
+    if (el3) charts.topCust = new Chart(el3, {
+        type: 'bar',
+        data: { labels: top5.map(c => c[0]), datasets: [{ data: top5.map(c => c[1].rev), backgroundColor: ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'], borderRadius: 6 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => fmt(v) } } } }
+    });
+
     const tbody = document.querySelector('#topCustomerTable tbody');
-    if (tbody) {
-        tbody.innerHTML =
-            sorted
-                .map(
-                    c => `
-            <tr>
-                <td>${c.name}</td>
-                <td class="text-center">${c.jobCount}</td>
-                <td class="text-right">${window.formatCurrency(c.revenue)}</td>
-                <td class="text-right">${window.formatCurrency(c.avg)}</td>
-            </tr>
-        `
-                )
-                .join('') || '<tr><td colspan="4" class="text-center text-muted">ไม่มีข้อมูล</td></tr>';
-    }
+    if (tbody) tbody.innerHTML = top5.map(([name, d]) => `<tr><td>${name}</td><td style="text-align:right">${d.count}</td><td style="text-align:right">${fmt(d.rev)}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">ไม่มีข้อมูล</td></tr>';
+}
 
-    // Chart
-    if (window.topCustomerChart) window.topCustomerChart.destroy();
-    const chartEl = document.getElementById('topCustomerChart');
-    if (chartEl) {
-        window.topCustomerChart = new Chart(chartEl, {
-            type: 'bar',
-            data: {
-                labels: sorted.map(c => (c.name.length > 15 ? c.name.slice(0, 15) + '...' : c.name)),
-                datasets: [
-                    {
-                        label: 'รายได้ (บาท)',
-                        data: sorted.map(c => c.revenue),
-                        backgroundColor: 'rgba(59,130,246,0.6)',
-                        borderColor: '#3b82f6',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: { x: { ticks: { callback: v => window.formatCurrency(v) } } }
+function renderProducts(items) {
+    const productRevenue = {};
+    let labor = 0, parts = 0;
+    items.forEach(i => {
+        const name = i.product_name || i.item_name || 'ไม่ระบุ';
+        const total = Number(i.total || 0) || (Number(i.price || i.unit_price || 0) * Number(i.qty || 1));
+        productRevenue[name] = (productRevenue[name] || 0) + total;
+        const itemType = i.type || i.item_type || '';
+        if (itemType === 'Service') labor += total; else parts += total;
+    });
+
+    const sorted = Object.entries(productRevenue).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    destroyChart('star');
+    const el = document.getElementById('starProductChart');
+    if (el) charts.star = new Chart(el, {
+        type: 'bar',
+        data: { labels: sorted.map(s => s[0]), datasets: [{ data: sorted.map(s => s[1]), backgroundColor: '#3b82f6', borderRadius: 4 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => fmt(v) } } } }
+    });
+
+    const tbody = document.querySelector('#starTable tbody');
+    if (tbody) tbody.innerHTML = sorted.map(([name, val]) => `<tr><td>${name}</td><td style="text-align:right">${fmt(val)}</td><td style="text-align:right">${items.filter(i => (i.product_name || i.item_name) === name).reduce((s, i) => s + Number(i.qty || 1), 0)}</td></tr>`).join('');
+
+    destroyChart('laborParts');
+    const el2 = document.getElementById('laborPartsChart');
+    if (el2)    charts.laborParts = new Chart(el2, {
+        type: 'doughnut',
+        data: { labels: ['ค่าแรง','อะไหล่'], datasets: [{ data: [labor, parts], backgroundColor: ['#3b82f6','#f59e0b'], borderWidth: 2, borderColor: '#fff' }] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '55%', 
+            plugins: { legend: { position: 'bottom' } },
+            onClick: (e, elements) => {
+                if (elements.length > 0) {
+                    const idx = elements[0].index;
+                    const typeLabel = idx === 0 ? 'ค่าแรง' : 'อะไหล่';
+                    const matched = items.filter(i => {
+                        const t = i.type || i.item_type || '';
+                        return idx === 0 ? (t === 'Service') : (t !== 'Service');
+                    });
+                    
+                    const headers = ['รหัสใบงาน', 'รายการ', 'สาขา', 'จำนวน', 'รวม'];
+                    const rows = matched.map(item => {
+                        const t = Number(item.total || 0) || (Number(item.price || item.unit_price || 0) * Number(item.qty || 1));
+                        return `<tr>
+                            <td>${item.job_id || '-'}</td>
+                            <td>${item.product_name || item.item_name || '-'}</td>
+                            <td>${item.branch_id || '-'}</td>
+                            <td style="text-align:right;">${item.qty || 1}</td>
+                            <td style="text-align:right; font-weight:600; color:#3b82f6;">${fmt(t)}</td>
+                        </tr>`;
+                    }).join('');
+                    
+                    openDetailModal(`สัดส่วนรายได้: ${typeLabel}`, headers, rows);
+                }
             }
-        });
-    }
-};
-
-// ==========================================
-// PRODUCT GROWTH TRACKING
-// ==========================================
-window.updateProductGrowth = async function (currentServiceItems) {
-    const div = document.getElementById('productGrowthContent');
-    try {
-        const growthData = await window.RevenueService.getProductGrowthData(window.currentPeriod, window.selectedYear, window.selectedMonth, window.selectedQuarter, window.getBranchFilter(), currentServiceItems);
-
-        if (growthData.length === 0) {
-            div.innerHTML = `<p class="text-muted text-center">ไม่มีข้อมูลเพียงพอสำหรับเปรียบเทียบ</p>`;
-            return;
         }
+    });
+}
 
-        div.innerHTML = `
-            <div class="table-container">
-                <table>
-                    <thead><tr>
-                        <th>กลุ่มสินค้า</th>
-                        <th>งวดปัจจุบัน</th>
-                        <th>งวดก่อนหน้า</th>
-                        <th>การเปลี่ยนแปลง</th>
-                    </tr></thead>
-                    <tbody>
-                        ${growthData
-                .slice(0, 15)
-                .map(g => {
-                    const icon = g.pct > 5 ? '🟢 ↑' : g.pct < -5 ? '🔴 ↓' : '🟡 →';
-                    const color =
-                        g.pct > 5
-                            ? 'var(--accent-green)'
-                            : g.pct < -5
-                                ? 'var(--accent-red)'
-                                : 'var(--text-muted)';
-                    return `<tr>
-                                <td>${g.name}</td>
-                                <td class="text-right">${window.formatCurrency(g.cur)}</td>
-                                <td class="text-right">${window.formatCurrency(g.prev)}</td>
-                                <td class="text-right" style="color:${color}; font-weight:600;">${icon} ${g.pct > 0 ? '+' : ''}${g.pct.toFixed(1)}%</td>
-                            </tr>`;
-                })
-                .join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-    } catch (err) {
-        console.error('Product growth error:', err);
-        div.innerHTML = `<p class="text-muted">ไม่สามารถโหลดข้อมูลการเติบโตได้</p>`;
-    }
-};
+function renderRecentJobs(jobs) {
+    const tbody = document.querySelector('#recentJobsTable tbody');
+    if (!tbody) return;
+    const statusMap = {
+        open: '<span class="status-badge status-open">เปิด</span>',
+        in_progress: '<span class="status-badge" style="background:#dbeafe;color:#1e40af">กำลังซ่อม</span>',
+        completed: '<span class="status-badge status-completed">เสร็จ</span>',
+        invoiced: '<span class="status-badge status-invoiced">ออกบิล</span>',
+        cancelled: '<span class="status-badge" style="background:#fee2e2;color:#991b1b">ยกเลิก</span>'
+    };
+    const sorted = [...jobs].sort((a, b) => (b.start_date || '').localeCompare(a.start_date || '')).slice(0, 10);
+    tbody.innerHTML = sorted.map(j => {
+        const d = j.start_date ? new Date(j.start_date).toLocaleDateString('th-TH', {day:'numeric',month:'short'}) : '-';
+        return `<tr>
+            <td style="font-weight:600">${j.job_no || '-'}</td>
+            <td>${j.customer_name || '-'}</td>
+            <td>${j.plate || j.plate_number || '-'}</td>
+            <td style="text-align:right;font-weight:700">${fmt(j.grand_total)}</td>
+            <td>${statusMap[j.status] || j.status || '-'}</td>
+            <td style="font-size:0.75rem;color:#64748b">${d}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:#94a3b8">ไม่มีใบงาน</td></tr>';
+}
 
-// ==========================================
-// BRANCH COMPARISON
-// ==========================================
-window.branchRevenueChart = null;
-window.branchJobCountChart = null;
+// ── Modal UI Logic ──
+function openDetailModal(title, headers, rowsHTML) {
+    const modal = document.getElementById('chartDetailModal');
+    if (!modal) return;
+    
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalThead').innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    document.getElementById('modalTbody').innerHTML = rowsHTML || `<tr><td colspan="${headers.length}" style="text-align:center;">ไม่มีข้อมูล</td></tr>`;
+    
+    modal.classList.add('active');
+}
 
-window.updateBranchComparison = async function () {
-    try {
-        const { startDate, endDate } = window.getDateRange();
+document.getElementById('modalCloseBtn')?.addEventListener('click', () => {
+    document.getElementById('chartDetailModal').classList.remove('active');
+});
+document.getElementById('chartDetailModal')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('chartDetailModal')) e.target.classList.remove('active');
+});
 
-        // Get all branches from users collection
-        const allUsers = await window.pb.collection('users').getFullList({ fields: 'branch' });
-        const branches = [...new Set(allUsers.map(u => (u.branch || '').trim()).filter(Boolean))].sort();
-
-        if (branches.length < 2) {
-            const card = document.getElementById('branchCompareCard');
-            if (card) card.style.display = 'none';
-            return;
-        }
-
-        // Fetch ALL transactions for the period (no branch filter)
-        const allTx = await window.TransactionService.getFullTransactions({
-            filter: `open_date >= '${startDate}' && open_date <= '${endDate}'`,
-            sort: 'open_date'
-        });
-
-        // Group by branch
-        const branchData = {};
-        branches.forEach(b => { branchData[b] = { revenue: 0, jobCount: 0 }; });
-        branchData['ไม่ระบุ'] = { revenue: 0, jobCount: 0 };
-
-        allTx.forEach(tx => {
-            const branch = (tx.branch || '').trim() || 'ไม่ระบุ';
-            if (!branchData[branch]) branchData[branch] = { revenue: 0, jobCount: 0 };
-            branchData[branch].revenue += Number(tx.total_revenue || 0);
-            branchData[branch].jobCount++;
-        });
-
-        // Remove empty branches
-        Object.keys(branchData).forEach(k => {
-            if (branchData[k].revenue === 0 && branchData[k].jobCount === 0) delete branchData[k];
-        });
-
-        const branchNames = Object.keys(branchData).sort((a, b) => branchData[b].revenue - branchData[a].revenue);
-        const totalRevenue = branchNames.reduce((s, b) => s + branchData[b].revenue, 0);
-
-        const colors = ['#4f8cff', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4', '#ec4899', '#84cc16'];
-
-        // Revenue Chart
-        if (window.branchRevenueChart) window.branchRevenueChart.destroy();
-        const revEl = document.getElementById('branchRevenueChart');
-        if (revEl) {
-            window.branchRevenueChart = new Chart(revEl, {
-                type: 'bar',
-                data: {
-                    labels: branchNames,
-                    datasets: [{
-                        label: 'รายได้ (บาท)',
-                        data: branchNames.map(b => branchData[b].revenue),
-                        backgroundColor: branchNames.map((_, i) => colors[i % colors.length] + '99'),
-                        borderColor: branchNames.map((_, i) => colors[i % colors.length]),
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: { x: { beginAtZero: true, ticks: { callback: v => window.formatCurrency(v) } } }
-                }
-            });
-        }
-
-        // Job Count Chart
-        if (window.branchJobCountChart) window.branchJobCountChart.destroy();
-        const jobEl = document.getElementById('branchJobCountChart');
-        if (jobEl) {
-            window.branchJobCountChart = new Chart(jobEl, {
-                type: 'bar',
-                data: {
-                    labels: branchNames,
-                    datasets: [{
-                        label: 'จำนวนงาน',
-                        data: branchNames.map(b => branchData[b].jobCount),
-                        backgroundColor: branchNames.map((_, i) => colors[i % colors.length] + '99'),
-                        borderColor: branchNames.map((_, i) => colors[i % colors.length]),
-                        borderWidth: 1,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                }
-            });
-        }
-
-        // Table
-        const tbody = document.querySelector('#branchCompareTable tbody');
-        if (tbody) {
-            tbody.innerHTML = branchNames.map(b => {
-                const d = branchData[b];
-                const avg = d.jobCount > 0 ? d.revenue / d.jobCount : 0;
-                const pct = totalRevenue > 0 ? (d.revenue / totalRevenue * 100).toFixed(1) : '0.0';
-                return `<tr>
-                    <td><strong>${b}</strong></td>
-                    <td class="text-right">${window.formatCurrency(d.revenue)}</td>
-                    <td class="text-right">${d.jobCount}</td>
-                    <td class="text-right">${window.formatCurrency(avg)}</td>
-                    <td class="text-right">${pct}%</td>
-                </tr>`;
-            }).join('');
-        }
-
-        const card = document.getElementById('branchCompareCard');
-        if (card) card.style.display = '';
-
-    } catch (err) {
-        console.warn('Branch comparison error:', err);
-        const card = document.getElementById('branchCompareCard');
-        if (card) card.style.display = 'none';
-    }
-};
+// ── Boot ──
+initSelectors();
+fetchAndRender();

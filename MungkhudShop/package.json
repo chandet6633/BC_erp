@@ -12,7 +12,6 @@
         "vite": "^6.0.0"
     },
     "dependencies": {
-        "chart.js": "^4.4.1",
-        "pocketbase": "^0.26.8"
+        "chart.js": "^4.4.1"
     }
 }

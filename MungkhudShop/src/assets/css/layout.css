@@ -237,6 +237,22 @@
     background: var(--color-bg);
 }
 
+/* Page transition animation */
+.page-content.page-enter {
+    animation: pageEnter 0.25s ease-out;
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .embedded-mode .sidebar { display: none !important; }
 .embedded-mode .topnav { display: none !important; }
 .embedded-mode .main-wrapper { width: 100%; }

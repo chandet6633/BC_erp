@@ -1,0 +1,1 @@
+import{c as o}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const c=o({title:"ใบรับสินค้า (RR)",icon:"local_shipping",prefix:"RR",collection:"goods_receipts"});export{c as initGoodsReceiptPage};

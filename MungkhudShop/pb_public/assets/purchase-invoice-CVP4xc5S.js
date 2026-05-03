@@ -1,0 +1,1 @@
+import{c as e}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const t=e({title:"ใบกำกับภาษีซื้อ (IV)",icon:"description",prefix:"PIV",collection:"purchase_invoices"});export{t as initPurchaseInvoicePage};

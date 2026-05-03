@@ -1,5 +1,6 @@
 import { AuthService } from '../../services/authService.js';
 import { pb } from '../../services/pocketbase.js';
+import { loginWithPin, loginWithUsername, changePassword, validateToken, setAuthToken, clearAuthToken } from '@shared/nocodb-adapter.js';
 import { TOOLS } from '../../registry.js';
 import { ConfigService } from '../../services/configService.js';
 import { AuditService } from '../../services/auditService.js';
@@ -7,11 +8,170 @@ import { AuditService } from '../../services/auditService.js';
 let currentRole = '';
 let pinBuffer = '';
 
-// Initialize Config
+const TOKEN_KEY = 'bcauto_jwt';
+
+// Initialize Config + Auto-Login
 (async () => {
     await ConfigService.init();
+
+    // Auto-login: check for stored JWT before showing login modal
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (storedToken) {
+        try {
+            const user = await validateToken(storedToken);
+            if (user && !user.must_change_password) {
+                setAuthToken(storedToken);
+                sessionStorage.setItem('bcauto_role', user.role);
+                sessionStorage.setItem('bcauto_user_name', user.name || user.username);
+                sessionStorage.setItem('bcauto_user_id', user.id);
+                localStorage.setItem('bcauto_branch', user.branch === 'main' ? 'BC Auto Service' : (user.branch || 'BC Auto Service'));
+                console.log('[Auth] Auto-login:', user.name);
+            }
+        } catch { /* token invalid, show login */ }
+    }
+
     refreshUI();
+
+    // Focus username field if login modal visible
+    setTimeout(() => {
+        const modal = document.getElementById('auth-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            document.getElementById('loginUsername')?.focus();
+        }
+    }, 300);
 })();
+
+// ==========================================
+// USERNAME/PASSWORD LOGIN (Primary)
+// ==========================================
+window.submitUsernameLogin = async () => {
+    const username = document.getElementById('loginUsername')?.value?.trim()?.toLowerCase();
+    const password = document.getElementById('loginPassword')?.value;
+    const remember = document.getElementById('rememberMe')?.checked;
+    const errorEl = document.getElementById('login-error');
+    const btn = document.getElementById('loginBtn');
+
+    if (!username || !password) {
+        errorEl.textContent = 'กรุณากรอก username และรหัสผ่าน';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังเข้าสู่ระบบ...';
+    errorEl.style.display = 'none';
+
+    try {
+        const { user, token } = await loginWithUsername(username, password);
+
+        // Store JWT for persistent login
+        if (remember) {
+            localStorage.setItem(TOKEN_KEY, token);
+        } else {
+            sessionStorage.setItem(TOKEN_KEY, token);
+        }
+
+        // Check force password change
+        if (user.must_change_password) {
+            document.getElementById('loginFormSection').style.display = 'none';
+            document.getElementById('pinRoleSection').style.display = 'none';
+            document.getElementById('changePasswordSection').style.display = '';
+            document.getElementById('newPassword')?.focus();
+            btn.disabled = false;
+            btn.textContent = '🔑 เข้าสู่ระบบ';
+            return;
+        }
+
+        // Store session
+        sessionStorage.setItem('bcauto_role', user.role);
+        sessionStorage.setItem('bcauto_user_name', user.name || username);
+        sessionStorage.setItem('bcauto_user_id', user.id);
+        localStorage.setItem('bcauto_branch', user.branch === 'main' ? 'BC Auto Service' : (user.branch || 'BC Auto Service'));
+
+        AuditService.log('login_success', `Password login: ${user.name} (${user.role})`, 'auth');
+        hideModal();
+    } catch (e) {
+        errorEl.textContent = e.message || 'เข้าสู่ระบบไม่สำเร็จ';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '🔑 เข้าสู่ระบบ';
+    }
+};
+
+// Enter key support
+document.addEventListener('keydown', (e) => {
+    const loginForm = document.getElementById('loginFormSection');
+    if (loginForm && loginForm.style.display !== 'none') {
+        if (e.key === 'Enter' && document.activeElement?.id === 'loginUsername') {
+            document.getElementById('loginPassword')?.focus();
+        } else if (e.key === 'Enter' && document.activeElement?.id === 'loginPassword') {
+            window.submitUsernameLogin();
+        }
+    }
+});
+
+// Password visibility toggle
+document.getElementById('togglePassword')?.addEventListener('click', () => {
+    const pwd = document.getElementById('loginPassword');
+    const btn = document.getElementById('togglePassword');
+    if (pwd.type === 'password') {
+        pwd.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        pwd.type = 'password';
+        btn.textContent = '👁';
+    }
+});
+
+// ==========================================
+// FORCE CHANGE PASSWORD
+// ==========================================
+window.submitNewPassword = async () => {
+    const newPwd = document.getElementById('newPassword')?.value;
+    const confirmPwd = document.getElementById('confirmPassword')?.value;
+    const errorEl = document.getElementById('change-password-error');
+    const btn = document.getElementById('changePasswordBtn');
+
+    if (!newPwd || newPwd.length < 4) {
+        errorEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร';
+        errorEl.style.display = 'block';
+        return;
+    }
+    if (newPwd !== confirmPwd) {
+        errorEl.textContent = 'รหัสผ่านไม่ตรงกัน';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
+    errorEl.style.display = 'none';
+
+    try {
+        await changePassword('', newPwd);
+        // Now complete the login
+        hideModal();
+        location.reload();
+    } catch (e) {
+        errorEl.textContent = e.message || 'เกิดข้อผิดพลาด';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'ตั้งรหัสผ่าน';
+    }
+};
+
+// ==========================================
+// VIEW SWITCHING (Login form ↔ PIN section)
+// ==========================================
+window.showPinSection = () => {
+    document.getElementById('loginFormSection').style.display = 'none';
+    document.getElementById('pinRoleSection').style.display = '';
+};
+
+window.showLoginForm = () => {
+    document.getElementById('loginFormSection').style.display = '';
+    document.getElementById('pinRoleSection').style.display = 'none';
+};
 
 // Keyboard support for PIN popup
 document.addEventListener('keydown', (e) => {
@@ -43,12 +203,7 @@ const ROLE_CONFIG = {
         iconColor: '#16a34a',
         icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
     },
-    admin: {
-        label: 'ใส่ PIN Admin',
-        iconBg: '#fffbeb',
-        iconColor: '#d97706',
-        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
-    },
+
     mechanic: {
         label: 'ใส่ PIN ช่าง',
         iconBg: '#fff7ed',
@@ -99,35 +254,23 @@ window.submitAuth = async () => {
     const errorEl = document.getElementById('auth-error');
     errorEl.classList.add('hidden');
 
-    // Build role filter based on selected role
-    let roleFilter = '';
+    // Error messages per role
     let errorMsg = '';
-    if (currentRole === 'manager') {
-        roleFilter = `(role='owner' || role='manager')`;
-        errorMsg = 'PIN ผู้จัดการไม่ถูกต้อง';
-    } else if (currentRole === 'admin') {
-        roleFilter = `(role='admin')`;
-        errorMsg = 'PIN Admin ไม่ถูกต้อง';
-    } else if (currentRole === 'mechanic') {
-        roleFilter = `(role='mechanic')`;
-        errorMsg = 'PIN ช่างไม่ถูกต้อง';
-    } else {
-        roleFilter = `(role='sa')`;
-        errorMsg = 'รหัส PIN ไม่ถูกต้อง';
-    }
+    if (currentRole === 'manager') errorMsg = 'PIN ผู้จัดการไม่ถูกต้อง';
+    else if (currentRole === 'sa') errorMsg = 'PIN SA ไม่ถูกต้อง';
+    else if (currentRole === 'mechanic') errorMsg = 'PIN ช่างไม่ถูกต้อง';
+    else errorMsg = 'รหัส PIN ไม่ถูกต้อง';
 
     try {
-        const res = await pb.collection('users').getFirstListItem(`pin='${pinBuffer}' && ${roleFilter}`);
-        if (res) {
-            sessionStorage.setItem('bcauto_role', res.role || currentRole);
-            sessionStorage.setItem('bcauto_user_name', res.name);
-            sessionStorage.setItem('bcauto_user_id', res.id);
-            localStorage.setItem('bcauto_branch', res.branch === 'main' ? 'BC Auto Service' : (res.branch || 'BC Auto Service'));
-            AuditService.log('login_success', `PIN login: ${res.name} (${res.role}, ${res.branch || 'BC Auto service (วิริยะเซอร์วิส)'})`, 'auth');
-            hideModal();
-        }
+        // Call Express API server — PIN verified server-side, JWT returned
+        const { user } = await loginWithPin(pinBuffer, currentRole);
+
+        sessionStorage.setItem('bcauto_role', user.role || currentRole);
+        sessionStorage.setItem('bcauto_user_name', user.name);
+        sessionStorage.setItem('bcauto_user_id', user.id);
+        localStorage.setItem('bcauto_branch', user.branch === 'main' ? 'BC Auto Service' : (user.branch || 'BC Auto Service'));
+        hideModal();
     } catch (e) {
-        AuditService.log('login_failed', `Invalid ${currentRole} PIN attempt`, 'auth');
         pinBuffer = '';
         updateDots();
         errorEl.textContent = errorMsg;
@@ -146,13 +289,16 @@ window.handleToolClick = (tool) => {
 
     let url = tool.path || tool.url;
 
-    // Resolve MungkhudShop URL from config or fallback to port 8091
+    // Resolve MungkhudShop URL from config or auto-detect port
     if (url === '__mungkhudshop__') {
         const configured = ConfigService.getSetting('mungkhudshop_url');
         if (configured) {
             url = configured.replace(/\/$/, '') + '/#/dashboard';
         } else {
-            url = `${window.location.protocol}//${window.location.hostname}:8091/#/dashboard`;
+            // Auto-detect: Management 9092 → MungkhudShop 9091, Management 8092 → 8091
+            const currentPort = window.location.port || '8092';
+            const shopPort = currentPort === '9092' ? '9091' : '8091';
+            url = `${window.location.protocol}//${window.location.hostname}:${shopPort}/#/dashboard`;
         }
     }
 
@@ -182,6 +328,7 @@ window.handleToolClick = (tool) => {
 window.switchBranch = (branch) => {
     localStorage.setItem('bcauto_branch', branch);
     updateBranchUI();
+    refreshUI();
 };
 
 function updateBranchUI() {
@@ -211,6 +358,9 @@ window.logoutUser = () => {
     sessionStorage.removeItem('bcauto_role');
     sessionStorage.removeItem('bcauto_user_name');
     sessionStorage.removeItem('bcauto_user_id');
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    clearAuthToken();
     pb.authStore.clear();
     refreshUI();
     if (typeof window.refreshAppShell === 'function') {
@@ -218,36 +368,212 @@ window.logoutUser = () => {
     }
 };
 
+// ==========================================
+// SESSION TIMEOUT (30 min idle → auto-logout)
+// ==========================================
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+let _lastActivity = Date.now();
+
+function resetActivity() { _lastActivity = Date.now(); }
+
+['mousemove', 'keydown', 'touchstart', 'click', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, resetActivity, { passive: true });
+});
+
+setInterval(() => {
+    const user = AuthService.getUser();
+    if (!user) return;
+    if (Date.now() - _lastActivity > SESSION_TIMEOUT_MS) {
+        console.log('[Auth] Session timeout — logging out');
+        window.logoutUser();
+    }
+}, 60_000); // Check every minute
+
+// Start Clock
+setInterval(() => {
+    const clockEl = document.getElementById('current-date-time');
+    if (clockEl && clockEl.querySelector('span')) {
+        const now = new Date();
+        const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        clockEl.querySelector('span').textContent = now.toLocaleDateString('th-TH', opts);
+    }
+}, 1000);
+
+async function fetchDashboardKPIs(branch) {
+    try {
+        const hasBranch = branch && branch !== 'all' && branch !== 'BC Auto Service' && branch !== 'main';
+        const todayStart = new Date();
+        todayStart.setHours(0,0,0,0);
+        const todayStr = todayStart.toISOString().slice(0, 10) + ' 00:00:00';
+
+        const branchLabels = {
+            'samchuk': 'สามชุก',
+            'suphanburi': 'สุพรรณบุรี',
+            'BC Auto Service': 'วิริยะเซอร์วิส',
+            'main': 'วิริยะเซอร์วิส'
+        };
+
+        // Fetch ALL active jobs (for branch breakdown)
+        const activeRes = await pb.collection('jobs').getList(1, 200, {
+            filter: `status != 'completed'`
+        });
+
+        // Fetch ALL today's jobs (for branch breakdown)
+        const todayAllRes = await pb.collection('jobs').getList(1, 200, {
+            filter: `created >= '${todayStr}'`
+        });
+
+        // --- Active jobs breakdown ---
+        let activeTotal = 0;
+        const activeBranch = {};
+        if (activeRes && activeRes.items) {
+            activeRes.items.forEach(j => {
+                const bid = j.branch_id || 'ไม่ระบุ';
+                if (!activeBranch[bid]) activeBranch[bid] = 0;
+                activeBranch[bid]++;
+                if (!hasBranch || j.branch_id === branch) activeTotal++;
+            });
+        }
+
+        // --- Today's cars & revenue breakdown ---
+        let todayCount = 0;
+        let todayRevenue = 0;
+        const todayCars = {};
+        const todayRev = {};
+        if (todayAllRes && todayAllRes.items) {
+            todayAllRes.items.forEach(j => {
+                const rev = Number(j.grand_total || 0);
+                const bid = j.branch_id || 'ไม่ระบุ';
+
+                if (!todayCars[bid]) todayCars[bid] = 0;
+                todayCars[bid]++;
+
+                if (!todayRev[bid]) todayRev[bid] = 0;
+                todayRev[bid] += rev;
+
+                if (!hasBranch || j.branch_id === branch) {
+                    todayCount++;
+                    todayRevenue += rev;
+                }
+            });
+        }
+
+        // Helper: build branch breakdown HTML
+        function buildBreakdown(dataMap, options = {}) {
+            const { isCurrency = false, color = 'rgba(255,255,255,0.85)' } = options;
+            const keys = Object.keys(dataMap);
+            if (keys.length === 0) return '';
+            let html = '<div class="kpi-breakdown">';
+            keys.forEach(bid => {
+                const label = branchLabels[bid] || bid;
+                const val = dataMap[bid];
+                const display = isCurrency ? `฿${val.toLocaleString()}` : val;
+                html += `<div class="kpi-branch-row">
+                    <span class="kpi-branch-name">${label}</span>
+                    <span class="kpi-branch-value" style="color:${color}">${display}</span>
+                </div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
+        // Revenue widget: only for financial roles
+        const userRole = (AuthService.getUser() || {}).role;
+        const canSeeRevenue = ['owner', 'manager', 'admin'].includes(userRole);
+
+        const kpiHtml = `
+            <div class="kpi-widget">
+                <span class="kpi-widget-label">ใบงานที่กำลังซ่อม</span>
+                <span class="kpi-widget-value" style="color: #60a5fa;">${activeTotal}</span>
+                ${buildBreakdown(activeBranch, { color: 'rgba(96,165,250,0.9)' })}
+            </div>
+            <div class="kpi-widget">
+                <span class="kpi-widget-label">รถเข้าวันนี้</span>
+                <span class="kpi-widget-value" style="color: #34d399;">${todayCount}</span>
+                ${buildBreakdown(todayCars, { color: 'rgba(52,211,153,0.9)' })}
+            </div>
+            ${canSeeRevenue ? `
+            <div class="kpi-widget kpi-revenue-widget">
+                <span class="kpi-widget-label">รายรับวันนี้ (โดยประมาณ)</span>
+                <span class="kpi-widget-value" style="color: #fcd34d;">฿${todayRevenue.toLocaleString()}</span>
+                ${buildBreakdown(todayRev, { isCurrency: true, color: 'rgba(252,211,77,0.9)' })}
+            </div>
+            ` : ''}
+        `;
+        document.getElementById('hero-kpis').innerHTML = kpiHtml;
+    } catch (err) {
+        console.error('Failed to fetch KPIs', err);
+        document.getElementById('hero-kpis').innerHTML = `<p style="color:white; opacity:0.7">ไม่สามารถโหลดข้อมูลได้</p>`;
+    }
+}
+
 function refreshUI() {
     const user = AuthService.getUser();
-    const grid = document.getElementById('tool-grid');
+    const cmdCenter = document.getElementById('command-center');
+    const categoriesContainer = document.getElementById('tool-categories');
     const modal = document.getElementById('auth-modal');
 
     if (!user) {
         if (modal) modal.classList.remove('hidden');
-        if (grid) grid.innerHTML = '';
+        if (cmdCenter) cmdCenter.style.display = 'none';
     } else {
         if (modal) modal.classList.add('hidden');
+        if (cmdCenter) cmdCenter.style.display = 'block';
+
+        const userName = sessionStorage.getItem('bcauto_user_name') || 'ผู้ใช้งาน';
+        const greetingEl = document.getElementById('greeting-text');
+        if (greetingEl) greetingEl.textContent = `สวัสดีคุณ ${userName}`;
+
+        const branch = localStorage.getItem('bcauto_branch') || 'all';
+        fetchDashboardKPIs(branch);
 
         const tools = TOOLS.filter(tool => {
             if (tool.hidden) return false;
-            const branch = localStorage.getItem('bcauto_branch') || 'BC Auto Service';
             return ConfigService.hasAccess(user.role, tool.id, branch);
         });
 
-        if (grid) {
-            grid.innerHTML = tools.map((tool, i) => `
-                <a href="javascript:void(0)"
-                   onclick="window.handleToolClick(${JSON.stringify(tool).replace(/"/g, '&quot;')})"
-                   class="menu-card animate-slide-up"
-                   style="animation-delay: ${0.08 * (i + 1)}s"
-                   role="button" tabindex="0"
-                   aria-label="${tool.title}">
-                    <div class="icon">${tool.icon}</div>
-                    <div class="title">${tool.title}</div>
-                    <div class="desc">${tool.description || tool.group || 'Utility'}</div>
-                </a>
-            `).join('');
+        if (categoriesContainer) {
+            // Group tools
+            const groups = {
+                'financial': { title: '<span class="material-icons-outlined" style="font-size:20px;vertical-align:middle;">analytics</span> การเงินและวิเคราะห์', tools: [] },
+                'operations': { title: '<span class="material-icons-outlined" style="font-size:20px;vertical-align:middle;">work</span> ปฏิบัติการและบริการ', tools: [] },
+                'hr': { title: '<span class="material-icons-outlined" style="font-size:20px;vertical-align:middle;">groups</span> บุคคลและพนักงาน', tools: [] },
+                'admin': { title: '<span class="material-icons-outlined" style="font-size:20px;vertical-align:middle;">admin_panel_settings</span> ระบบ', tools: [] }
+            };
+
+            tools.forEach(t => {
+                const g = t.group || 'operations';
+                if (groups[g]) groups[g].tools.push(t);
+            });
+
+            let html = '';
+            let delayIndex = 0;
+
+            Object.values(groups).forEach(group => {
+                if (group.tools.length === 0) return;
+                html += `<div class="category-group">
+                            <h2 class="category-header">${group.title}</h2>
+                            <div class="menu-grid" style="margin-top: 16px;">`;
+                group.tools.forEach(tool => {
+                    delayIndex++;
+                    html += `
+                        <a href="javascript:void(0)"
+                           onclick="window.handleToolClick(${JSON.stringify(tool).replace(/"/g, '&quot;')})"
+                           class="menu-card animate-slide-up"
+                           style="animation-delay: ${0.08 * delayIndex}s"
+                           role="button" tabindex="0"
+                           aria-label="${tool.title}">
+                            <div class="icon">${tool.icon}</div>
+                            <div class="title">${tool.title}</div>
+                            <div class="desc">${tool.description || tool.group || 'Utility'}</div>
+                        </a>
+                    `;
+                });
+                html += `   </div>
+                          </div>`;
+            });
+
+            categoriesContainer.innerHTML = html;
         }
 
         if (typeof window.refreshAppShell === 'function') {
@@ -258,6 +584,10 @@ function refreshUI() {
 
 // Expose refreshUI globally just in case other scripts need it
 window.refreshUI = refreshUI;
+
+// Force light theme (dark mode removed)
+document.documentElement.setAttribute('data-theme', 'light');
+localStorage.removeItem('bcauto_theme');
 
 // Execute immediately on load
 refreshUI();

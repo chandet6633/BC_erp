@@ -1,0 +1,1 @@
+import{c as t}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const r=t({title:"ใบเสนอราคา (QT)",icon:"request_quote",prefix:"QT",collection:"quotations"});export{r as initQuotationPage};

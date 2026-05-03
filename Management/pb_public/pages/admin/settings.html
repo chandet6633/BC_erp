@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Settings - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        .settings-card { background: white; border-radius: var(--radius-lg); padding: var(--space-5); border: 1px solid var(--surface-200); margin-bottom: var(--space-4); }
+        .settings-card h3 { font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-4); color: var(--surface-800); display: flex; align-items: center; gap: 8px; }
+        .setting-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) 0; border-bottom: 1px solid var(--surface-100); }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-label { font-size: var(--text-sm); font-weight: 500; color: var(--surface-700); }
+        .setting-desc { font-size: var(--text-xs); color: var(--surface-400); margin-top: 2px; }
+        .setting-input { padding: 6px 12px; border: 1px solid var(--surface-200); border-radius: var(--radius-md); font-size: var(--text-sm); width: 140px; text-align: center; }
+        .setting-input:focus { border-color: var(--primary-500); outline: none; }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface-300); border-radius: 24px; transition: 0.3s; }
+        .toggle-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--primary-500); }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+    </style>
+  <script type="module" crossorigin src="../../assets/admin_settings-BQnkzb9_.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/app-shell-DruINWZs.js">
+  <link rel="modulepreload" crossorigin href="../../assets/authService-B7yCEaIZ.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-shell-C55UztRe.css">
+  <link rel="stylesheet" crossorigin href="../../assets/design-system-BnpIurk9.css">
+  <link rel="stylesheet" crossorigin href="../../assets/page-header-B6HlsY86.css">
+  <link rel="stylesheet" crossorigin href="../../assets/style-DPwNr2Bh.css">
+</head>
+<body class="page-bg">
+    <div class="container" style="max-width: 700px; padding: 20px;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><span class="material-icons-outlined" style="font-size:1.6rem;vertical-align:bottom">settings</span> ตั้งค่าระบบ</h1>
+                <p class="page-subtitle">System Configuration</p>
+            </div>
+            <div class="page-actions">
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3><span class="material-icons-outlined" style="font-size:1.2rem">business</span> ข้อมูลบริษัท</h3>
+            <div class="setting-row">
+                <div><div class="setting-label">ชื่อบริษัท</div><div class="setting-desc">แสดงในหัวรายงาน</div></div>
+                <input type="text" class="setting-input" id="s_company_name" style="width:220px" value="BC Auto Xperience" />
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3><span class="material-icons-outlined" style="font-size:1.2rem">schedule</span> เวลาทำงาน</h3>
+            <div class="setting-row">
+                <div><div class="setting-label">เวลาเข้างาน</div><div class="setting-desc">ใช้คำนวณการมาสาย</div></div>
+                <input type="time" class="setting-input" id="s_work_start" value="08:30" />
+            </div>
+            <div class="setting-row">
+                <div><div class="setting-label">เวลาเลิกงาน</div></div>
+                <input type="time" class="setting-input" id="s_work_end" value="17:30" />
+            </div>
+            <div class="setting-row">
+                <div><div class="setting-label">เกณฑ์มาสาย</div><div class="setting-desc">หลังเวลานี้ถือว่าสาย</div></div>
+                <input type="time" class="setting-input" id="s_late_after" value="09:00" />
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3><span class="material-icons-outlined" style="font-size:1.2rem">location_on</span> GPS & การลงเวลา</h3>
+            <div class="setting-row">
+                <div><div class="setting-label">บังคับใช้ GPS</div><div class="setting-desc">ต้องเปิด GPS ก่อนลงเวลา</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="s_gps_required" /><span class="toggle-slider"></span></label>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="saveBtn" style="width:100%;padding:var(--space-3);font-size:1rem;font-weight:700">
+            <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">save</span> บันทึกการตั้งค่า
+        </button>
+    </div>
+
+    </script>
+</body>
+</html>

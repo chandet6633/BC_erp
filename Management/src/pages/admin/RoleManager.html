@@ -1,75 +1,61 @@
 <!doctype html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Role Manager | Admin Suite</title>
+    <title>Role Manager - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/page-header.css" />
+    <link href="../../assets/css/style.css?v=3" rel="stylesheet" />
     <style>
-        .role-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--space-6);
-            margin-top: var(--space-6);
-        }
-
-        .tool-check-list {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2);
-            margin-top: var(--space-4);
-            max-height: 400px;
-            overflow-y: auto;
-            padding: var(--space-4);
-            background: var(--surface-50);
-            border-radius: var(--radius-lg);
-        }
-
-        .tool-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-2);
-            border-radius: var(--radius-md);
-            transition: background 0.2s;
-        }
-
-        .tool-item:hover {
-            background: var(--surface-100);
-        }
-
-        .tool-item input {
-            width: 18px;
-            height: 18px;
-        }
+        .role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); margin-top: var(--space-4); }
+        .role-card { background: white; border-radius: var(--radius-lg); padding: var(--space-5); border: 1px solid var(--surface-200); }
+        .role-card h3 { font-size: var(--text-lg); font-weight: 700; text-transform: capitalize; margin-bottom: 4px; color: var(--surface-900); display: flex; align-items: center; gap: 8px; }
+        .role-card .subtitle { font-size: var(--text-xs); color: var(--surface-500); margin-bottom: var(--space-4); }
+        .tool-list { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
+        .tool-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--surface-100); transition: all 0.2s ease; cursor: pointer; }
+        .tool-item:hover { background: var(--surface-50); border-color: var(--surface-200); }
+        .tool-info { flex: 1; }
+        .tool-title { font-size: var(--text-sm); font-weight: 600; color: var(--surface-800); margin-bottom: 2px; }
+        .tool-desc { font-size: 0.65rem; color: var(--surface-400); line-height: 1.3; }
+        
+        /* Modern Checkbox */
+        .checkbox-wrapper { display: flex; align-items: center; justify-content: center; padding-top: 2px; }
+        .checkbox-wrapper input { width: 18px; height: 18px; accent-color: var(--primary-600); cursor: pointer; }
+        
+        .loading-state { text-align: center; padding: 60px 20px; color: var(--surface-500); }
     </style>
-    \n
-    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
 </head>
-
-<body>
-    <div class="container py-8">
-        <header class="flex justify-between items-center mb-8">
+<body class="page-bg">
+    <div class="container" style="max-width: 1000px; padding: 20px;">
+        <div class="page-header">
             <div>
-                <h1 class="text-3xl font-bold">🔐 Role & Permission Manager</h1>
-                <p class="text-sub">Manage which roles can access specific tools</p>
+                <h1 class="page-title"><span class="material-icons-outlined" style="font-size:1.6rem;vertical-align:bottom">security</span> จัดการสิทธิ์การเข้าถึง</h1>
+                <p class="page-subtitle">กำหนดเครื่องมือที่อนุญาตสำหรับแต่ละ Role</p>
             </div>
-            <a href="index.html" class="btn btn-ghost">← Back to Suite</a>
-        </header>
-
-        <div id="loading" class="text-center py-12">
-            <p class="text-sub">Loading roles and tools...</p>
+            <div class="page-actions">
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
         </div>
 
-        <div id="manager-content" class="hidden">
+        <div id="loading" class="loading-state">
+            <span class="material-icons-outlined" style="font-size:2rem;animation:spin 1s linear infinite">refresh</span>
+            <div style="margin-top:12px;font-size:var(--text-sm);font-weight:500">กำลังโหลดข้อมูล Roles...</div>
+        </div>
+
+        <div id="manager-content" style="display:none">
             <div class="role-grid" id="role-cards">
                 <!-- Role cards will be injected here -->
             </div>
 
-            <div class="mt-12 text-center">
-                <button onclick="saveAllPermissions(event)" class="btn btn-primary btn-lg">
-                    💾 Save All Changes
+            <div style="text-align:center; margin-top: var(--space-6);">
+                <button onclick="saveAllPermissions(event)" class="btn btn-primary" style="padding: 12px 32px; font-size: 1rem; font-weight: 700; box-shadow: var(--shadow-md);">
+                    <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">save</span> บันทึกการตั้งค่าทั้งหมด
                 </button>
             </div>
         </div>
@@ -82,46 +68,58 @@
         import { ConfigService } from '../../services/configService.js';
         import { AuditService } from '../../services/auditService.js';
 
-        const ROLES = ['admin', 'manager', 'owner', 'sa', 'mechanic', 'sa_main', 'sa_suphanburi'];
+        let ROLES = [];
         let rolePermissions = {};
 
         async function init() {
-            if (!AuthService.requireRole(['admin'])) return;
+            if (!AuthService.requireRole(['admin', 'owner'])) return;
 
-            await ConfigService.init();
+            try {
+                // 1. Fetch dynamic roles from users table
+                const users = await pb.collection('users').getFullList({ fields: 'role' });
+                const uniqueRoles = new Set(users.map(u => u.role).filter(r => r && typeof r === 'string'));
+                // Ensure at least admin is present
+                uniqueRoles.add('admin');
+                ROLES = Array.from(uniqueRoles).sort();
 
-            // Prime rolePermissions with current state or defaults
-            ROLES.forEach(role => {
-                const dbPerms = ConfigService.rolePermissions[role] || [];
-                // Only use DB perms if they contain at least one valid current tool ID.
-                // This gracefully handles legacy DB states where tool IDs might have changed.
-                const hasValid = dbPerms.some(dbId => TOOLS.some(t => t.id === dbId));
+                await ConfigService.init();
 
-                rolePermissions[role] = hasValid ? dbPerms :
-                    TOOLS.filter(t => t.roles.includes(role)).map(t => t.id);
-            });
+                // 2. Prime rolePermissions with current state or defaults
+                ROLES.forEach(role => {
+                    const dbPerms = ConfigService.rolePermissions[role] || [];
+                    const hasValid = dbPerms.some(dbId => TOOLS.some(t => t.id === dbId));
 
-            renderRoles();
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('manager-content').classList.remove('hidden');
+                    rolePermissions[role] = hasValid ? dbPerms :
+                        TOOLS.filter(t => t.roles.includes(role)).map(t => t.id);
+                });
+
+                renderRoles();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('manager-content').style.display = 'block';
+            } catch (err) {
+                console.error("Initialization error:", err);
+                document.getElementById('loading').innerHTML = `<div style="color:var(--danger)">เกิดข้อผิดพลาด: ${err.message}</div>`;
+            }
         }
 
         function renderRoles() {
             const container = document.getElementById('role-cards');
             container.innerHTML = ROLES.map(role => `
-                <div class="card p-6">
-                    <h3 class="text-xl font-bold mb-2 capitalize">${role}</h3>
-                    <p class="text-xs text-sub mb-4">Select accessible tools for this role</p>
+                <div class="role-card">
+                    <h3><span class="material-icons-outlined" style="color:var(--primary-600);font-size:1.3rem">badge</span> ${role === 'sa' ? 'Service Advisor' : role}</h3>
+                    <p class="subtitle">สิทธิ์สำหรับกลุ่มผู้ใช้: ${role}</p>
                     
-                    <div class="tool-check-list">
+                    <div class="tool-list">
                         ${TOOLS.map(tool => `
                             <label class="tool-item">
-                                <input type="checkbox" 
-                                       ${rolePermissions[role].includes(tool.id) ? 'checked' : ''} 
-                                       onchange="togglePermission('${role}', '${tool.id}', this.checked)">
-                                <div>
-                                    <div class="font-medium text-sm">${tool.title}</div>
-                                    <div class="text-xs text-sub">${tool.description || tool.group || 'Utility'}</div>
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" 
+                                           ${rolePermissions[role].includes(tool.id) ? 'checked' : ''} 
+                                           onchange="togglePermission('${role}', '${tool.id}', this.checked)">
+                                </div>
+                                <div class="tool-info">
+                                    <div class="tool-title">${tool.title}</div>
+                                    <div class="tool-desc">${tool.description || tool.group || 'Utility Tool'}</div>
                                 </div>
                             </label>
                         `).join('')}
@@ -144,15 +142,16 @@
 
         window.saveAllPermissions = async (event) => {
             const btn = event ? event.currentTarget : document.querySelector('button.btn-primary');
-            const originalText = btn.textContent;
+            const originalHTML = btn.innerHTML;
             btn.disabled = true;
-            btn.textContent = 'Saving...';
+            btn.innerHTML = '<span class="material-icons-outlined" style="font-size:1.2rem;animation:spin 1s linear infinite;vertical-align:text-bottom">refresh</span> กำลังบันทึก...';
 
             try {
+                // Ensure system_roles is present or fallback to try/catch
                 const promises = ROLES.map(async (role) => {
-                    // Find existing record for this role
                     let record;
                     try {
+                        // NocoDB adapter supports filter
                         record = await pb.collection('system_roles').getFirstListItem(`role_name='${role}'`);
                     } catch (e) {
                         // Not found, will create
@@ -160,7 +159,8 @@
 
                     const data = {
                         role_name: role,
-                        allowed_tools: rolePermissions[role]
+                        name: role, // added because schema requires `name` or defaults it sometimes
+                        allowed_tools: JSON.stringify(rolePermissions[role]) // Ensure we pass stringified json if field is generic string, NocoDB handles stringified arrays better
                     };
 
                     if (record) {
@@ -171,22 +171,26 @@
                 });
 
                 await Promise.all(promises);
-                AuditService.log('permissions_update', `Updated role permissions for: ${ROLES.join(', ')}`, 'admin');
+                try { AuditService.log('permissions_update', `Updated role permissions for: ${ROLES.join(', ')}`, 'admin'); } catch {}
                 await ConfigService.init(); // Reload configurations after saving
-                alert('Permissions saved successfully!');
+                
+                btn.style.background = 'var(--success-600)';
+                btn.innerHTML = '<span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">check</span> บันทึกเรียบร้อย';
+                setTimeout(() => {
+                    btn.style.background = '';
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }, 2000);
             } catch (error) {
                 console.error(error);
                 alert('Error saving permissions: ' + error.message);
-            } finally {
+                btn.innerHTML = originalHTML;
                 btn.disabled = false;
-                btn.textContent = originalText;
             }
         };
 
         init();
     </script>
-    \n
-    <script type="module" src="../../assets/js/app-shell.js"></script>\n
+    <script type="module" src="../../assets/js/app-shell.js"></script>
 </body>
-
 </html>

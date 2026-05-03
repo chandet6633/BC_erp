@@ -1,0 +1,18 @@
+{
+  "name": "bcauto-api-server",
+  "version": "1.0.0",
+  "description": "BC AutoXperience ERP API middleware — JWT auth, validation, rate limiting",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.4.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
+  }
+}

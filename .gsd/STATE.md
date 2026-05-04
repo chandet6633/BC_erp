@@ -3,15 +3,16 @@
 > Last updated: 2026-05-04
 
 ## Current Position
-- **Milestone**: App Verification & Hardening
-- **Phase**: Not started
-- **Status**: Milestone planned
+- **Phase**: 1
+- **Task**: Planning complete
+- **Status**: Ready for execution
 
 ## Last Session Summary
 Phase 6 executed successfully. Management Portal mechanic dashboard created with active job list, QC image upload/approval, and role-gated KPIs. 
+A new milestone "App Verification & Hardening" was created, and Phase 1 was planned to set up Playwright testing.
 
 ## Next Steps
-1. Execute /plan 1 to set up the Playwright testing infrastructure.
+1. /execute 1
 
 ## Phase 3 Summary
 - ✅ `patch-schema-v3.mjs`: Added `qc_images` and `qc_approved_by` to jobs.

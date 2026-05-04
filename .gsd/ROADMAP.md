@@ -35,7 +35,7 @@
 - Update NocoDB setup script with new columns
 
 ### Phase 2: Job Card Overhaul
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete (2026-05-04)
 **Objective**: Rebuild the job creation form with combined customer+vehicle card, mechanic assignment, and inline creation flow.
 **Features**: F1 (customer+vehicle inline), F2 (ad-hoc items), F3 (mechanic select), F13 (service history badge)
 **Deliverables**:

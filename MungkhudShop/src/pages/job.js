@@ -1,7 +1,7 @@
 /**
- * MungkhudShop — Job Page (ARCH-2 Refactored)
+ * MungkhudShop — Job Page (v2 — POS Overhaul)
  * Orchestrator: imports state, data operations, and line-item logic from focused modules.
- * This file contains only the UI templates and event wiring.
+ * v2: Combined customer+vehicle card, mechanic assignment, service badge, ad-hoc items.
  */
 import { createTabs, showToast, showConfirm, generateDocId, createAutocomplete, createVatToggle } from '../components/ui.js'
 import { fetchFullList, updateRecord } from '../services/pb.js'
@@ -10,7 +10,7 @@ import { notifyJobCompleted } from '../services/telegram.js'
 import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
 
 // ARCH-2: Import from focused modules
-import { resetState, getState, setPlateAC, setCustomerAC, setVatToggle } from './job-state.js'
+import { resetState, getState, setPlateAC, setCustomerAC, setVatToggle, getMechanics } from './job-state.js'
 import { addJobLineRow, recalcTotals } from './job-line-items.js'
 import { loadSearchData, filterLocalSearch, saveJobData, clearJobForm, editJob, deleteJob } from './job-data.js'
 
@@ -86,15 +86,15 @@ function renderAddEditTab(panel, mainContainer) {
     panel.innerHTML = `
         <div class="toolbar">
             <div class="toolbar-actions">
-                <button class="btn btn-primary" id="btnSaveJob"><span class="material-icons-outlined">save</span> บันทึก</button>
-                <button class="btn btn-outline" id="btnClearJob"><span class="material-icons-outlined">refresh</span> ล้างฟอร์ม</button>
-                <button class="btn btn-success" id="btnCloseJob" style="display:none;"><span class="material-icons-outlined">check_circle</span> ปิดงาน</button>
-                <button class="btn btn-danger" id="btnCancelJob" style="display:none;"><span class="material-icons-outlined">cancel</span> ยกเลิกงาน</button>
+                <button class="btn btn-primary touch-target" id="btnSaveJob"><span class="material-icons-outlined">save</span> บันทึก</button>
+                <button class="btn btn-outline touch-target" id="btnClearJob"><span class="material-icons-outlined">refresh</span> ล้างฟอร์ม</button>
+                <button class="btn btn-success touch-target" id="btnCloseJob" style="display:none;"><span class="material-icons-outlined">check_circle</span> ปิดงาน</button>
+                <button class="btn btn-danger touch-target" id="btnCancelJob" style="display:none;"><span class="material-icons-outlined">cancel</span> ยกเลิกงาน</button>
             </div>
         </div>
 
         <div class="job-form-grid">
-            <!-- Job Info -->
+            <!-- ─── Job Info ─── -->
             <div class="job-section">
                 <div class="job-section-title"><span class="material-icons-outlined">assignment</span> ข้อมูลใบงาน</div>
                 <div class="form-row-2">
@@ -121,19 +121,48 @@ function renderAddEditTab(panel, mainContainer) {
                         <input type="date" class="form-control" id="jobEndDate">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">ช่างผู้รับผิดชอบ</label>
-                    <input type="text" class="form-control" id="jobTechnician" placeholder="ชื่อช่าง...">
+
+                <!-- v2: Mechanic Assignment -->
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label">ช่างหลัก (Lead)</label>
+                        <select class="form-control touch-target" id="jobLeadMechanic">
+                            <option value="">-- เลือกช่าง --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ช่างช่วย (Helpers)</label>
+                        <div id="jobHelperMechanics" style="display:flex;flex-wrap:wrap;gap:var(--sp-2);padding:var(--sp-2);min-height:44px;border:1px solid var(--bc-border);border-radius:var(--radius-md);background:var(--bc-surface-solid);">กำลังโหลด...</div>
+                    </div>
                 </div>
+
                 <div class="form-group">
                     <label class="form-label">หมายเหตุ</label>
                     <textarea class="form-control" id="jobNotes" rows="2" placeholder="หมายเหตุ..."></textarea>
                 </div>
             </div>
 
-            <!-- Vehicle Info -->
+            <!-- ─── Combined Customer + Vehicle Card (v2) ─── -->
             <div class="job-section">
-                <div class="job-section-title"><span class="material-icons-outlined">directions_car</span> ข้อมูลยานพาหนะ</div>
+                <div class="job-section-title"><span class="material-icons-outlined">directions_car</span> ข้อมูลลูกค้า & ยานพาหนะ</div>
+
+                <!-- Service History Badge (hidden until plate selected) -->
+                <div id="jobServiceBadge" style="display:none;padding:var(--sp-3);background:var(--bc-info-light,#DBEAFE);border-radius:var(--radius-md);margin-bottom:var(--sp-3);font-size:0.85rem;border-left:4px solid var(--bc-info,#3B82F6);">
+                    <div style="font-weight:600;margin-bottom:var(--sp-2);">📋 ประวัติการเข้ารับบริการ</div>
+                    <div style="display:flex;gap:var(--sp-4);flex-wrap:wrap;">
+                        <span>🔄 <span id="badgeVisitCount">-</span></span>
+                        <span>📅 <span id="badgeLastDate">-</span></span>
+                        <span>🛣️ <span id="badgeMileage">-</span></span>
+                    </div>
+                </div>
+
+                <!-- New Vehicle/Customer Prompt -->
+                <div id="jobNewRecordPrompt" style="display:none;padding:var(--sp-3);background:var(--bc-warning-light,#FEF3C7);border-radius:var(--radius-md);margin-bottom:var(--sp-3);border-left:4px solid var(--bc-warning,#F59E0B);font-size:0.875rem;">
+                    <span class="material-icons-outlined" style="font-size:16px;vertical-align:middle;">info</span>
+                    <strong>ไม่พบข้อมูลยานพาหนะนี้ในระบบ</strong> — กรุณากรอกข้อมูลด้านล่าง ระบบจะบันทึกให้อัตโนมัติเมื่อกด "บันทึก"
+                </div>
+
+                <!-- Plate + Red Plate -->
                 <div class="form-row-2">
                     <div class="form-group">
                         <label class="form-label required">ทะเบียนรถ</label>
@@ -144,25 +173,31 @@ function renderAddEditTab(panel, mainContainer) {
                         <div class="toggle" id="jobRedPlate"></div>
                     </div>
                 </div>
+
+                <!-- Vehicle fields -->
                 <div class="form-row-2">
                     <div class="form-group">
                         <label class="form-label">รุ่นรถ</label>
                         <input type="text" class="form-control" id="jobModel" placeholder="Toyota Camry">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">สีรถ</label>
+                        <input type="text" class="form-control" id="jobColor" placeholder="สี...">
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
                         <label class="form-label">เลขไมล์</label>
                         <input type="number" class="form-control" id="jobMileage" placeholder="0">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">เลขตัวถัง (VIN)</label>
+                        <input type="text" class="form-control" id="jobChassis" placeholder="VIN...">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">เลขตัวถัง (Chassis)</label>
-                    <input type="text" class="form-control" id="jobChassis" placeholder="VIN...">
-                </div>
-            </div>
 
-            <!-- Customer Info -->
-            <div class="job-section">
-                <div class="job-section-title"><span class="material-icons-outlined">person</span> ข้อมูลลูกค้า</div>
+                <!-- Customer fields -->
+                <div style="border-top:1px solid var(--bc-border);margin:var(--sp-3) 0;padding-top:var(--sp-3);"></div>
                 <div class="form-row-2">
                     <div class="form-group">
                         <label class="form-label required">ชื่อลูกค้า</label>
@@ -175,13 +210,13 @@ function renderAddEditTab(panel, mainContainer) {
                 </div>
             </div>
 
-            <!-- Payment Info + VAT Toggle -->
+            <!-- ─── Payment Info + VAT Toggle ─── -->
             <div class="job-section">
                 <div class="job-section-title"><span class="material-icons-outlined">payment</span> การชำระเงิน</div>
                 <div class="form-row-2">
                     <div class="form-group">
                         <label class="form-label">ประเภทการชำระ</label>
-                        <select class="form-control" id="jobPaymentType">
+                        <select class="form-control touch-target" id="jobPaymentType">
                             <option value="cash">เงินสด</option>
                             <option value="transfer">โอนเงิน</option>
                             <option value="credit">บัตรเครดิต</option>
@@ -304,7 +339,7 @@ function renderAddEditTab(panel, mainContainer) {
                 id: v.id,
                 code: v.plate_number,
                 label: v.plate_number,
-                secondary: `${v.brand || ''} ${v.model || ''}`.trim(),
+                secondary: `${v.brand || ''} ${v.model || ''} ${v.color || ''}`.trim(),
                 _raw: v
             }))
         },
@@ -312,7 +347,11 @@ function renderAddEditTab(panel, mainContainer) {
             const v = item._raw
             panel.querySelector('#jobModel').value = `${v.brand || ''} ${v.model || ''}`.trim()
             panel.querySelector('#jobMileage').value = v.mileage || ''
-            panel.querySelector('#jobChassis').value = v.chassis_number || ''
+            panel.querySelector('#jobChassis').value = v.vin || v.chassis_number || ''
+            panel.querySelector('#jobColor').value = v.color || ''
+            panel.querySelector('#jobNewRecordPrompt').style.display = 'none'
+
+            // Autofill customer
             if (v.customer_id) {
                 fetchFullList('customers', { filter: `id='${sanitizeFilter(v.customer_id)}'` }).then(custs => {
                     if (custs.length > 0) {
@@ -325,9 +364,45 @@ function renderAddEditTab(panel, mainContainer) {
                     }
                 })
             }
+
+            // Service history badge
+            const plate = v.plate_number
+            fetchFullList('jobs', { where: `(plate,eq,${plate})`, requestKey: null }).then(prevJobs => {
+                const badge = panel.querySelector('#jobServiceBadge')
+                if (!badge) return
+                const closedJobs = prevJobs.filter(j => j.status === 'closed')
+                if (closedJobs.length === 0) {
+                    badge.style.display = 'none'
+                    return
+                }
+                badge.style.display = 'block'
+                panel.querySelector('#badgeVisitCount').textContent = `เข้ารับบริการ ${closedJobs.length} ครั้ง`
+                const lastJob = closedJobs.sort((a, b) => new Date(b.start_date) - new Date(a.start_date))[0]
+                const lastDate = lastJob.start_date ? new Date(lastJob.start_date).toLocaleDateString('th-TH') : '-'
+                panel.querySelector('#badgeLastDate').textContent = `ครั้งล่าสุด: ${lastDate}`
+                const lastMileage = lastJob.mileage_in || 0
+                const curMileage = parseFloat(panel.querySelector('#jobMileage').value) || 0
+                const delta = curMileage > lastMileage && lastMileage > 0 ? `+${(curMileage - lastMileage).toLocaleString()} km` : `${curMileage.toLocaleString()} km`
+                panel.querySelector('#badgeMileage').textContent = `ไมล์: ${delta}`
+            }).catch(() => {})
         }
     })
     setPlateAC(plateAutocomplete)
+
+    // Detect new (unregistered) plate on blur
+    plateAutocomplete.input?.addEventListener('blur', async () => {
+        const plateVal = plateAutocomplete.input.value.trim()
+        const selectedId = plateAutocomplete.input.dataset?.selectedId
+        if (!plateVal || selectedId) return  // skip if empty or already selected from dropdown
+        // Small delay to allow onSelect to fire first
+        setTimeout(async () => {
+            if (plateAutocomplete.input.dataset?.selectedId) return  // selection happened
+            const prompt = panel.querySelector('#jobNewRecordPrompt')
+            const badge = panel.querySelector('#jobServiceBadge')
+            if (prompt) prompt.style.display = 'block'
+            if (badge) badge.style.display = 'none'
+        }, 200)
+    })
 
     // --- Autocomplete: Customer ---
     const custAutocomplete = createAutocomplete({
@@ -358,6 +433,27 @@ function renderAddEditTab(panel, mainContainer) {
     })
     setVatToggle(vt)
 
+    // --- Mechanic Dropdown + Helper Chips (v2) ---
+    ;(async () => {
+        try {
+            const mechanics = await getMechanics()
+            const leadSel = panel.querySelector('#jobLeadMechanic')
+            mechanics.forEach(m => {
+                const opt = document.createElement('option')
+                opt.value = m.id
+                opt.textContent = m.display_name || m.name
+                leadSel.appendChild(opt)
+            })
+            renderHelperChips(panel, mechanics, null)
+            leadSel.addEventListener('change', () => {
+                renderHelperChips(panel, mechanics, leadSel.value)
+            })
+        } catch (e) {
+            console.warn('[Job] Could not load mechanics:', e.message)
+            panel.querySelector('#jobHelperMechanics').textContent = 'ไม่สามารถโหลดข้อมูลช่าง'
+        }
+    })()
+
     const redPlate = panel.querySelector('#jobRedPlate')
     redPlate.addEventListener('click', () => redPlate.classList.toggle('active'))
     panel.querySelector('#jobDiscount').addEventListener('input', () => recalcTotals(panel))
@@ -379,6 +475,9 @@ function renderAddEditTab(panel, mainContainer) {
             const productMap = {}
             products.forEach(p => { productMap[p.id] = p; productMap[p.code] = p })
             rows.forEach(tr => {
+                const typeBtn = tr.querySelector('.item-type-btn')
+                if (typeBtn?.dataset?.type === 'adhoc') return
+
                 const prodId = tr.querySelector('.item-prod')?.dataset?.selectedId || tr.querySelector('.item-prod')?.value
                 const unitPrice = parseFloat(tr.querySelector('.item-price')?.value) || 0
                 const prod = productMap[prodId]
@@ -402,6 +501,7 @@ function renderAddEditTab(panel, mainContainer) {
                 const pMap = {}
                 products.forEach(p => { pMap[p.id] = p })
                 for (const ji of jItems) {
+                    if (ji.type === 'adhoc') continue
                     const prod = pMap[ji.product_id]
                     const cost = prod ? (prod.cost || 0) : 0
                     totalCost += cost * (ji.qty || 0)
@@ -523,4 +623,59 @@ function renderAddEditTab(panel, mainContainer) {
         if (label) label.textContent = `ยอดชำระ: ฿${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`
     }
     panel.querySelectorAll('.pay-amount').forEach(inp => inp.addEventListener('input', updatePaymentSum))
+}
+
+// ── Helper: render mechanic chip pills for "Helper" selection ─────────────
+function renderHelperChips(panel, mechanics, excludeId) {
+    const container = panel.querySelector('#jobHelperMechanics')
+    if (!container) return
+    container.innerHTML = ''
+    const eligible = mechanics.filter(m => m.id !== excludeId)
+    if (eligible.length === 0) {
+        container.textContent = 'ไม่มีช่างอื่น'
+        return
+    }
+    eligible.forEach(m => {
+        const chip = document.createElement('button')
+        chip.type = 'button'
+        chip.className = 'helper-chip'
+        chip.dataset.id = m.id
+        chip.textContent = m.display_name || m.name
+        chip.style.cssText = `
+            display:inline-flex;align-items:center;gap:4px;
+            padding:6px 12px;border:1px solid var(--bc-border);
+            border-radius:var(--radius-full,20px);cursor:pointer;
+            font-size:0.8rem;background:var(--bc-surface-solid);
+            color:var(--bc-text);transition:all 0.15s;
+        `
+        chip.addEventListener('click', () => {
+            chip.classList.toggle('active')
+            if (chip.classList.contains('active')) {
+                chip.style.background = 'var(--bc-navy-mid,#1e3a5f)'
+                chip.style.color = '#fff'
+                chip.style.borderColor = 'var(--bc-navy-mid,#1e3a5f)'
+            } else {
+                chip.style.background = 'var(--bc-surface-solid)'
+                chip.style.color = 'var(--bc-text)'
+                chip.style.borderColor = 'var(--bc-border)'
+            }
+        })
+        container.appendChild(chip)
+    })
+}
+
+// ── Helper: get selected helper mechanic IDs ──────────────────────────────
+export function getSelectedHelperIds(panel) {
+    return Array.from(panel.querySelectorAll('#jobHelperMechanics .helper-chip.active'))
+        .map(chip => chip.dataset.id)
+}
+
+// ── Helper: set helper chips active state (used by editJob) ──────────────
+export function setHelperChipState(panel, helperIdsCsv, mechanics, leadId) {
+    renderHelperChips(panel, mechanics, leadId)
+    if (!helperIdsCsv) return
+    const ids = helperIdsCsv.split(',').map(s => s.trim()).filter(Boolean)
+    panel.querySelectorAll('#jobHelperMechanics .helper-chip').forEach(chip => {
+        if (ids.includes(chip.dataset.id)) chip.click()
+    })
 }

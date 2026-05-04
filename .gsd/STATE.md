@@ -3,29 +3,29 @@
 > Last updated: 2026-05-04
 
 ## Current Position
-- **Phase**: 1 — Schema & Foundation
-- **Task**: Planning complete
-- **Status**: Ready for execution
+- **Phase**: 1 — Complete ✅
+- **Next Phase**: 2 — Job Card Overhaul
+- **Status**: Phase 1 verified, all tasks done
 
-## Plans Created
-- `1-PLAN.md` — Schema Migration Script (wave 1)
-- `2-PLAN.md` — Shared Utilities: Duplicate Check + Image Compressor (wave 1)
-- `3-PLAN.md` — Mobile CSS Foundation + Remove Branch Page + API Validation (wave 2)
+## Phase 1 Summary (3 plans, 7 tasks)
+- ✅ `patch-schema-v2.mjs` — 11 new columns added to NocoDB (11 added, 0 failed)
+- ✅ `setup-nocodb-tables.mjs` — Updated with v2 columns for fresh installs
+- ✅ `shared/duplicate-check.js` — Generic + 4 specific duplicate check functions
+- ✅ `shared/image-compressor.js` — Canvas image compressor + upload widget
+- ✅ `shared/design-tokens.css` — iPhone breakpoints (430/768/1024) + utility classes
+- ✅ `master-branch.js` — Deleted, route and nav removed from app.js + index.html
+- ✅ `api-server/middleware/validate.js` — Added work_duration_minutes to numerics
 
 ## Current Branch
 `feat/password-flow-redesign`
 
 ## Key Context
-- NocoDB test instance running at localhost:9080 (verified healthy)
-- Token: UmqurJUh0NhbrQWnhMJ-sXRgA6wfrlX4dvk9Y5YD
-- 24 tables in BC_ERP base (verified)
-- 11 new columns needed across 3 tables (jobs, settings, job_payments)
-- `job_items.type` already exists — can use for 'adhoc' flag
-- `validate.js` is permissive — only need to add work_duration_minutes to NUMERIC_FIELDS
-- Design tokens have NO breakpoints yet — Phase 1 adds them
+- NocoDB: 24 tables, all v2 columns live in test instance
+- Mobile CSS: MungkhudShop already had mobile.css at 768/480px — tokens now add 430px
+- Phase 2 adds: customer+vehicle inline creation, ad-hoc items, mechanic dropdown, service badge
+- Phase 3 adds: kanban archive, job timer, payment status, proof upload
+- Phase 4 adds: quick print, settings templates, customer history page, daily summary
 
 ## Next Steps
-1. `/execute 1` — Run all 3 plans
-
-## Open Decisions
-- None — all resolved in /discuss-phase 1
+1. `/discuss-phase 2` — Optional: discuss job card overhaul
+2. `/plan 2` — Plan Phase 2: Job Card Overhaul

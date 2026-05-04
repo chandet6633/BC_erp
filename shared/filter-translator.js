@@ -117,6 +117,8 @@ function translateCondition(expr) {
         // Check if inner contains || or &&
         if (inner.includes('||') || inner.includes('&&')) {
             return translateFilter(inner)
+        } else {
+            expr = inner
         }
     }
 

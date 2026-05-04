@@ -1,0 +1,1 @@
+import{c as e}from"./document-factory-B51oxqq2.js";import"./index-9Z-6SckO.js";import"./inventory-BROWFZn2.js";const c=e({title:"ใบแจ้งหนี้ / ใบกำกับภาษี",icon:"receipt_long",prefix:"IV",collection:"invoices"});export{c as initInvoicePage};

@@ -1,1 +1,0 @@
-import{c as i}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const n=i({title:"ใบเบิก (RQ)",icon:"assignment",prefix:"RQ",collection:"requisitions"});export{n as initRequisitionPage};

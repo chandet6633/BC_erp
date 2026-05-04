@@ -378,6 +378,15 @@ async function handleSSO() {
             return
         }
 
+        // Update NocoDB adapter token FIRST so subsequent API calls work
+        if (data.jwt) {
+            try {
+                setAuthToken(data.jwt)
+            } catch (err) {
+                console.warn('SSO: Failed to set adapter token', err)
+            }
+        }
+
         // Fetch role data for menu permissions
         let allowedMenus = ''
         try {
@@ -410,15 +419,6 @@ async function handleSSO() {
 
         setCurrentUser(session, data.jwt)
         if (data.branch_id) setBranch(data.branch_id)
-        
-        // Update NocoDB adapter token if present
-        if (data.jwt) {
-            try {
-                setAuthToken(data.jwt)
-            } catch (err) {
-                console.warn('SSO: Failed to set adapter token', err)
-            }
-        }
 
         console.log('✅ SSO Login successful:', session.display_name)
 

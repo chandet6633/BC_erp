@@ -1,1 +1,0 @@
-import{c as t}from"./document-factory-B3Z2MMKN.js";import"./index-XszaqNmQ.js";import"./inventory-DHMdvGMB.js";const a=t({title:"ภาษีหัก ณ ที่จ่าย (WT)",icon:"percent",prefix:"WT",collection:"withholding_tax",hasItems:!1});export{a as initWithholdingTaxPage};

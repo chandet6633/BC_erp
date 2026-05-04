@@ -164,6 +164,16 @@ const TABLES = [
         { title: 'payment_type', uidt: 'SingleLineText' }, { title: 'branch_id', uidt: 'SingleLineText' },
         { title: 'technician', uidt: 'SingleLineText' }, { title: 'repair_details', uidt: 'LongText' },
         { title: 'notes', uidt: 'LongText' }, { title: 'mileage_in', uidt: 'Number' },
+        // v2: Mechanic assignment
+        { title: 'lead_mechanic_id', uidt: 'SingleLineText' },
+        { title: 'helper_mechanic_ids', uidt: 'SingleLineText' },
+        // v2: Payment tracking
+        { title: 'payment_status', uidt: 'SingleLineText' },   // unpaid | partial | paid
+        { title: 'payment_proof', uidt: 'Attachment' },        // transfer slip image
+        // v2: Job timer
+        { title: 'work_started_at', uidt: 'DateTime' },
+        { title: 'work_ended_at', uidt: 'DateTime' },
+        { title: 'work_duration_minutes', uidt: 'Number' },
     ]},
     { title: 'job_items', columns: [
         { title: 'job_id', uidt: 'SingleLineText' }, { title: 'product_id', uidt: 'SingleLineText' },
@@ -204,6 +214,10 @@ const TABLES = [
         { title: 'prefix_iv', uidt: 'SingleLineText' }, { title: 'prefix_rc', uidt: 'SingleLineText' },
         { title: 'vat_rate', uidt: 'Decimal' }, { title: 'default_vat_enabled', uidt: 'Checkbox' },
         { title: 'default_vat_mode', uidt: 'SingleLineText' },
+        // v2: Print template customization
+        { title: 'logo_image', uidt: 'Attachment' },        // shop logo
+        { title: 'qr_payment_image', uidt: 'Attachment' },  // QR code image
+        { title: 'qr_payment_text', uidt: 'LongText' },     // payment instructions
     ]},
     { title: 'app_settings', columns: [
         { title: 'key', uidt: 'SingleLineText' }, { title: 'value', uidt: 'LongText' },
@@ -219,6 +233,8 @@ const TABLES = [
         { title: 'job_id', uidt: 'SingleLineText' }, { title: 'amount', uidt: 'Decimal' },
         { title: 'payment_method', uidt: 'SingleLineText' }, { title: 'payment_date', uidt: 'DateTime' },
         { title: 'reference', uidt: 'SingleLineText' },
+        // v2: Payment proof attachment
+        { title: 'proof_image', uidt: 'Attachment' },
     ]},
     { title: 'hr_employees', columns: [
         { title: 'emp_id', uidt: 'SingleLineText' }, { title: 'name', uidt: 'SingleLineText' },

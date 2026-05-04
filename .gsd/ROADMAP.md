@@ -49,7 +49,7 @@
 - Mobile-responsive form layout
 
 ### Phase 3: Kanban + Timer + Payment
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete (2026-05-04)
 **Objective**: Enhance the kanban board, add job timer, and implement payment status tracking.
 **Features**: F4 (kanban archive), F9 (payment status + proof), F12 (job timer)
 **Deliverables**:
@@ -63,7 +63,7 @@
 - Mobile-optimized kanban with horizontal scroll
 
 ### Phase 4: Print, History & Daily Summary
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete (2026-05-04)
 **Objective**: Complete the operational tools — quick print, customizable templates, customer history, and daily closing.
 **Features**: F5 (print templates), F6 (customer history), F8 (quick print), F11 (daily summary)
 **Deliverables**:
@@ -76,7 +76,7 @@
 - Date range filter for historical summaries
 
 ### Phase 5: Polish, Mobile QA & KPI
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Final mobile optimization pass, mechanic KPI aggregation, and end-to-end testing.
 **Features**: F3 (KPI aggregation), F14 (mobile polish)
 **Deliverables**:
@@ -87,3 +87,41 @@
 - Performance optimization (lazy loading, pagination)
 - Build and deploy to Docker test environment
 - End-to-end workflow testing (create job → assign → work → close → pay → print → summary)
+
+### Phase 6: Management Portal — Mechanic Dashboard
+**Status**: ✅ Complete
+**Objective**: Create a dedicated workspace for mechanics in the Management Portal.
+**Features**: F3 (KPI aggregation & QC)
+**Deliverables**:
+- Dedicated mechanic route (`/mechanic`) in the Management Portal
+- Mechanic dashboard showing active jobs assigned to them
+- QC approval interface for uploading proof images and signing off
+- KPI tracking (jobs completed, hours logged, performance metrics)
+
+---
+
+> **Current Milestone**: App Verification & Hardening
+> **Goal**: Conduct full E2E testing on both web apps, ensuring all read/write operations link to the schema, and eliminate dead-end features.
+
+## Must-Haves
+- [ ] Fully functional webapp with no dead-end features, buttons, or inputs.
+- [ ] Every page with read/write capability is linked to the schema and tested.
+- [ ] Role-based access control tested across all portals.
+
+## Phases
+
+### Phase 1: Test Infrastructure Setup
+**Status**: ⬜ Not Started
+**Objective**: Set up Playwright testing infrastructure, mock environments, and testing utilities.
+
+### Phase 2: MungkhudShop Comprehensive Testing & Validation
+**Status**: ⬜ Not Started
+**Objective**: Test ALL MungkhudShop pages (stocking simulation, print templates, kanban, QC, settings, job workflow). Identify and fix broken links to schema or dead buttons.
+
+### Phase 3: Management Portal Role-Based Testing
+**Status**: ⬜ Not Started
+**Objective**: Test all portal features across every role (mechanic, SA, manager, owner, admin). Simulate distinct workflows to ensure security, correct schema interaction, and no dead ends.
+
+### Phase 4: Code Polish & Redundancy Reduction
+**Status**: ⬜ Not Started
+**Objective**: Clean up the codebase, reduce redundancies, and polish the final code structure for production readiness.

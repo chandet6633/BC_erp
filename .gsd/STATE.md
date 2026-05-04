@@ -3,25 +3,30 @@
 > Last updated: 2026-05-04
 
 ## Current Position
-- **Phase**: 2 — Job Card Overhaul — Complete ✅
-- **Next Phase**: 3 — Operations & Workflow
-- **Status**: Phase 2 verified, all tasks done
+- **Milestone**: App Verification & Hardening
+- **Phase**: Not started
+- **Status**: Milestone planned
 
-## Phase 2 Summary (3 plans, 4 files)
-- ✅ `MungkhudShop/src/pages/job.js`: Redesigned form, combined vehicle+customer card, mechanic assignment, ad-hoc item toggle, service badge display, new record prompt banner.
-- ✅ `MungkhudShop/src/pages/job-data.js`: Implemented auto-creation of vehicle/customer records, duplicate job detection, and ad-hoc item save logic (skipping stock ledger for adhoc items).
-- ✅ `MungkhudShop/src/pages/job-line-items.js`: Transformed line items with an ad-hoc toggle, dynamically switching between product autocomplete and manual text inputs.
-- ✅ `MungkhudShop/src/pages/job-state.js`: Added `getMechanics` cache for efficient mechanic dropdown loading.
+## Last Session Summary
+Phase 6 executed successfully. Management Portal mechanic dashboard created with active job list, QC image upload/approval, and role-gated KPIs. 
+
+## Next Steps
+1. Execute /plan 1 to set up the Playwright testing infrastructure.
+
+## Phase 3 Summary
+- ✅ `patch-schema-v3.mjs`: Added `qc_images` and `qc_approved_by` to jobs.
+- ✅ `MungkhudShop/src/pages/kanban.js`: Mobile-responsive kanban, auto-archive logic, job timer logic, QC modal trigger, file attachment upload.
+- ✅ `MungkhudShop/src/pages/job.js`: Payment sum validation against grand_total, payment proof UI.
+- ✅ `MungkhudShop/src/pages/job-data.js`: Payment status calculation and payment proof upload to payload.
+- ✅ `shared/nocodb-adapter.js`: Added `uploadAttachment` helper.
 
 ## Current Branch
 `feat/password-flow-redesign`
 
 ## Key Context
-- All v2 form fields (customer_id, vehicle_id, lead_mechanic_id, helper_mechanic_ids) are now active and saving.
-- Vehicles automatically update mileage upon job creation.
-- Adhoc items save correctly with `type: 'adhoc'` and don't reduce stock.
-- The UI handles the inline transition smoothly (unknown plate -> prompt -> auto-create -> saved).
+- Payment validation strictly blocks "ปิดงาน" unless the sum equals the grand total, or the payment type includes credit terms.
+- QC Approval uses a modal to completely intercept drag-and-drop from in-progress to closed/pending_review.
+- Auto-archive hides any 'closed' jobs that were not modified 'today', keeping the Kanban board clean.
 
 ## Next Steps
-1. `/discuss-phase 3` — Optional: discuss the next phase (Operations & Workflow)
-2. `/plan 3` — Plan Phase 3: Operations & Workflow
+1. /execute 4

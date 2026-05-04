@@ -44,9 +44,9 @@ const ROUTES = {
     'forms': () => import('./pages/forms.js').then(m => m.initFormsPage),
     'settings': () => import('./pages/settings.js').then(m => m.initSettingsPage),
     'user-permissions': () => import('./pages/user-permissions.js').then(m => m.initUserPermissionsPage),
-    'master-branch': () => import('./pages/master-branch.js').then(m => m.initBranchPage),
     'kanban': () => import('./pages/kanban.js').then(m => m.initKanbanPage),
 }
+
 
 
 const DEFAULT_ROUTE = 'dashboard'

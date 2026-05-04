@@ -11,7 +11,8 @@
 
 // Numeric fields that must be valid numbers (when provided and non-empty)
 const NUMERIC_FIELDS = {
-    jobs: ['subtotal', 'discount', 'vat_amount', 'grand_total', 'mileage_in'],
+    jobs: ['subtotal', 'discount', 'vat_amount', 'grand_total', 'mileage_in', 'work_duration_minutes'],
+
     job_items: ['qty', 'price', 'discount', 'total'],
     products: ['price', 'cost', 'min_stock'],
     documents: ['subtotal', 'discount', 'vat_amount', 'grand_total'],

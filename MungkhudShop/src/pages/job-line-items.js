@@ -41,7 +41,12 @@ export function addJobLineRow(panel, data = null, index = 1) {
             </select>
         </td>
         <td><input type="number" class="form-control item-qty" value="${data ? data.qty : 1}" min="1" style="width:72px;"></td>
-        <td><input type="number" class="form-control item-price" value="${data ? (data.unit_price || data.price || 0) : 0}" min="0" style="width:96px;"></td>
+        <td>
+            <input type="number" class="form-control item-price" value="${data ? (data.unit_price || data.price || 0) : 0}" min="0" style="width:96px;">
+            <div class="adhoc-cost-wrapper" style="${isAdhoc ? '' : 'display:none;'} margin-top:4px;">
+                <input type="number" class="form-control item-cost" placeholder="ทุน/หน่วย" title="ต้นทุนต่อหน่วย (เฉพาะรายการด่วน)" value="${data ? (data.cost || '') : ''}" min="0" style="width:96px; font-size:0.8rem; height:26px; border-color:var(--bc-warning-mid, #F59E0B);">
+            </div>
+        </td>
         <td><input type="number" class="form-control item-disc" value="${data ? data.discount : 0}" min="0" style="width:80px;"></td>
         <td class="item-total text-bold">฿0.00</td>
         <td><button type="button" class="btn btn-sm btn-danger item-remove"><span class="material-icons-outlined" style="font-size:16px;">close</span></button></td>
@@ -65,6 +70,7 @@ export function addJobLineRow(panel, data = null, index = 1) {
         acHost.style.display = nowAdhoc ? 'none' : ''
         adhocName.style.display = nowAdhoc ? '' : 'none'
         adhocType.style.display = nowAdhoc ? '' : 'none'
+        tr.querySelector('.adhoc-cost-wrapper').style.display = nowAdhoc ? '' : 'none'
         recalcTotals(panel)
     })
 

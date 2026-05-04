@@ -132,6 +132,12 @@ const PATCHES = [
         columns: [
             { title: 'proof_image', uidt: 'Attachment' },  // payment proof per payment record
         ]
+    },
+    {
+        table: 'job_items',
+        columns: [
+            { title: 'cost', uidt: 'Number' } // v2 ad-hoc cost tracking
+        ]
     }
 ]
 

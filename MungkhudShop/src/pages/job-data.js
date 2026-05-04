@@ -284,19 +284,21 @@ export async function saveJobData(panel, mainContainer) {
             const typeBtn = tr.querySelector('.item-type-btn')
             const isAdhoc = typeBtn?.dataset?.type === 'adhoc'
 
-            let product_id, product_name, itemType, product_type
+            let product_id, product_name, itemType, product_type, cost
 
             if (isAdhoc) {
                 product_id = ''
                 product_name = tr.querySelector('.item-adhoc-name')?.value?.trim() || 'รายการด่วน'
                 itemType = 'adhoc'
                 product_type = tr.querySelector('.item-product-type')?.value || 'other'
+                cost = parseFloat(tr.querySelector('.item-cost')?.value) || 0
             } else {
                 const prodInput = tr.querySelector('.item-prod')
                 product_id = prodInput?.dataset?.selectedId || ''
                 product_name = prodInput?.value?.trim() || ''
                 itemType = 'product'
                 product_type = ''
+                cost = 0 // for products, cost is handled/stored via products table later
             }
 
             const qty = parseFloat(tr.querySelector('.item-qty').value) || 0
@@ -307,7 +309,7 @@ export async function saveJobData(panel, mainContainer) {
                 await createRecord('job_items', {
                     job_id: jobId, product_id, product_name, qty,
                     unit_price, discount, total: (qty * unit_price) - discount,
-                    type: itemType, product_type
+                    type: itemType, product_type, cost
                 })
                 // Only add to stock ledger if NOT adhoc AND has a real product_id
                 if (!isAdhoc && product_id) {

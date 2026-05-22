@@ -1,0 +1,15 @@
+{
+  "name": "bcauto-e2e",
+  "version": "1.0.0",
+  "description": "E2E testing for BC AutoXperience",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:mungkhud": "playwright test --project=MungkhudShop",
+    "test:management": "playwright test --project=Management"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.43.0",
+    "@types/node": "^20.12.7"
+  }
+}

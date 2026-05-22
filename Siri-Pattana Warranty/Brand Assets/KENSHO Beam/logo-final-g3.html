@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KENSHO Beam — Final Logo G3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;color:#fff;font-family:'Inter',sans-serif;padding:40px 40px 80px}
+.section{max-width:1200px;margin:0 auto 60px}
+.label{font-size:11px;font-weight:400;letter-spacing:5px;text-transform:uppercase;color:#0EA5E9;margin-bottom:24px;text-align:center}
+
+/* === PRIMARY LOGO === */
+.hero{display:flex;align-items:center;justify-content:center;background:#050508;border:1px solid #1a1a1a;border-radius:14px;padding:60px;margin-bottom:60px}
+.logo{display:flex;align-items:center;gap:18px}
+.logo .kv{font-family:'Shippori Mincho';font-size:56px;font-weight:800;color:#fff;writing-mode:vertical-rl;letter-spacing:8px}
+.logo .slash{width:3px;height:90px;background:#0EA5E9;transform:skewX(-12deg);border-radius:2px;flex-shrink:0}
+.logo .right{display:flex;flex-direction:column}
+.logo .brand{font-family:'Orbitron';font-size:34px;font-weight:700;color:#fff;letter-spacing:5px;line-height:1}
+.logo .sub{font-family:'Orbitron';font-size:13px;font-weight:400;color:#0EA5E9;letter-spacing:10px;margin-top:3px}
+
+/* === COLOR VARIANTS === */
+.variants{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.var-card{border:1px solid #1a1a1a;border-radius:10px;overflow:hidden}
+.var-display{display:flex;align-items:center;justify-content:center;height:180px;padding:30px}
+.var-label{font-size:10px;color:#555;padding:10px 14px;background:#0a0a0a;border-top:1px solid #1a1a1a;text-align:center}
+
+.var-card .logo{gap:12px}
+.var-card .logo .kv{font-size:36px;letter-spacing:5px}
+.var-card .logo .slash{height:58px;width:2px}
+.var-card .logo .brand{font-size:22px;letter-spacing:4px}
+.var-card .logo .sub{font-size:9px;letter-spacing:7px;margin-top:2px}
+
+/* White on black */
+.v-white .kv,.v-white .brand{color:#fff}
+.v-white .sub{color:#0EA5E9}
+.v-white .slash{background:#0EA5E9}
+
+/* All blue */
+.v-blue .kv{color:#0EA5E9}
+.v-blue .brand{color:#0EA5E9}
+.v-blue .sub{color:#0EA5E980}
+.v-blue .slash{background:#0EA5E9}
+
+/* Black on white */
+.v-dark .kv,.v-dark .brand{color:#0A0A12}
+.v-dark .sub{color:#0EA5E9}
+.v-dark .slash{background:#0EA5E9}
+
+/* Silver mono */
+.v-silver .kv,.v-silver .brand{color:#C8CDD3}
+.v-silver .sub{color:#C8CDD380}
+.v-silver .slash{background:#C8CDD3}
+
+/* Amber accent */
+.v-amber .kv,.v-amber .brand{color:#fff}
+.v-amber .sub{color:#F59E0B}
+.v-amber .slash{background:#F59E0B}
+
+/* White mono (for emboss) */
+.v-mono .kv,.v-mono .brand{color:#fff}
+.v-mono .sub{color:#fff8}
+.v-mono .slash{background:#fff}
+
+/* === SIZE TEST === */
+.sizes{display:flex;align-items:flex-end;justify-content:center;gap:40px;flex-wrap:wrap}
+.size-item{text-align:center}
+.size-box{background:#050508;border:1px solid #1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:16px;margin-bottom:8px}
+.size-label{font-size:10px;color:#444}
+
+/* size scales */
+.sz-lg .logo{gap:18px}
+.sz-lg .logo .kv{font-size:56px;letter-spacing:8px}
+.sz-lg .logo .slash{height:90px;width:3px}
+.sz-lg .logo .brand{font-size:34px;letter-spacing:5px}
+.sz-lg .logo .sub{font-size:13px;letter-spacing:10px;margin-top:3px}
+
+.sz-md .logo{gap:10px}
+.sz-md .logo .kv{font-size:28px;letter-spacing:4px}
+.sz-md .logo .slash{height:46px;width:2px}
+.sz-md .logo .brand{font-size:18px;letter-spacing:3px}
+.sz-md .logo .sub{font-size:7px;letter-spacing:6px;margin-top:1px}
+
+.sz-sm .logo{gap:6px}
+.sz-sm .logo .kv{font-size:18px;letter-spacing:2px}
+.sz-sm .logo .slash{height:30px;width:2px}
+.sz-sm .logo .brand{font-size:12px;letter-spacing:2px}
+.sz-sm .logo .sub{font-size:5px;letter-spacing:4px;margin-top:1px}
+
+.sz-xs .logo{gap:4px}
+.sz-xs .logo .kv{font-size:12px;letter-spacing:1px}
+.sz-xs .logo .slash{height:20px;width:1px}
+.sz-xs .logo .brand{font-size:8px;letter-spacing:1px}
+.sz-xs .logo .sub{font-size:4px;letter-spacing:2px;margin-top:0}
+
+/* === MOCKUPS === */
+.mockups{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.mockup{border:1px solid #1a1a1a;border-radius:12px;overflow:hidden}
+.mockup-display{position:relative;display:flex;align-items:center;justify-content:center;padding:40px}
+.mockup-label{font-size:10px;color:#555;padding:12px 16px;background:#0a0a0a;border-top:1px solid #1a1a1a;text-align:center}
+
+/* Driver mockup */
+.driver-body{width:200px;height:80px;background:linear-gradient(135deg,#2a2a2f,#1a1a1f);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px #00000060;position:relative;border:1px solid #333}
+.driver-body::before{content:'';position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,#ffffff08,transparent);border-radius:8px 8px 0 0}
+.driver-body .logo{gap:6px}
+.driver-body .logo .kv{font-size:16px;letter-spacing:2px;color:#888}
+.driver-body .logo .slash{height:26px;width:1.5px;background:#667}
+.driver-body .logo .brand{font-size:11px;letter-spacing:2px;color:#888}
+.driver-body .logo .sub{font-size:4px;letter-spacing:3px;margin-top:1px;color:#667}
+.driver-pins{display:flex;gap:6px;margin-top:12px;justify-content:center}
+.driver-pins span{width:3px;height:10px;background:#444;border-radius:1px}
+
+/* Box mockup */
+.box-mock{width:260px;height:180px;background:#0a0a0a;border:1px solid #222;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.box-mock::before{content:'';position:absolute;top:0;right:0;width:40px;height:100%;background:linear-gradient(90deg,transparent,#ffffff05);border-left:1px solid #1a1a1a}
+.box-mock .logo{gap:8px}
+.box-mock .logo .kv{font-size:28px;letter-spacing:4px}
+.box-mock .logo .slash{height:46px;width:2px}
+.box-mock .logo .brand{font-size:18px;letter-spacing:3px}
+.box-mock .logo .sub{font-size:7px;letter-spacing:6px;margin-top:1px}
+.box-tagline{font-family:'Inter';font-size:7px;color:#444;letter-spacing:3px;text-transform:uppercase}
+
+/* === WITH TAGLINE VARIANTS === */
+.tagline-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.tag-card{background:#050508;border:1px solid #1a1a1a;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:16px}
+.tag-card .tagline{font-family:'Inter';font-size:9px;color:#555;letter-spacing:4px;text-transform:uppercase}
+.tag-card .tagline-alt{font-family:'Orbitron';font-size:8px;color:#0EA5E9;letter-spacing:6px}
+.tag-label{font-size:10px;color:#444;text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- PRIMARY -->
+<div class="section">
+<div class="label">— Final Logo — G3 —</div>
+<div class="hero">
+<div class="logo">
+<div class="kv">顕照</div>
+<div class="slash"></div>
+<div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div>
+</div>
+</div>
+</div>
+
+<!-- COLOR VARIANTS -->
+<div class="section">
+<div class="label">— Color Variants —</div>
+<div class="variants">
+
+<div class="var-card"><div class="var-display v-white" style="background:#050508">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">White + Blue on Black (primary)</div></div>
+
+<div class="var-card"><div class="var-display v-blue" style="background:#050508">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">All Blue on Black</div></div>
+
+<div class="var-card"><div class="var-display v-dark" style="background:#f0f0f0">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">Dark on White (inverted)</div></div>
+
+<div class="var-card"><div class="var-display v-silver" style="background:#050508">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">Silver Mono (laser etch)</div></div>
+
+<div class="var-card"><div class="var-display v-amber" style="background:#050508">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">White + Amber accent</div></div>
+
+<div class="var-card"><div class="var-display v-mono" style="background:#050508">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="var-label">White Mono (emboss / single color)</div></div>
+
+</div>
+</div>
+
+<!-- SIZE TEST -->
+<div class="section">
+<div class="label">— Size Test —</div>
+<div class="sizes">
+<div class="size-item"><div class="size-box sz-lg">
+<div class="logo v-white"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="size-label">Full size (banner / signage)</div></div>
+
+<div class="size-item"><div class="size-box sz-md">
+<div class="logo v-white"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="size-label">Box sticker (~6cm)</div></div>
+
+<div class="size-item"><div class="size-box sz-sm">
+<div class="logo v-white"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="size-label">Driver emboss (~3cm)</div></div>
+
+<div class="size-item"><div class="size-box sz-xs">
+<div class="logo v-white"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div><div class="size-label">Minimum (~1.5cm)</div></div>
+</div>
+</div>
+
+<!-- MOCKUPS -->
+<div class="section">
+<div class="label">— Use Case Mockups —</div>
+<div class="mockups">
+
+<div class="mockup"><div class="mockup-display" style="background:#1a1a1e;flex-direction:column;gap:8px">
+<div class="driver-body">
+<div class="logo"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+</div>
+<div class="driver-pins"><span></span><span></span><span></span><span></span><span></span></div>
+</div><div class="mockup-label">LED Driver Unit — laser etched logo</div></div>
+
+<div class="mockup"><div class="mockup-display" style="background:#222">
+<div class="box-mock">
+<div class="logo v-white"><div class="kv">顕照</div><div class="slash"></div><div class="right"><div class="brand">KENSHO</div><div class="sub">B E A M</div></div></div>
+<div class="box-tagline">Strike Brighter.</div>
+</div>
+</div><div class="mockup-label">Matte Black Packaging Box — sticker label</div></div>
+
+</div>
+</div>
+
+<!-- WITH TAGLINE -->
+<div class="section">
+<div class="label">— With Tagline Options —</div>
+<div class="tagline-row">
+
+<div class="tag-card">
+<div class="logo v-white" style="gap:12px">
+<div class="kv" style="font-size:40px;letter-spacing:5px">顕照</div>
+<div class="slash" style="height:66px;width:2px"></div>
+<div class="right"><div class="brand" style="font-size:26px;letter-spacing:4px">KENSHO</div><div class="sub" style="font-size:9px;letter-spacing:7px;margin-top:2px">B E A M</div></div>
+</div>
+<div class="tagline">Strike Brighter.</div>
+<div class="tag-label">Option A — Inter, subtle gray</div>
+</div>
+
+<div class="tag-card">
+<div class="logo v-white" style="gap:12px">
+<div class="kv" style="font-size:40px;letter-spacing:5px">顕照</div>
+<div class="slash" style="height:66px;width:2px"></div>
+<div class="right"><div class="brand" style="font-size:26px;letter-spacing:4px">KENSHO</div><div class="sub" style="font-size:9px;letter-spacing:7px;margin-top:2px">B E A M</div></div>
+</div>
+<div class="tagline-alt">STRIKE BRIGHTER</div>
+<div class="tag-label">Option B — Orbitron, brand blue</div>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>

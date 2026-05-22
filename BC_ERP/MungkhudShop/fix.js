@@ -1,0 +1,1 @@
+const fs = require('fs'); let f1 = fs.readFileSync('src/pages/customer-history.js', 'utf8'); f1 = f1.replace(/\\\\\/g, '\').replace(/\\\\\$/g, '$'); fs.writeFileSync('src/pages/customer-history.js', f1); let f2 = fs.readFileSync('src/pages/mechanic-kpi.js', 'utf8'); f2 = f2.replace(/\\\\\/g, '\').replace(/\\\\\$/g, '$'); fs.writeFileSync('src/pages/mechanic-kpi.js', f2);

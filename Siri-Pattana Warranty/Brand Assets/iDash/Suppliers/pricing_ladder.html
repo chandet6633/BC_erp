@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iDash — Pricing Ladder & Spec Sheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26; --border: #2a2a3a;
+            --text: #e8e8f0; --text-dim: #8888a0; --accent: #6366f1; --accent2: #818cf8;
+            --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 2rem; }
+        .header { text-align: center; margin-bottom: 2.5rem; }
+        .header h1 { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #6366f1, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--text-dim); margin-top: 0.5rem; font-size: 0.9rem; }
+        .header .badge { display: inline-block; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: var(--accent2); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-top: 0.75rem; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 2rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; white-space: nowrap; }
+        thead th { background: var(--surface2); color: var(--text-dim); font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px; padding: 0.75rem 0.8rem; text-align: left; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+        thead th.gs { border-left: 2px solid var(--border); }
+        tbody td { padding: 0.65rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        tbody tr:hover { background: rgba(99,102,241,0.05); }
+        .tier-cell { font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .m { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .mg { color: var(--green); font-weight: 700; }
+        .ma { color: var(--amber); font-weight: 700; }
+        .mp { color: var(--accent2); font-weight: 700; }
+        .pg { color: var(--green); font-weight: 600; font-size: 0.78rem; }
+        .pa { color: var(--amber); font-weight: 600; font-size: 0.78rem; }
+        .sv { color: var(--text-dim); }
+        .sh { color: var(--text); font-weight: 600; }
+        .chip { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .cy { background: rgba(34,197,94,0.15); color: var(--green); }
+        .cn { background: rgba(255,255,255,0.04); color: #555; }
+        .star { color: var(--amber); }
+        .spare td { opacity: 0.45; font-style: italic; }
+        .spare:hover td { opacity: 0.7; }
+        .upgrade-cell { font-size: 0.75rem; color: var(--accent2); max-width: 180px; white-space: normal; line-height: 1.4; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+        .stat-card .label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-card .value { font-size: 1.4rem; font-weight: 800; margin-top: 0.25rem; }
+        .stat-card .sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.1rem; }
+        .note-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; font-size: 0.82rem; color: var(--text-dim); line-height: 1.7; }
+        .note-box strong { color: var(--text); }
+        @media print { body { background:#fff; color:#111; padding:1rem; } .table-wrap { border-color:#ddd; background:#fff; } thead th { background:#f5f5f5; color:#333; border-color:#ddd; } tbody td { border-color:#eee; } .mg { color:#16a34a; } .ma { color:#d97706; } .stat-card,.note-box { border-color:#ddd; background:#fafafa; } }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>iDash — Pricing Ladder</h1>
+    <p>Supplier: Sermsiri (Zeus / Fuchiaudio) · 9 Models · 7 Active Tiers</p>
+    <div class="badge">Updated: 2 May 2026 · Redesigned tier progression</div>
+</div>
+<div class="summary-grid">
+    <div class="stat-card"><div class="label">Price Range</div><div class="value" style="color:var(--accent2)">฿4,990 – ฿19,900</div><div class="sub">7 tiers</div></div>
+    <div class="stat-card"><div class="label">Lowest Cost</div><div class="value" style="color:var(--green)">฿1,800</div><div class="sub">F903 (Eco)</div></div>
+    <div class="stat-card"><div class="label">Best Retail Margin</div><div class="value" style="color:var(--amber)">66.6%</div><div class="sub">Pro (ZS944)</div></div>
+    <div class="stat-card"><div class="label">Wholesale Profit</div><div class="value" style="color:var(--green)">฿500–1,000</div><div class="sub">Flat, cost-based</div></div>
+    <div class="stat-card"><div class="label">Best Store Margin</div><div class="value" style="color:var(--accent2)">57.2%</div><div class="sub">Pro tier</div></div>
+</div>
+<div class="section-title">💰 Full Pricing Ladder with Specifications</div>
+<div class="table-wrap">
+<table>
+<thead><tr>
+    <th>Tier</th><th>Supplier</th><th>Cost</th><th>Retail</th><th>Retail Profit</th><th>Retail %</th>
+    <th class="gs">Wholesale</th><th>Your Profit</th><th>Your %</th><th>Store Profit</th><th>Store %</th>
+    <th class="gs">CPU</th><th>RAM</th><th>ROM</th><th>Display</th><th>4G</th><th>360°</th><th>HDMI</th><th>Fiber</th><th>DVR</th>
+    <th class="gs">Clear Upgrade</th>
+</tr></thead>
+<tbody>
+<tr>
+    <td><div class="tier-cell"><span class="dot" style="background:#10b981"></span>Eco</div></td>
+    <td class="sv">F 903</td><td class="m">฿1,800</td><td class="mp">฿4,990</td><td class="mg">฿3,190</td><td class="pg">63.9%</td>
+    <td class="ma gs">฿2,300</td><td class="ma">฿500</td><td class="pa">21.7%</td><td class="mg">฿2,690</td><td class="pg">53.9%</td>
+    <td class="sv">4C 1.5GHz</td><td class="sv">2 GB</td><td class="sv">32 GB</td><td class="sv">IPS 720p</td>
+    <td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">Entry level</td>
+</tr>
+<tr>
+    <td><div class="tier-cell"><span class="dot" style="background:#3b82f6"></span>Core</div></td>
+    <td class="sv">ZS 943</td><td class="m">฿2,500</td><td class="mp">฿6,990</td><td class="mg">฿4,490</td><td class="pg">64.2%</td>
+    <td class="ma gs">฿3,200</td><td class="ma">฿700</td><td class="pa">21.9%</td><td class="mg">฿3,790</td><td class="pg">54.2%</td>
+    <td class="sh">8C 1.5GHz</td><td class="sh">4 GB</td><td class="sv">32 GB</td><td class="sh">IPS 1K</td>
+    <td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">+4GB RAM, +8 core, +1K display, +Android 15</td>
+</tr>
+<tr>
+    <td><div class="tier-cell"><span class="dot" style="background:#8b5cf6"></span>Pro</div></td>
+    <td class="sv">ZS 944</td><td class="m">฿3,000</td><td class="mp">฿8,990</td><td class="mg">฿5,990</td><td class="pg">66.6%</td>
+    <td class="ma gs">฿3,850</td><td class="ma">฿850</td><td class="pa">22.1%</td><td class="mg">฿5,140</td><td class="pg">57.2%</td>
+    <td class="sv">8C 1.5GHz</td><td class="sv">4 GB</td><td class="sv">32 GB</td><td class="sh">IPS 1.5K</td>
+    <td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cy">✓</span></td>
+    <td class="upgrade-cell">+1.5K display, +DVR</td>
+</tr>
+<tr style="border-top:2px solid #6366f1">
+    <td><div class="tier-cell"><span class="dot" style="background:#f59e0b"></span>Pro Max</div></td>
+    <td class="sv">ZS 936</td><td class="m">฿5,800</td><td class="mp">฿11,900</td><td class="mg">฿6,100</td><td class="pg">51.2%</td>
+    <td class="ma gs">฿6,500</td><td class="ma">฿700</td><td class="pa">10.7%</td><td class="mg">฿5,400</td><td class="pg">45.3%</td>
+    <td class="sh">SD 8C 2.0GHz</td><td class="sv">4 GB</td><td class="sh">64 GB</td><td class="sv">IPS 1.5K</td>
+    <td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">★ Snapdragon, +2.0GHz, +64GB, +4G, +360°, +HDMI</td>
+</tr>
+<tr>
+    <td><div class="tier-cell"><span class="dot" style="background:#ef4444"></span>Ultra <span class="star">⭐</span></div></td>
+    <td class="sv">ZS 937</td><td class="m">฿6,500</td><td class="mp">฿14,900</td><td class="mg">฿8,400</td><td class="pg">56.4%</td>
+    <td class="ma gs">฿7,500</td><td class="ma">฿1,000</td><td class="pa">13.3%</td><td class="mg">฿7,400</td><td class="pg">49.7%</td>
+    <td class="sv">SD 8C 2.0GHz</td><td class="sh">6 GB</td><td class="sh">128 GB</td><td class="sv">IPS 1.5K</td>
+    <td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">+6GB RAM, +128GB ROM</td>
+</tr>
+<tr style="border-top:2px solid #ec4899">
+    <td><div class="tier-cell"><span class="dot" style="background:#ec4899"></span>Ultra Plus</div></td>
+    <td class="sv">ZS 931A</td><td class="m">฿9,500</td><td class="mp">฿17,900</td><td class="mg">฿8,400</td><td class="pg">46.9%</td>
+    <td class="ma gs">฿10,500</td><td class="ma">฿1,000</td><td class="pa">9.5%</td><td class="mg">฿7,400</td><td class="pg">41.3%</td>
+    <td class="sv">SD 8C 2.0GHz</td><td class="sh">8 GB</td><td class="sv">128 GB</td><td class="sh">IPS 2K</td>
+    <td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">+8GB RAM, +2K display, +Fiber Optic</td>
+</tr>
+<tr>
+    <td><div class="tier-cell"><span class="dot" style="background:#f43f5e"></span>Ultra Max</div></td>
+    <td class="sv">ZS 932A</td><td class="m">฿10,500</td><td class="mp">฿19,900</td><td class="mg">฿9,400</td><td class="pg">47.2%</td>
+    <td class="ma gs">฿11,500</td><td class="ma">฿1,000</td><td class="pa">8.7%</td><td class="mg">฿8,400</td><td class="pg">42.2%</td>
+    <td class="sv">SD 8C 2.0GHz</td><td class="sv">8 GB</td><td class="sh">256 GB</td><td class="sh">IPS 2K</td>
+    <td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cn">—</span></td>
+    <td class="upgrade-cell">+256GB ROM</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="section-title">📦 Spare Stock (Unassigned)</div>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Model</th><th>Cost</th><th>CPU</th><th>RAM</th><th>ROM</th><th>Display</th><th>4G</th><th>360°</th><th>Fiber</th><th>Use Case</th></tr></thead>
+<tbody>
+<tr class="spare"><td>F 902</td><td class="m">฿2,300</td><td>8C 1.5GHz</td><td>4 GB</td><td>32 GB</td><td>IPS 720p</td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td><span class="chip cn">—</span></td><td>Warranty replacement</td></tr>
+<tr class="spare"><td>ZS 930A</td><td class="m">฿8,500</td><td>SD 8C 2.0GHz</td><td>8 GB</td><td>128 GB</td><td>IPS 1K</td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td><span class="chip cy">✓</span></td><td>Upgrade / special order</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="section-title">📈 Upgrade Progression</div>
+<div class="note-box" style="font-size:0.85rem; line-height:2; font-family:monospace;">
+    <strong>Display:</strong> 720p → <strong>1K</strong> → <strong>1.5K</strong> → 1.5K → 1.5K → <strong>2K</strong> → 2K<br>
+    <strong>RAM:</strong>&nbsp;&nbsp;&nbsp;&nbsp; 2GB → <strong>4GB</strong> → 4GB → 4GB → <strong>6GB</strong> → <strong>8GB</strong> → 8GB<br>
+    <strong>ROM:</strong>&nbsp;&nbsp;&nbsp;&nbsp; 32GB → 32GB → 32GB → <strong>64GB</strong> → <strong>128GB</strong> → 128GB → <strong>256GB</strong><br>
+    <strong>Chipset:</strong> F03 → Z43 → Z44 → <strong>★ Snapdragon</strong> → SD → SD → SD<br>
+    <strong>Price:</strong>&nbsp;&nbsp; ฿4,990 → ฿6,990 → ฿8,990 → ฿11,900 → ฿14,900 → ฿17,900 → ฿19,900<br>
+    <strong>Gap:</strong>&nbsp;&nbsp;&nbsp;&nbsp; — → +฿2,000 → +฿2,000 → +฿2,910 → +฿3,000 → +฿3,000 → +฿2,000
+</div>
+
+<br>
+<div class="section-title">📝 Notes</div>
+<div class="note-box">
+    <strong>Your costs:</strong> Packaging + Social Media + Website only<br>
+    <strong>Wholesale formula:</strong> Cost + flat overhead (฿500–1,000). High tiers capped at ฿1,000 since your costs are fixed.<br>
+    <strong>All units:</strong> 9" and 10" · CarPlay · Android Auto · 50W×4 · FM · Steering wheel · Reverse camera · USB · BT<br>
+    <strong>Fiber Optic:</strong> Ultra Plus & Ultra Max only (931A/932A) — 48KHz/24bit<br>
+    <strong>360° cameras:</strong> NOT included — sold separately<br>
+    <strong>SD = Qualcomm Snapdragon</strong> — enters at Pro Max tier (฿12,900)
+</div>
+</body>
+</html>

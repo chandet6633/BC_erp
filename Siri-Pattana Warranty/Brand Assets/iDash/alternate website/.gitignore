@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Debug/temp files
+__next.__page__.txt
+__next._full.txt
+__next._head.txt
+__next._index.txt
+__next._tree.txt
+*.txt
+!robots.txt
+
+# Original uncompressed images (keep webp versions)
+# Uncomment if you want to exclude large PNGs from git
+# before.png
+# after.png
+
+# Local Netlify folder
+.netlify

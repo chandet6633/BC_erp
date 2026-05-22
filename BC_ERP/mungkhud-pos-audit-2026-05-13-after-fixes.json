@@ -1,0 +1,1480 @@
+{
+  "exported_at": "2026-05-13T03:44:05.309Z",
+  "fields": {
+    "auditDate": "2026-05-13",
+    "updateReason": "After first fix order, with Google Font and Material Icon dependencies restored by request",
+    "sourceAudit": "C:/Users/Unique5270/Downloads/mungkhud-pos-audit-2026-05-13.json"
+  },
+  "results": [
+    {
+      "id": "preflight.0.0",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Environment Health",
+      "action": "Open API health endpoint.",
+      "expected": "API returns status ok.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.0.1",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Environment Health",
+      "action": "Open POS login page.",
+      "expected": "Login screen renders without console-breaking errors.",
+      "status": "todo",
+      "note": "RETEST after update: logo is served from /assets/mungkhud_logo.png; Google Font and Material Icon dependencies are intentionally restored.",
+      "evidence": "Please verify manually in browser console that external font/icon requests load in your network environment."
+    },
+    {
+      "id": "preflight.0.2",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Environment Health",
+      "action": "Open Management Portal login page.",
+      "expected": "Portal renders and role selection works.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.0.3",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Environment Health",
+      "action": "Confirm current branch list and seeded users.",
+      "expected": "At least one SA, one mechanic, one manager/admin exist.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.0.4",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Environment Health",
+      "action": "Record browser/device in session notes.",
+      "expected": "Audit results can be reproduced later.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.1.0",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Test Data Baseline",
+      "action": "Create or identify one stock product with cost, price, unit, and min stock.",
+      "expected": "Product can be searched and selected in jobs/documents.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.1.1",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Test Data Baseline",
+      "action": "Create or identify one service/labor item.",
+      "expected": "Service/labor item is non-stock-tracked, does not appear as missing/low stock, and does not post stock movement.",
+      "status": "todo",
+      "note": "RETEST after fix: service/labor stock tracking rules were added across stock list, dashboard, inventory report, job close, Kanban payment, and inventory documents.",
+      "evidence": "Fixed in workspace; build and POS E2E smoke passed. Please verify with one labor/service line plus one stock product line."
+    },
+    {
+      "id": "preflight.1.2",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Test Data Baseline",
+      "action": "Create one customer and one vehicle.",
+      "expected": "Vehicle is linked to the customer.",
+      "status": "pass",
+      "note": "when creating vehicle, the customer name (owner) should not be jsut dropdown, if the customer data reach higher volume, it will take time to go through",
+      "evidence": ""
+    },
+    {
+      "id": "preflight.1.3",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Test Data Baseline",
+      "action": "Receive initial stock through Goods Receipt.",
+      "expected": "RR/RQ/RE/TF/SA/PIV/PCN/PAY/WT have clearer labels, validation, and item/amount rules by document type.",
+      "status": "todo",
+      "note": "RETEST after fix: document factory now supports per-doc labels, required notes, TF destination branch validation, inventory-only stock products, and amount-only PAY/WT.",
+      "evidence": "Fixed in workspace; build and POS E2E smoke passed. This is still dev-phase workflow, not final accounting design."
+    },
+    {
+      "id": "preflight.1.4",
+      "section": "0. Preflight And Data Setup",
+      "workflow": "Test Data Baseline",
+      "action": "Write down product code, customer name, plate number, and branch.",
+      "expected": "These values are used throughout the audit.",
+      "status": "pass",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.0.0",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "POS Login And Branch Lock",
+      "action": "Login as SA.",
+      "expected": "Dashboard opens and branch label is visible.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.0.1",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "POS Login And Branch Lock",
+      "action": "Check branch selector behavior.",
+      "expected": "SA is locked to assigned branch; admin can switch branch.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.0.2",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "POS Login And Branch Lock",
+      "action": "Logout and login as admin.",
+      "expected": "Admin can access all menus and branch switcher.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.0.3",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "POS Login And Branch Lock",
+      "action": "Logout and login again as SA.",
+      "expected": "Previous admin branch choice does not leak into SA session.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.1.0",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "Portal Role Routing",
+      "action": "Login portal as mechanic.",
+      "expected": "Mechanic lands on mechanic dashboard or can open it.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.1.1",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "Portal Role Routing",
+      "action": "Try to access finance/settings pages as mechanic.",
+      "expected": "Access is denied or unavailable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.1.2",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "Portal Role Routing",
+      "action": "Login portal as SA or manager.",
+      "expected": "SA/manager can see allowed operational pages.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "auth.1.3",
+      "section": "1. Login, Branch, And Role Boundary",
+      "workflow": "Portal Role Routing",
+      "action": "Confirm mechanic cannot collect payment.",
+      "expected": "Payment remains SA/POS responsibility.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.0.0",
+      "section": "2. Master Data",
+      "workflow": "Customer And Vehicle Reuse Across Branches",
+      "action": "As Branch A, create or identify a customer and linked vehicle.",
+      "expected": "Customer and vehicle save successfully.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.0.1",
+      "section": "2. Master Data",
+      "workflow": "Customer And Vehicle Reuse Across Branches",
+      "action": "As Branch B SA, search the same customer in Job page.",
+      "expected": "Customer appears even though created at another branch.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.0.2",
+      "section": "2. Master Data",
+      "workflow": "Customer And Vehicle Reuse Across Branches",
+      "action": "As Branch B SA, search the same plate.",
+      "expected": "Vehicle details appear and can be selected.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.0.3",
+      "section": "2. Master Data",
+      "workflow": "Customer And Vehicle Reuse Across Branches",
+      "action": "Create a Branch B job for that vehicle.",
+      "expected": "New job has Branch B branch_id.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.0.4",
+      "section": "2. Master Data",
+      "workflow": "Customer And Vehicle Reuse Across Branches",
+      "action": "Open Customer History.",
+      "expected": "History is understandable and includes useful prior visits.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.1.0",
+      "section": "2. Master Data",
+      "workflow": "Product And Vendor Master Data",
+      "action": "Create product brand and group.",
+      "expected": "They can be selected or shown in product data.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.1.1",
+      "section": "2. Master Data",
+      "workflow": "Product And Vendor Master Data",
+      "action": "Create stock product with cost lower than selling price.",
+      "expected": "Product saves with expected cost/price.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.1.2",
+      "section": "2. Master Data",
+      "workflow": "Product And Vendor Master Data",
+      "action": "Create service item/labor line.",
+      "expected": "Service can be selected in job without stock deduction.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.1.3",
+      "section": "2. Master Data",
+      "workflow": "Product And Vendor Master Data",
+      "action": "Create vendor.",
+      "expected": "Vendor can be selected in purchase documents.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "master.1.4",
+      "section": "2. Master Data",
+      "workflow": "Product And Vendor Master Data",
+      "action": "Edit each record and save.",
+      "expected": "Changes persist after refresh.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.0.0",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Goods Receipt",
+      "action": "Create Goods Receipt RR with vendor and product lines.",
+      "expected": "Document saves as draft.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.0.1",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Goods Receipt",
+      "action": "Check Stock List before confirm.",
+      "expected": "Draft RR has not increased stock.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.0.2",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Goods Receipt",
+      "action": "Confirm RR.",
+      "expected": "Document status becomes confirmed.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.0.3",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Goods Receipt",
+      "action": "Check Stock List after confirm.",
+      "expected": "Product stock increases in current branch.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.0.4",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Goods Receipt",
+      "action": "Try editing confirmed RR.",
+      "expected": "App blocks or clearly controls risky edits.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.1.0",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Adjustment",
+      "action": "Create Stock Adjustment SA without reason.",
+      "expected": "App requires reason or blocks confirmation.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.1.1",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Adjustment",
+      "action": "Create positive adjustment with reason.",
+      "expected": "Stock increases after confirmation.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.1.2",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Adjustment",
+      "action": "Create negative adjustment with reason.",
+      "expected": "Stock decreases after confirmation.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.1.3",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Adjustment",
+      "action": "Try adjustment that would make stock negative.",
+      "expected": "Behavior is blocked or clearly accepted by business rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.1.4",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Adjustment",
+      "action": "Check stock ledger/report.",
+      "expected": "Adjustment is traceable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.2.0",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Transfer",
+      "action": "Create Stock Transfer TF and select destination branch.",
+      "expected": "Destination branch is required.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.2.1",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Transfer",
+      "action": "Add product quantity and save draft.",
+      "expected": "Draft has no stock effect.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.2.2",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Transfer",
+      "action": "Confirm transfer.",
+      "expected": "Source branch decreases and destination branch increases.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.2.3",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Transfer",
+      "action": "Check source branch stock.",
+      "expected": "Quantity decreased by transfer amount.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.2.4",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Stock Transfer",
+      "action": "Check destination branch stock.",
+      "expected": "Quantity increased by transfer amount.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.3.0",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Requisition And Return",
+      "action": "Create Requisition RQ with stock product.",
+      "expected": "Draft saves.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.3.1",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Requisition And Return",
+      "action": "Confirm RQ.",
+      "expected": "Stock behavior matches intended business rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.3.2",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Requisition And Return",
+      "action": "Create Stock Return RE.",
+      "expected": "Draft saves.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.3.3",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Requisition And Return",
+      "action": "Confirm RE.",
+      "expected": "Stock behavior matches intended business rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "stock.3.4",
+      "section": "3. Inventory And Stock Documents",
+      "workflow": "Requisition And Return",
+      "action": "Record any unclear stock direction.",
+      "expected": "Dev decision is captured for follow-up.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.0",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "Search existing plate.",
+      "expected": "Vehicle details and customer can auto-fill.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.1",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "Search customer by name/phone.",
+      "expected": "Existing customer can be selected.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.2",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "For new plate/customer, type new values.",
+      "expected": "Save creates customer/vehicle without duplicate surprises.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.3",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "Add labor line and stock product line.",
+      "expected": "Totals, cost, discount, and VAT recalculate.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.4",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "Assign lead mechanic and optional helpers.",
+      "expected": "Assigned mechanic IDs are saved.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.0.5",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Job Intake",
+      "action": "Save job.",
+      "expected": "Job appears with status pending/รับรถ.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.1.0",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Duplicate And Edit Controls",
+      "action": "Try creating another open job for same plate.",
+      "expected": "App warns or prevents duplicate active job.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.1.1",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Duplicate And Edit Controls",
+      "action": "Edit an unpaid active job.",
+      "expected": "Allowed fields update correctly.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.1.2",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Duplicate And Edit Controls",
+      "action": "Try unsafe discount or negative amount.",
+      "expected": "App blocks or normalizes invalid values.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.1.3",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Duplicate And Edit Controls",
+      "action": "Refresh page and reopen job.",
+      "expected": "Saved data persists.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "service.1.4",
+      "section": "4. SA Service Job In POS",
+      "workflow": "Duplicate And Edit Controls",
+      "action": "Confirm branch ownership.",
+      "expected": "Job belongs to current SA branch.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.0.0",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Lead Mechanic Accepts Work",
+      "action": "Create POS job and assign Mechanic A as lead.",
+      "expected": "Job is pending and assigned to Mechanic A.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.0.1",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Lead Mechanic Accepts Work",
+      "action": "Login portal as Mechanic A.",
+      "expected": "Job appears in active work list.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.0.2",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Lead Mechanic Accepts Work",
+      "action": "Confirm role badge.",
+      "expected": "Mechanic A is marked as lead mechanic.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.0.3",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Lead Mechanic Accepts Work",
+      "action": "Click accept/start work.",
+      "expected": "Job status changes to in_progress/กำลังซ่อม.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.0.4",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Lead Mechanic Accepts Work",
+      "action": "Open POS Kanban as SA.",
+      "expected": "Job appears in in_progress column.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.1.0",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Helper Mechanic Boundary",
+      "action": "Create job with Mechanic A as lead and Mechanic B as helper.",
+      "expected": "Both assignments save.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.1.1",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Helper Mechanic Boundary",
+      "action": "Login as Mechanic B before lead accepts.",
+      "expected": "Job appears as helper or pending visibility follows intended rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.1.2",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Helper Mechanic Boundary",
+      "action": "Try to accept/start as helper.",
+      "expected": "Helper cannot start lead-owned pending job.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.1.3",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Helper Mechanic Boundary",
+      "action": "Login as lead and accept job.",
+      "expected": "Job becomes in_progress.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.1.4",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Helper Mechanic Boundary",
+      "action": "Login as helper again.",
+      "expected": "Helper can view work and add QC evidence only if intended.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.0",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Open in-progress assigned job as mechanic.",
+      "expected": "QC button/panel is available.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.1",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Try submitting QC without photos.",
+      "expected": "Submission is blocked.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.2",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Upload photo for only one item when multiple items exist.",
+      "expected": "Submission remains blocked until all required items have photos.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.3",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Upload photos for every required item.",
+      "expected": "Preview thumbnails appear.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.4",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Add mechanic notes.",
+      "expected": "Notes save and persist.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.5",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Submit QC.",
+      "expected": "Job status changes to qc_done/รอเก็บเงิน.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.2.6",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "QC Photo Submission",
+      "action": "Open POS Kanban as SA.",
+      "expected": "Job is in waiting-for-payment column.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.3.0",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Mechanic Privacy And Permissions",
+      "action": "Inspect job card as mechanic.",
+      "expected": "Customer privacy is acceptable; job and plate are enough for work.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.3.1",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Mechanic Privacy And Permissions",
+      "action": "Try to access revenue or finance pages.",
+      "expected": "Access is blocked.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.3.2",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Mechanic Privacy And Permissions",
+      "action": "Try to edit price, discount, or payment.",
+      "expected": "Not available to mechanic.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.3.3",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Mechanic Privacy And Permissions",
+      "action": "Try to close completed/paid job.",
+      "expected": "Not available to mechanic.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "mechanic.3.4",
+      "section": "5. Mechanic Portal Work And QC",
+      "workflow": "Mechanic Privacy And Permissions",
+      "action": "Review completed work history.",
+      "expected": "Mechanic sees their own completed work history/KPI as intended.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.0",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Open qc_done job in POS Kanban.",
+      "expected": "Payment action is available.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.1",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Enter exact full payment.",
+      "expected": "Payment submit succeeds.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.2",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Upload payment proof if transfer/QR.",
+      "expected": "Proof uploads and preview/status is clear.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.3",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Submit payment.",
+      "expected": "Job becomes completed and paid.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.4",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Check Stock List.",
+      "expected": "Stock product lines are deducted once.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.0.5",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Full Payment",
+      "action": "Check finance/report data.",
+      "expected": "Revenue ledger/payment entry is created.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.1.0",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Split Payment And Validation",
+      "action": "Create job total with known amount.",
+      "expected": "Amount due is clear.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.1.1",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Split Payment And Validation",
+      "action": "Enter split payments that equal total.",
+      "expected": "Payment succeeds and methods are recorded.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.1.2",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Split Payment And Validation",
+      "action": "Try underpayment.",
+      "expected": "App blocks or keeps job unpaid/partial by intended rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.1.3",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Split Payment And Validation",
+      "action": "Try overpayment.",
+      "expected": "App blocks or clearly handles change/overpay by intended rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "payment.1.4",
+      "section": "6. SA Payment And Job Close",
+      "workflow": "Split Payment And Validation",
+      "action": "Try closing already paid job again.",
+      "expected": "Duplicate payment/stock deduction is prevented.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.0",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Create quotation QT with customer and items.",
+      "expected": "Draft saves.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.1",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Confirm quotation.",
+      "expected": "Status becomes confirmed.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.2",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Convert QT to invoice IV.",
+      "expected": "Invoice copies customer, lines, totals, and reference.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.3",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Confirm invoice.",
+      "expected": "Status becomes confirmed and conversion to receipt is available.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.4",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Convert IV to receipt RC.",
+      "expected": "Receipt copies correct data.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.0.5",
+      "section": "7. Sales Documents",
+      "workflow": "Quotation To Invoice To Receipt",
+      "action": "Confirm receipt.",
+      "expected": "Final document is traceable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.1.0",
+      "section": "7. Sales Documents",
+      "workflow": "Credit Note",
+      "action": "Create credit note CN linked to customer/reference.",
+      "expected": "Draft saves.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.1.1",
+      "section": "7. Sales Documents",
+      "workflow": "Credit Note",
+      "action": "Add credited item or amount.",
+      "expected": "Total is negative/reducing as intended.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.1.2",
+      "section": "7. Sales Documents",
+      "workflow": "Credit Note",
+      "action": "Confirm CN.",
+      "expected": "Status becomes confirmed.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.1.3",
+      "section": "7. Sales Documents",
+      "workflow": "Credit Note",
+      "action": "Check reports.",
+      "expected": "Revenue/stock impact matches intended business rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "salesdocs.1.4",
+      "section": "7. Sales Documents",
+      "workflow": "Credit Note",
+      "action": "Record unclear reversal behavior.",
+      "expected": "Dev decision is captured.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.0.0",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Lifecycle",
+      "action": "Create and confirm RR.",
+      "expected": "Stock increases.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.0.1",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Lifecycle",
+      "action": "Convert RR to purchase invoice PIV.",
+      "expected": "Vendor, lines, totals, and reference copy correctly.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.0.2",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Lifecycle",
+      "action": "Confirm PIV.",
+      "expected": "Purchase invoice status is confirmed.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.0.3",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Lifecycle",
+      "action": "Create payment PAY if used.",
+      "expected": "Supplier payment is recorded clearly.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.0.4",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Lifecycle",
+      "action": "Check finance/report behavior.",
+      "expected": "Payable/cash impact matches intended rule.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.1.0",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Credit And Withholding Tax",
+      "action": "Create purchase credit note PCN.",
+      "expected": "Vendor adjustment saves.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.1.1",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Credit And Withholding Tax",
+      "action": "Confirm PCN.",
+      "expected": "Report impact is correct.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.1.2",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Credit And Withholding Tax",
+      "action": "Create withholding tax WT.",
+      "expected": "Document saves without item requirement.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.1.3",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Credit And Withholding Tax",
+      "action": "Confirm WT.",
+      "expected": "Tax document is traceable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "purchase.1.4",
+      "section": "8. Purchasing And Payables",
+      "workflow": "Purchase Credit And Withholding Tax",
+      "action": "Check printed/exported document if available.",
+      "expected": "Document output is readable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.0.0",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "Operational Reports",
+      "action": "Open dashboard after test transactions.",
+      "expected": "Counts and KPIs load without errors.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.0.1",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "Operational Reports",
+      "action": "Open Sales Report.",
+      "expected": "Completed/paid jobs appear; drafts do not inflate revenue.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.0.2",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "Operational Reports",
+      "action": "Open Inventory Report.",
+      "expected": "Stock movements match RR, job, TF, SA, RQ, RE tests.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.0.3",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "Operational Reports",
+      "action": "Open Finance Report.",
+      "expected": "Payment ledger matches closed jobs and documents.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.0.4",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "Operational Reports",
+      "action": "Switch branch as admin.",
+      "expected": "Branch-specific numbers change correctly.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.1.0",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "End Of Day Reconciliation",
+      "action": "List all jobs created today.",
+      "expected": "Every test job has expected status.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.1.1",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "End Of Day Reconciliation",
+      "action": "Compare paid jobs to finance entries.",
+      "expected": "Each paid job has one correct revenue/payment trail.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.1.2",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "End Of Day Reconciliation",
+      "action": "Compare stock products sold to stock ledger.",
+      "expected": "Each stock product was deducted once.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.1.3",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "End Of Day Reconciliation",
+      "action": "Check open/qc_done jobs.",
+      "expected": "Unpaid jobs are visible and not hidden.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "reports.1.4",
+      "section": "9. Reports, Dashboard, And End Of Day",
+      "workflow": "End Of Day Reconciliation",
+      "action": "Record unmatched totals.",
+      "expected": "Every mismatch has job number and screenshot/evidence.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.0.0",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Counter Usability",
+      "action": "Create a job on desktop.",
+      "expected": "Required fields are obvious and save errors are useful.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.0.1",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Counter Usability",
+      "action": "Create or review a job on tablet/mobile width.",
+      "expected": "Controls fit and no text overlaps.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.0.2",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Counter Usability",
+      "action": "Use autocomplete for customer, plate, and product.",
+      "expected": "Results are fast and understandable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.0.3",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Counter Usability",
+      "action": "Use browser refresh during a form.",
+      "expected": "Data loss behavior is acceptable or clear.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.0.4",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Counter Usability",
+      "action": "Check Thai labels and statuses.",
+      "expected": "Words match real shop language.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.1.0",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Bug Capture Quality",
+      "action": "For each failure, record role and branch.",
+      "expected": "Developer can reproduce permission context.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.1.1",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Bug Capture Quality",
+      "action": "Record exact route and document/job number.",
+      "expected": "Developer can locate data.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.1.2",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Bug Capture Quality",
+      "action": "Attach screenshot path or short screen recording path.",
+      "expected": "Visual issue is clear.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.1.3",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Bug Capture Quality",
+      "action": "Write expected vs actual in notes.",
+      "expected": "Bug is actionable.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "ux.1.4",
+      "section": "10. Usability, Mobile, And Dev Findings",
+      "workflow": "Bug Capture Quality",
+      "action": "Mark blocker when it stops the next workflow.",
+      "expected": "Priority is visible in exported JSON.",
+      "status": "todo",
+      "note": "",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.0.0",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Static Assets And Console Cleanliness",
+      "action": "Open POS login and dashboard.",
+      "expected": "Mungkhud logo loads from /assets/mungkhud_logo.png without 404.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.0.1",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Static Assets And Console Cleanliness",
+      "action": "Check browser console after refresh.",
+      "expected": "Google Font and Material Icon requests load successfully, and no logo or app asset errors block the page.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.0.2",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Static Assets And Console Cleanliness",
+      "action": "Navigate between dashboard, job, stock list, and documents.",
+      "expected": "Sidebar icons render as Material Icons, not plain text icon names.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.1.0",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Service/Labor No-Stock Behavior",
+      "action": "Create or edit one labor/service product.",
+      "expected": "Product type is service/labor and stock tracking is set to No.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.1.1",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Service/Labor No-Stock Behavior",
+      "action": "Open Stock List and dashboard low-stock widgets.",
+      "expected": "Service/labor product does not appear as missing or low stock.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.1.2",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Service/Labor No-Stock Behavior",
+      "action": "Open Inventory Report.",
+      "expected": "Service/labor product is not listed as stock inventory.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.1.3",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Service/Labor No-Stock Behavior",
+      "action": "Create a job with one service/labor line and one stock product line.",
+      "expected": "Job total includes both lines, but only stock product participates in stock checks.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.1.4",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Service/Labor No-Stock Behavior",
+      "action": "Complete QC and collect payment for that job.",
+      "expected": "Only the stock product is deducted once; service/labor creates no stock movement.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.0",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Open RR, RQ, RE, TF, SA, PIV, PCN, PAY, and WT document pages.",
+      "expected": "Labels, reference fields, notes, and item/amount behavior match the document type.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.1",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Try selecting a service/labor product in an inventory document.",
+      "expected": "Only stock-tracked products are selectable or accepted for stock movement.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.2",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Create Stock Adjustment without notes.",
+      "expected": "Save is blocked and asks for an adjustment reason.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.3",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Create Stock Transfer without destination branch.",
+      "expected": "Save is blocked until destination branch is selected.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.4",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Open PAY and WT.",
+      "expected": "Forms use amount-only workflow and do not require item lines.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    },
+    {
+      "id": "fixes-2026-05-13.2.5",
+      "section": "0A. Fix Regression Checks - 2026-05-13",
+      "workflow": "Document Workflow Split",
+      "action": "Save PAY/WT with amount 0 or blank.",
+      "expected": "Save is blocked until a positive amount is entered.",
+      "status": "todo",
+      "note": "Added after first fix order; please verify manually.",
+      "evidence": ""
+    }
+  ]
+}

@@ -1,0 +1,1357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mungkhud POS Manual Audit Checklist</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text: #172033;
+      --muted: #657187;
+      --border: #d9e0ea;
+      --primary: #1f5eff;
+      --primary-soft: #eaf0ff;
+      --pass: #147a4a;
+      --pass-bg: #e8f7ef;
+      --fail: #b42318;
+      --fail-bg: #fff0ed;
+      --blocked: #9a5b00;
+      --blocked-bg: #fff5db;
+      --na: #576275;
+      --na-bg: #eef2f7;
+      --radius: 8px;
+      --shadow: 0 1px 2px rgba(12, 18, 32, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(245, 247, 251, 0.96);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 8px 11px;
+      cursor: pointer;
+      min-height: 36px;
+    }
+
+    .btn:hover {
+      border-color: #aeb9c9;
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .btn.danger {
+      background: var(--fail-bg);
+      border-color: #ffc4bd;
+      color: var(--fail);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(100px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 5px;
+    }
+
+    .metric-value {
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .progress {
+      height: 8px;
+      background: #e6ebf3;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: var(--primary);
+      transition: width 0.2s ease;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 96px;
+      overflow: hidden;
+    }
+
+    .side-section {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .side-section:last-child {
+      border-bottom: none;
+    }
+
+    .side-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      background: #fff;
+    }
+
+    .field textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav-item {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      border-radius: 6px;
+      padding: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--primary-soft);
+      color: #1649c7;
+    }
+
+    .nav-count {
+      color: var(--muted);
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .audit-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .section-card {
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-soft);
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .section-subtitle {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 3px;
+    }
+
+    .section-tools {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--na-bg);
+      color: var(--na);
+    }
+
+    .workflow {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow:last-child {
+      border-bottom: none;
+    }
+
+    .workflow-title {
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .workflow-purpose {
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin-bottom: 10px;
+    }
+
+    .route-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    code,
+    .route {
+      background: #eef2f7;
+      border: 1px solid #dde5f0;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+    }
+
+    .steps {
+      display: grid;
+      gap: 8px;
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .step-main {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #eef2f7;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .step-text {
+      min-width: 0;
+    }
+
+    .step-action {
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .step-expected {
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .step-controls {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 6px;
+      padding: 5px 7px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      min-width: 42px;
+    }
+
+    .status-btn.pass.active {
+      background: var(--pass-bg);
+      border-color: #9edab9;
+      color: var(--pass);
+      font-weight: 700;
+    }
+
+    .status-btn.fail.active {
+      background: var(--fail-bg);
+      border-color: #ffc4bd;
+      color: var(--fail);
+      font-weight: 700;
+    }
+
+    .status-btn.blocked.active {
+      background: var(--blocked-bg);
+      border-color: #ffd37b;
+      color: var(--blocked);
+      font-weight: 700;
+    }
+
+    .status-btn.na.active {
+      background: var(--na-bg);
+      border-color: #cfd8e6;
+      color: var(--na);
+      font-weight: 700;
+    }
+
+    .step-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 10px 10px 48px;
+    }
+
+    .step-details input,
+    .step-details textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 8px;
+      font-size: 0.8rem;
+    }
+
+    .step-details textarea {
+      min-height: 40px;
+      resize: vertical;
+    }
+
+    .callout {
+      border-left: 4px solid var(--primary);
+      background: var(--primary-soft);
+      padding: 10px 12px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: #193d96;
+      font-size: 0.86rem;
+      margin: 10px 0;
+    }
+
+    .risk {
+      border-left-color: var(--blocked);
+      background: var(--blocked-bg);
+      color: #6d4100;
+    }
+
+    .fail-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .fail-item {
+      padding: 10px;
+      border: 1px solid #ffc4bd;
+      background: var(--fail-bg);
+      border-radius: var(--radius);
+      color: var(--fail);
+      font-size: 0.85rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .topbar-inner,
+      .layout,
+      .audit-meta,
+      .step-details {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .topbar-inner {
+        align-items: stretch;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media print {
+      .topbar,
+      .sidebar,
+      .actions,
+      .section-tools,
+      .step-details {
+        display: none !important;
+      }
+
+      body {
+        background: #fff;
+      }
+
+      .shell,
+      .layout {
+        display: block;
+        max-width: none;
+        padding: 0;
+      }
+
+      .panel,
+      .section-card,
+      .step {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .workflow {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Mungkhud POS Manual Audit Checklist</h1>
+        <div class="subtitle">Dev-phase workflow guide for POS, mechanic portal, inventory, documents, reports, and permissions.</div>
+        <div class="progress" aria-label="Audit progress"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="showAllBtn" type="button">Show All</button>
+        <button class="btn" id="showIssuesBtn" type="button">Issues Only</button>
+        <button class="btn" id="exportBtn" type="button">Export JSON</button>
+        <button class="btn" id="printBtn" type="button">Print</button>
+        <button class="btn danger" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="summary" id="summary"></section>
+
+    <div class="layout">
+      <aside class="panel sidebar">
+        <div class="side-section">
+          <div class="side-title">Audit Info</div>
+          <div class="field">
+            <label for="testerName">Tester</label>
+            <input id="testerName" placeholder="Your name">
+          </div>
+          <div class="field">
+            <label for="testEnv">Environment</label>
+            <select id="testEnv">
+              <option>Local dev stack</option>
+              <option>Test server</option>
+              <option>Production-like staging</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="auditDate">Date</label>
+            <input id="auditDate" type="date">
+          </div>
+        </div>
+        <div class="side-section">
+          <div class="side-title">Quick Links</div>
+          <div class="nav-list" id="navList"></div>
+        </div>
+        <div class="side-section">
+          <div class="side-title">Test Accounts</div>
+          <p style="margin:0 0 8px;color:var(--muted);font-size:.82rem;">Use real seeded credentials in your stack. Confirm role and branch after login.</p>
+          <div class="route-row">
+            <span class="route">admin</span>
+            <span class="route">sa</span>
+            <span class="route">mechanic</span>
+            <span class="route">manager</span>
+          </div>
+        </div>
+        <div class="side-section">
+          <div class="side-title">Rules To Remember</div>
+          <div class="callout risk">
+            Dev phase means a failed step is useful information. Record exact route, role, branch, job number, and screenshot/evidence path.
+          </div>
+        </div>
+      </aside>
+
+      <section>
+        <div class="panel audit-meta">
+          <div class="field">
+            <label for="posUrl">POS URL</label>
+            <input id="posUrl" value="http://localhost:9091">
+          </div>
+          <div class="field">
+            <label for="portalUrl">Management Portal URL</label>
+            <input id="portalUrl" value="http://localhost:9092">
+          </div>
+          <div class="field">
+            <label for="apiUrl">API URL</label>
+            <input id="apiUrl" value="http://localhost:9093">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label for="sessionNotes">Session Notes</label>
+            <textarea id="sessionNotes" placeholder="Build version, branch tested, seed data notes, known limitations, device/browser used..."></textarea>
+          </div>
+        </div>
+
+        <div id="sections"></div>
+
+        <section class="panel section-card" id="issueSummaryCard">
+          <div class="section-header">
+            <div>
+              <h2>Issue Summary</h2>
+              <div class="section-subtitle">Failed and blocked steps appear here automatically.</div>
+            </div>
+          </div>
+          <div class="workflow">
+            <div class="fail-list" id="issueSummary"></div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'bcauto.pos.manual.audit.v1';
+
+    const AUDIT = [
+      {
+        id: 'preflight',
+        title: '0. Preflight And Data Setup',
+        subtitle: 'Confirm the test stack is stable before testing business flow.',
+        workflows: [
+          {
+            title: 'Environment Health',
+            purpose: 'Avoid wasting audit time on a broken stack.',
+            routes: ['API /api/health', 'POS /#/login', 'Portal /main/index.html'],
+            steps: [
+              ['Open API health endpoint.', 'API returns status ok.'],
+              ['Open POS login page.', 'Login screen renders without console-breaking errors.'],
+              ['Open Management Portal login page.', 'Portal renders and role selection works.'],
+              ['Confirm current branch list and seeded users.', 'At least one SA, one mechanic, one manager/admin exist.'],
+              ['Record browser/device in session notes.', 'Audit results can be reproduced later.']
+            ]
+          },
+          {
+            title: 'Test Data Baseline',
+            purpose: 'Create known objects so later checks are precise.',
+            routes: ['#/master-product', '#/master-customer', '#/master-vehicle', '#/goods-receipt'],
+            steps: [
+              ['Create or identify one stock product with cost, price, unit, and min stock.', 'Product can be searched and selected in jobs/documents.'],
+              ['Create or identify one service/labor item with stock tracking disabled.', 'Service item does not appear in stock list, low-stock widgets, or stock documents.'],
+              ['Create one customer and one vehicle.', 'Vehicle is linked to the customer.'],
+              ['Receive initial stock through Goods Receipt.', 'Stock List shows available quantity for current branch.'],
+              ['Write down product code, customer name, plate number, and branch.', 'These values are used throughout the audit.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'fixes-2026-05-13',
+        title: '0A. Fix Regression Checks - 2026-05-13',
+        subtitle: 'Verify the latest repaired behavior before continuing the full dev-phase audit.',
+        workflows: [
+          {
+            title: 'Static Assets And Console Cleanliness',
+            purpose: 'Confirm the POS shell no longer depends on missing logo/font resources.',
+            routes: ['POS /#/login', 'POS /#/dashboard', 'Browser console'],
+            steps: [
+              ['Open POS login and dashboard.', 'Mungkhud logo loads from /assets/mungkhud_logo.png without 404.'],
+              ['Check browser console after refresh.', 'Google Font and Material Icon requests load successfully, and no logo or app asset errors block the page.'],
+              ['Navigate between dashboard, job, stock list, and documents.', 'Sidebar icons render as Material Icons, not plain text icon names.']
+            ]
+          },
+          {
+            title: 'Service/Labor No-Stock Behavior',
+            purpose: 'Confirm service and labor products are not treated as inventory after the PocketBase to NocoDB migration.',
+            routes: ['#/master-product', '#/stock-list', '#/dashboard', '#/report-inventory', '#/job', '#/kanban'],
+            steps: [
+              ['Create or edit one labor/service product.', 'Product type is service/labor and stock tracking is set to No.'],
+              ['Open Stock List and dashboard low-stock widgets.', 'Service/labor product does not appear as missing or low stock.'],
+              ['Open Inventory Report.', 'Service/labor product is not listed as stock inventory.'],
+              ['Create a job with one service/labor line and one stock product line.', 'Job total includes both lines, but only stock product participates in stock checks.'],
+              ['Complete QC and collect payment for that job.', 'Only the stock product is deducted once; service/labor creates no stock movement.']
+            ]
+          },
+          {
+            title: 'Document Workflow Split',
+            purpose: 'Verify stocking and purchasing documents no longer feel like the same generic form.',
+            routes: ['#/goods-receipt', '#/stock-adjust', '#/stock-transfer', '#/requisition', '#/stock-return', '#/purchase-invoice', '#/purchase-cn', '#/payment', '#/withholding-tax'],
+            steps: [
+              ['Open RR, RQ, RE, TF, and SA document pages.', 'Labels, reference fields, notes, and item titles match the document type.'],
+              ['Try selecting a service/labor product in an inventory document.', 'Only stock-tracked products are selectable or accepted for stock movement.'],
+              ['Create Stock Adjustment without notes.', 'Save is blocked and asks for an adjustment reason.'],
+              ['Create Stock Transfer without destination branch.', 'Save is blocked until destination branch is selected.'],
+              ['Open PAY and WT.', 'Forms use amount-only workflow and do not require item lines.'],
+              ['Save PAY/WT with amount 0 or blank.', 'Save is blocked until a positive amount is entered.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'auth',
+        title: '1. Login, Branch, And Role Boundary',
+        subtitle: 'Make sure users enter the correct workspace and cannot cross role boundaries.',
+        workflows: [
+          {
+            title: 'POS Login And Branch Lock',
+            purpose: 'Verify SA can work only inside assigned branch.',
+            routes: ['#/login', '#/dashboard'],
+            steps: [
+              ['Login as SA.', 'Dashboard opens and branch label is visible.'],
+              ['Check branch selector behavior.', 'SA is locked to assigned branch; admin can switch branch.'],
+              ['Logout and login as admin.', 'Admin can access all menus and branch switcher.'],
+              ['Logout and login again as SA.', 'Previous admin branch choice does not leak into SA session.']
+            ]
+          },
+          {
+            title: 'Portal Role Routing',
+            purpose: 'Verify mechanics use the portal, not POS, for their work.',
+            routes: ['Management Portal', 'Mechanic page'],
+            steps: [
+              ['Login portal as mechanic.', 'Mechanic lands on mechanic dashboard or can open it.'],
+              ['Try to access finance/settings pages as mechanic.', 'Access is denied or unavailable.'],
+              ['Login portal as SA or manager.', 'SA/manager can see allowed operational pages.'],
+              ['Confirm mechanic cannot collect payment.', 'Payment remains SA/POS responsibility.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'master',
+        title: '2. Master Data',
+        subtitle: 'Customers and vehicles are global; transactional records are branch-owned.',
+        workflows: [
+          {
+            title: 'Customer And Vehicle Reuse Across Branches',
+            purpose: 'A customer from another branch should be easy for SA to find.',
+            routes: ['#/master-customer', '#/master-vehicle', '#/job', '#/customer-history'],
+            steps: [
+              ['As Branch A, create or identify a customer and linked vehicle.', 'Customer and vehicle save successfully.'],
+              ['As Branch B SA, search the same customer in Job page.', 'Customer appears even though created at another branch.'],
+              ['As Branch B SA, search the same plate.', 'Vehicle details appear and can be selected.'],
+              ['Create a Branch B job for that vehicle.', 'New job has Branch B branch_id.'],
+              ['Open Customer History.', 'History is understandable and includes useful prior visits.']
+            ]
+          },
+          {
+            title: 'Product And Vendor Master Data',
+            purpose: 'Stock, purchasing, and jobs depend on clean master data.',
+            routes: ['#/master-product', '#/master-vendor', '#/master-brand', '#/master-group'],
+            steps: [
+              ['Create product brand and group.', 'They can be selected or shown in product data.'],
+              ['Create stock product with cost lower than selling price.', 'Product saves with expected cost/price.'],
+              ['Create service item/labor line.', 'Product master saves it as non-stock-tracked and it can be selected in job without stock deduction.'],
+              ['Create vendor.', 'Vendor can be selected in purchase documents.'],
+              ['Edit each record and save.', 'Changes persist after refresh.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'stock',
+        title: '3. Inventory And Stock Documents',
+        subtitle: 'Draft documents should not move stock; confirmed documents should.',
+        workflows: [
+          {
+            title: 'Goods Receipt',
+            purpose: 'Receive stock into a branch.',
+            routes: ['#/goods-receipt', '#/stock-list'],
+            steps: [
+              ['Create Goods Receipt RR with vendor and stock product lines.', 'Document saves as draft and does not accept service/labor items for stock movement.'],
+              ['Check Stock List before confirm.', 'Draft RR has not increased stock.'],
+              ['Confirm RR.', 'Document status becomes confirmed.'],
+              ['Check Stock List after confirm.', 'Product stock increases in current branch.'],
+              ['Try editing confirmed RR.', 'App blocks or clearly controls risky edits.']
+            ]
+          },
+          {
+            title: 'Stock Adjustment',
+            purpose: 'Validate controlled stock correction.',
+            routes: ['#/stock-adjust', '#/stock-list'],
+            steps: [
+              ['Create Stock Adjustment SA without reason.', 'App blocks save and requires an adjustment reason.'],
+              ['Create positive adjustment with reason.', 'Stock increases after confirmation.'],
+              ['Create negative adjustment with reason.', 'Stock decreases after confirmation.'],
+              ['Try adjustment that would make stock negative.', 'Behavior is blocked or clearly accepted by business rule.'],
+              ['Check stock ledger/report.', 'Adjustment is traceable.']
+            ]
+          },
+          {
+            title: 'Stock Transfer',
+            purpose: 'Move stock from one branch to another.',
+            routes: ['#/stock-transfer', '#/stock-list'],
+            steps: [
+              ['Create Stock Transfer TF without destination branch.', 'Save is blocked until destination branch is selected.'],
+              ['Add product quantity and save draft.', 'Draft has no stock effect.'],
+              ['Confirm transfer.', 'Source branch decreases and destination branch increases.'],
+              ['Check source branch stock.', 'Quantity decreased by transfer amount.'],
+              ['Check destination branch stock.', 'Quantity increased by transfer amount.']
+            ]
+          },
+          {
+            title: 'Requisition And Return',
+            purpose: 'Confirm meaning of internal issue and return flows.',
+            routes: ['#/requisition', '#/stock-return', '#/stock-list'],
+            steps: [
+              ['Create Requisition RQ with stock product.', 'Draft saves.'],
+              ['Confirm RQ.', 'Stock behavior matches intended business rule.'],
+              ['Create Stock Return RE.', 'Draft saves.'],
+              ['Confirm RE.', 'Stock behavior matches intended business rule.'],
+              ['Record any unclear stock direction.', 'Dev decision is captured for follow-up.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'service',
+        title: '4. SA Service Job In POS',
+        subtitle: 'Core counter workflow: intake, assign, track, collect payment.',
+        workflows: [
+          {
+            title: 'Job Intake',
+            purpose: 'SA creates a correct branch-owned service job.',
+            routes: ['#/job'],
+            steps: [
+              ['Search existing plate.', 'Vehicle details and customer can auto-fill.'],
+              ['Search customer by name/phone.', 'Existing customer can be selected.'],
+              ['For new plate/customer, type new values.', 'Save creates customer/vehicle without duplicate surprises.'],
+              ['Add labor line and stock product line.', 'Totals, cost, discount, and VAT recalculate; only the stock product checks available stock.'],
+              ['Assign lead mechanic and optional helpers.', 'Assigned mechanic IDs are saved.'],
+              ['Save job.', 'Job appears with status pending/รับรถ.']
+            ]
+          },
+          {
+            title: 'Duplicate And Edit Controls',
+            purpose: 'Prevent confusing duplicate open jobs and unsafe edits.',
+            routes: ['#/job', '#/kanban'],
+            steps: [
+              ['Try creating another open job for same plate.', 'App warns or prevents duplicate active job.'],
+              ['Edit an unpaid active job.', 'Allowed fields update correctly.'],
+              ['Try unsafe discount or negative amount.', 'App blocks or normalizes invalid values.'],
+              ['Refresh page and reopen job.', 'Saved data persists.'],
+              ['Confirm branch ownership.', 'Job belongs to current SA branch.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'mechanic',
+        title: '5. Mechanic Portal Work And QC',
+        subtitle: 'Mechanic only approves assigned work and submits QC after the work is done.',
+        workflows: [
+          {
+            title: 'Lead Mechanic Accepts Work',
+            purpose: 'Only the lead mechanic should start the assigned job.',
+            routes: ['Management Portal mechanic page', 'POS #/kanban'],
+            steps: [
+              ['Create POS job and assign Mechanic A as lead.', 'Job is pending and assigned to Mechanic A.'],
+              ['Login portal as Mechanic A.', 'Job appears in active work list.'],
+              ['Confirm role badge.', 'Mechanic A is marked as lead mechanic.'],
+              ['Click accept/start work.', 'Job status changes to in_progress/กำลังซ่อม.'],
+              ['Open POS Kanban as SA.', 'Job appears in in_progress column.']
+            ]
+          },
+          {
+            title: 'Helper Mechanic Boundary',
+            purpose: 'Helper can see assigned work but should not lead-approve pending work.',
+            routes: ['Management Portal mechanic page'],
+            steps: [
+              ['Create job with Mechanic A as lead and Mechanic B as helper.', 'Both assignments save.'],
+              ['Login as Mechanic B before lead accepts.', 'Job appears as helper or pending visibility follows intended rule.'],
+              ['Try to accept/start as helper.', 'Helper cannot start lead-owned pending job.'],
+              ['Login as lead and accept job.', 'Job becomes in_progress.'],
+              ['Login as helper again.', 'Helper can view work and add QC evidence only if intended.']
+            ]
+          },
+          {
+            title: 'QC Photo Submission',
+            purpose: 'Mechanic completes evidence before SA can collect payment.',
+            routes: ['Management Portal mechanic page', 'POS #/kanban'],
+            steps: [
+              ['Open in-progress assigned job as mechanic.', 'QC button/panel is available.'],
+              ['Try submitting QC without photos.', 'Submission is blocked.'],
+              ['Upload photo for only one item when multiple items exist.', 'Submission remains blocked until all required items have photos.'],
+              ['Upload photos for every required item.', 'Preview thumbnails appear.'],
+              ['Add mechanic notes.', 'Notes save and persist.'],
+              ['Submit QC.', 'Job status changes to qc_done/รอเก็บเงิน.'],
+              ['Open POS Kanban as SA.', 'Job is in waiting-for-payment column.']
+            ]
+          },
+          {
+            title: 'Mechanic Privacy And Permissions',
+            purpose: 'Mechanic should not see more customer/financial data than needed.',
+            routes: ['Management Portal mechanic page'],
+            steps: [
+              ['Inspect job card as mechanic.', 'Customer privacy is acceptable; job and plate are enough for work.'],
+              ['Try to access revenue or finance pages.', 'Access is blocked.'],
+              ['Try to edit price, discount, or payment.', 'Not available to mechanic.'],
+              ['Try to close completed/paid job.', 'Not available to mechanic.'],
+              ['Review completed work history.', 'Mechanic sees their own completed work history/KPI as intended.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'payment',
+        title: '6. SA Payment And Job Close',
+        subtitle: 'Payment should be exact, traceable, and should trigger stock and ledger updates.',
+        workflows: [
+          {
+            title: 'Full Payment',
+            purpose: 'Close normal job after QC.',
+            routes: ['#/kanban', '#/stock-list', '#/report-finance'],
+            steps: [
+              ['Open qc_done job in POS Kanban.', 'Payment action is available.'],
+              ['Enter exact full payment.', 'Payment submit succeeds.'],
+              ['Upload payment proof if transfer/QR.', 'Proof uploads and preview/status is clear.'],
+              ['Submit payment.', 'Job becomes completed and paid.'],
+              ['Check Stock List.', 'Stock product lines are deducted once and service/labor lines are not deducted.'],
+              ['Check finance/report data.', 'Revenue ledger/payment entry is created.']
+            ]
+          },
+          {
+            title: 'Split Payment And Validation',
+            purpose: 'Catch money-handling edge cases.',
+            routes: ['#/kanban'],
+            steps: [
+              ['Create job total with known amount.', 'Amount due is clear.'],
+              ['Enter split payments that equal total.', 'Payment succeeds and methods are recorded.'],
+              ['Try underpayment.', 'App blocks or keeps job unpaid/partial by intended rule.'],
+              ['Try overpayment.', 'App blocks or clearly handles change/overpay by intended rule.'],
+              ['Try closing already paid job again.', 'Duplicate payment/stock deduction is prevented.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'salesdocs',
+        title: '7. Sales Documents',
+        subtitle: 'Quotation, invoice, receipt, and credit note conversion flow.',
+        workflows: [
+          {
+            title: 'Quotation To Invoice To Receipt',
+            purpose: 'Validate sales document lifecycle.',
+            routes: ['#/quotation', '#/invoice', '#/receipt'],
+            steps: [
+              ['Create quotation QT with customer and items.', 'Draft saves.'],
+              ['Confirm quotation.', 'Status becomes confirmed.'],
+              ['Convert QT to invoice IV.', 'Invoice copies customer, lines, totals, and reference.'],
+              ['Confirm invoice.', 'Status becomes confirmed and conversion to receipt is available.'],
+              ['Convert IV to receipt RC.', 'Receipt copies correct data.'],
+              ['Confirm receipt.', 'Final document is traceable.']
+            ]
+          },
+          {
+            title: 'Credit Note',
+            purpose: 'Validate refund/reversal behavior.',
+            routes: ['#/credit-note', '#/report-sales', '#/report-finance'],
+            steps: [
+              ['Create credit note CN linked to customer/reference.', 'Draft saves.'],
+              ['Add credited item or amount.', 'Total is negative/reducing as intended.'],
+              ['Confirm CN.', 'Status becomes confirmed.'],
+              ['Check reports.', 'Revenue/stock impact matches intended business rule.'],
+              ['Record unclear reversal behavior.', 'Dev decision is captured.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'purchase',
+        title: '8. Purchasing And Payables',
+        subtitle: 'Vendor-side documents should not behave like customer-side sales.',
+        workflows: [
+          {
+            title: 'Purchase Lifecycle',
+            purpose: 'Validate receiving, supplier invoice, and supplier payment.',
+            routes: ['#/goods-receipt', '#/purchase-invoice', '#/payment'],
+            steps: [
+              ['Create and confirm RR.', 'Stock increases.'],
+              ['Convert RR to purchase invoice PIV.', 'Vendor, lines, totals, and reference copy correctly.'],
+              ['Confirm PIV.', 'Purchase invoice status is confirmed.'],
+              ['Create payment PAY if used.', 'PAY uses amount-only entry, requires a positive amount, and records supplier payment clearly.'],
+              ['Check finance/report behavior.', 'Payable/cash impact matches intended rule.']
+            ]
+          },
+          {
+            title: 'Purchase Credit And Withholding Tax',
+            purpose: 'Validate supplier adjustments.',
+            routes: ['#/purchase-cn', '#/withholding-tax'],
+            steps: [
+              ['Create purchase credit note PCN.', 'Vendor adjustment saves.'],
+              ['Confirm PCN.', 'Report impact is correct.'],
+              ['Create withholding tax WT.', 'WT uses amount-only entry and saves without item requirement.'],
+              ['Confirm WT.', 'Tax document is traceable.'],
+              ['Check printed/exported document if available.', 'Document output is readable.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'reports',
+        title: '9. Reports, Dashboard, And End Of Day',
+        subtitle: 'Totals should match the test transactions.',
+        workflows: [
+          {
+            title: 'Operational Reports',
+            purpose: 'Verify the business owner can trust the numbers.',
+            routes: ['#/dashboard', '#/report-sales', '#/report-inventory', '#/report-finance'],
+            steps: [
+              ['Open dashboard after test transactions.', 'Counts and KPIs load without errors.'],
+              ['Open Sales Report.', 'Completed/paid jobs appear; drafts do not inflate revenue.'],
+              ['Open Inventory Report.', 'Stock movements match RR, job, TF, SA, RQ, RE tests.'],
+              ['Open Finance Report.', 'Payment ledger matches closed jobs and documents.'],
+              ['Switch branch as admin.', 'Branch-specific numbers change correctly.']
+            ]
+          },
+          {
+            title: 'End Of Day Reconciliation',
+            purpose: 'Check whether a branch can close the day confidently.',
+            routes: ['#/kanban', '#/report-sales', '#/report-finance'],
+            steps: [
+              ['List all jobs created today.', 'Every test job has expected status.'],
+              ['Compare paid jobs to finance entries.', 'Each paid job has one correct revenue/payment trail.'],
+              ['Compare stock products sold to stock ledger.', 'Each stock product was deducted once.'],
+              ['Check open/qc_done jobs.', 'Unpaid jobs are visible and not hidden.'],
+              ['Record unmatched totals.', 'Every mismatch has job number and screenshot/evidence.']
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ux',
+        title: '10. Usability, Mobile, And Dev Findings',
+        subtitle: 'Capture friction while the app is still cheap to change.',
+        workflows: [
+          {
+            title: 'Counter Usability',
+            purpose: 'The SA should move fast without guessing.',
+            routes: ['#/job', '#/kanban', '#/customer-history'],
+            steps: [
+              ['Create a job on desktop.', 'Required fields are obvious and save errors are useful.'],
+              ['Create or review a job on tablet/mobile width.', 'Controls fit and no text overlaps.'],
+              ['Use autocomplete for customer, plate, and product.', 'Results are fast and understandable.'],
+              ['Use browser refresh during a form.', 'Data loss behavior is acceptable or clear.'],
+              ['Check Thai labels and statuses.', 'Words match real shop language.']
+            ]
+          },
+          {
+            title: 'Bug Capture Quality',
+            purpose: 'Make follow-up fixes faster.',
+            routes: ['All pages'],
+            steps: [
+              ['For each failure, record role and branch.', 'Developer can reproduce permission context.'],
+              ['Record exact route and document/job number.', 'Developer can locate data.'],
+              ['Attach screenshot path or short screen recording path.', 'Visual issue is clear.'],
+              ['Write expected vs actual in notes.', 'Bug is actionable.'],
+              ['Mark blocker when it stops the next workflow.', 'Priority is visible in exported JSON.']
+            ]
+          }
+        ]
+      }
+    ];
+
+    const state = loadState();
+    let issueOnly = false;
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { steps: {}, fields: {} };
+      } catch {
+        return { steps: {}, fields: {} };
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function stepId(sectionId, workflowIndex, stepIndex) {
+      return `${sectionId}.${workflowIndex}.${stepIndex}`;
+    }
+
+    function allSteps() {
+      const out = [];
+      AUDIT.forEach(section => {
+        section.workflows.forEach((workflow, wi) => {
+          workflow.steps.forEach((step, si) => {
+            out.push({
+              id: stepId(section.id, wi, si),
+              section,
+              workflow,
+              action: step[0],
+              expected: step[1]
+            });
+          });
+        });
+      });
+      return out;
+    }
+
+    function statusOf(id) {
+      return state.steps[id]?.status || 'todo';
+    }
+
+    function renderSummary() {
+      const steps = allSteps();
+      const counts = { total: steps.length, pass: 0, fail: 0, blocked: 0, na: 0, todo: 0 };
+      steps.forEach(s => counts[statusOf(s.id)]++);
+      const done = counts.pass + counts.fail + counts.blocked + counts.na;
+      const pct = counts.total ? Math.round((done / counts.total) * 100) : 0;
+      document.getElementById('progressFill').style.width = `${pct}%`;
+      document.getElementById('summary').innerHTML = [
+        ['Progress', `${pct}%`],
+        ['Passed', counts.pass],
+        ['Failed', counts.fail],
+        ['Blocked', counts.blocked],
+        ['N/A', counts.na],
+        ['Remaining', counts.todo]
+      ].map(([label, value]) => `
+        <div class="metric">
+          <div class="metric-label">${label}</div>
+          <div class="metric-value">${value}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderNav() {
+      const nav = document.getElementById('navList');
+      nav.innerHTML = AUDIT.map(section => {
+        const ids = [];
+        section.workflows.forEach((w, wi) => w.steps.forEach((_, si) => ids.push(stepId(section.id, wi, si))));
+        const done = ids.filter(id => statusOf(id) !== 'todo').length;
+        return `
+          <button class="nav-item" type="button" data-jump="${section.id}">
+            <span>${section.title}</span>
+            <span class="nav-count">${done}/${ids.length}</span>
+          </button>
+        `;
+      }).join('');
+      nav.querySelectorAll('[data-jump]').forEach(btn => {
+        btn.addEventListener('click', () => document.getElementById(btn.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      });
+    }
+
+    function renderSections() {
+      const root = document.getElementById('sections');
+      root.innerHTML = AUDIT.map(section => {
+        const stepsInSection = [];
+        section.workflows.forEach((w, wi) => w.steps.forEach((_, si) => stepsInSection.push(stepId(section.id, wi, si))));
+        const done = stepsInSection.filter(id => statusOf(id) !== 'todo').length;
+        const failed = stepsInSection.filter(id => ['fail', 'blocked'].includes(statusOf(id))).length;
+
+        return `
+          <section class="panel section-card" id="${section.id}">
+            <div class="section-header">
+              <div>
+                <h2>${section.title}</h2>
+                <div class="section-subtitle">${section.subtitle}</div>
+              </div>
+              <div class="section-tools">
+                <span class="pill">${done}/${stepsInSection.length} checked</span>
+                ${failed ? `<span class="pill" style="background:var(--fail-bg);color:var(--fail);">${failed} issue(s)</span>` : ''}
+              </div>
+            </div>
+            ${section.workflows.map((workflow, wi) => renderWorkflow(section, workflow, wi)).join('')}
+          </section>
+        `;
+      }).join('');
+
+      root.querySelectorAll('[data-status]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.step;
+          state.steps[id] = state.steps[id] || {};
+          state.steps[id].status = btn.dataset.status;
+          saveState();
+          render();
+        });
+      });
+
+      root.querySelectorAll('[data-note], [data-evidence]').forEach(input => {
+        input.addEventListener('input', () => {
+          const id = input.dataset.note || input.dataset.evidence;
+          state.steps[id] = state.steps[id] || {};
+          if (input.dataset.note) state.steps[id].note = input.value;
+          if (input.dataset.evidence) state.steps[id].evidence = input.value;
+          saveState();
+          renderSummary();
+          renderIssueSummary();
+        });
+      });
+    }
+
+    function renderWorkflow(section, workflow, wi) {
+      return `
+        <div class="workflow">
+          <div class="workflow-title">${workflow.title}</div>
+          <div class="workflow-purpose">${workflow.purpose}</div>
+          <div class="route-row">${workflow.routes.map(r => `<span class="route">${r}</span>`).join('')}</div>
+          <div class="steps">
+            ${workflow.steps.map((step, si) => renderStep(section.id, wi, si, step)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStep(sectionId, wi, si, step) {
+      const id = stepId(sectionId, wi, si);
+      const record = state.steps[id] || {};
+      const status = record.status || 'todo';
+      const issueClass = issueOnly && !['fail', 'blocked'].includes(status) ? 'hidden' : '';
+      return `
+        <article class="step ${issueClass}">
+          <div class="step-main">
+            <div class="step-num">${si + 1}</div>
+            <div class="step-text">
+              <div class="step-action">${step[0]}</div>
+              <div class="step-expected">Expected: ${step[1]}</div>
+            </div>
+            <div class="step-controls" aria-label="Step status">
+              ${['pass', 'fail', 'blocked', 'na'].map(s => `
+                <button class="status-btn ${s} ${status === s ? 'active' : ''}" type="button" data-step="${id}" data-status="${s}">
+                  ${s === 'na' ? 'N/A' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="step-details">
+            <textarea data-note="${id}" placeholder="Notes: actual result, job number, branch, role...">${escapeHtml(record.note || '')}</textarea>
+            <input data-evidence="${id}" placeholder="Evidence path/link: screenshot, video, log..." value="${escapeHtml(record.evidence || '')}">
+          </div>
+        </article>
+      `;
+    }
+
+    function renderIssueSummary() {
+      const issues = allSteps().filter(step => ['fail', 'blocked'].includes(statusOf(step.id)));
+      const root = document.getElementById('issueSummary');
+      if (!issues.length) {
+        root.innerHTML = '<div style="color:var(--muted);font-size:.9rem;">No failed or blocked steps recorded yet.</div>';
+        return;
+      }
+      root.innerHTML = issues.map(step => {
+        const record = state.steps[step.id] || {};
+        return `
+          <div class="fail-item">
+            <strong>${statusOf(step.id).toUpperCase()}:</strong> ${step.section.title} / ${step.workflow.title}<br>
+            <span>${step.action}</span><br>
+            <span style="color:#6b2a24;">Note: ${escapeHtml(record.note || '-')}</span><br>
+            <span style="color:#6b2a24;">Evidence: ${escapeHtml(record.evidence || '-')}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function bindFields() {
+      ['testerName', 'testEnv', 'auditDate', 'posUrl', 'portalUrl', 'apiUrl', 'sessionNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (state.fields[id] !== undefined) el.value = state.fields[id];
+        el.addEventListener('input', () => {
+          state.fields[id] = el.value;
+          saveState();
+        });
+      });
+      if (!state.fields.auditDate) {
+        document.getElementById('auditDate').value = new Date().toISOString().slice(0, 10);
+        state.fields.auditDate = document.getElementById('auditDate').value;
+        saveState();
+      }
+    }
+
+    function exportJson() {
+      const payload = {
+        exported_at: new Date().toISOString(),
+        fields: state.fields,
+        results: allSteps().map(step => ({
+          id: step.id,
+          section: step.section.title,
+          workflow: step.workflow.title,
+          action: step.action,
+          expected: step.expected,
+          status: statusOf(step.id),
+          note: state.steps[step.id]?.note || '',
+          evidence: state.steps[step.id]?.evidence || ''
+        }))
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mungkhud-pos-audit-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+
+    function render() {
+      renderSummary();
+      renderNav();
+      renderSections();
+      renderIssueSummary();
+    }
+
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+      issueOnly = false;
+      render();
+    });
+    document.getElementById('showIssuesBtn').addEventListener('click', () => {
+      issueOnly = true;
+      render();
+    });
+    document.getElementById('exportBtn').addEventListener('click', exportJson);
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (!confirm('Reset all audit progress and notes?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    });
+
+    bindFields();
+    render();
+  </script>
+</body>
+</html>

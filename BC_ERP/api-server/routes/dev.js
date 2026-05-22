@@ -1,0 +1,68 @@
+import express from 'express'
+import { getAllRecords, deleteRecord } from '../lib/nocodb.js'
+import { requireAuth } from '../middleware/jwt.js'
+
+const router = express.Router()
+
+router.use(requireAuth)
+
+router.use((req, res, next) => {
+    // SECURITY GUARD: Only allow admin role to access dev routes
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required for Dev Tools' })
+    }
+    next()
+})
+
+router.post('/clear-data', async (req, res) => {
+    try {
+        const { action } = req.body
+
+        if (action === 'transactions') {
+            const tables = ['jobs', 'document_items', 'documents', 'stock_ledgers', 'payments']
+            for (const t of tables) {
+                const data = await getAllRecords(t, {})
+                for (const r of data) {
+                    await deleteRecord(t, r.id)
+                }
+            }
+            return res.json({ message: 'Transaction data cleared successfully' })
+        }
+
+        if (action === 'master_data') {
+            const tables = ['customers', 'vehicles', 'products']
+            for (const t of tables) {
+                const data = await getAllRecords(t, {})
+                for (const r of data) {
+                    await deleteRecord(t, r.id)
+                }
+            }
+            return res.json({ message: 'Master data reset successfully' })
+        }
+
+        if (action === 'users_roles') {
+            const tables = ['users', 'system_roles']
+            for (const t of tables) {
+                const data = await getAllRecords(t, {})
+                // Filter out 'admin' to prevent lockout
+                const toDelete = data.filter(r => {
+                    if (t === 'users' && r.username === 'admin') return false;
+                    if (t === 'system_roles' && r.name === 'admin') return false;
+                    return true;
+                })
+                
+                for (const r of toDelete) {
+                    await deleteRecord(t, r.id)
+                }
+            }
+            return res.json({ message: 'Users and Roles reset successfully (Admin preserved)' })
+        }
+
+        res.status(400).json({ error: 'Unknown action' })
+    } catch (e) {
+        console.error('Dev clear-data error:', e)
+        res.status(500).json({ error: e.message })
+    }
+})
+
+export default router

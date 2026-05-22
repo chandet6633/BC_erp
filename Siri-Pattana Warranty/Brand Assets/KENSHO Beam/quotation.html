@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase Order — LED Headlamp</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --primary: #0EA5E9;
+      --dark: #111827;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --bg-subtle: #f9fafb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: #e5e7eb;
+      font-size: 11pt;
+    }
+
+    /* A4 page simulation */
+    .a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #fff;
+      margin: 20px auto;
+      padding: 18mm 20mm 15mm;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--dark);
+      margin-bottom: 14px;
+    }
+
+    .header-left h1 {
+      font-size: 16pt;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 2px;
+    }
+
+    .header-left p {
+      font-size: 8pt;
+      color: var(--text-light);
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    .header-right .po-title {
+      font-size: 18pt;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 1.5px;
+      margin-bottom: 2px;
+    }
+
+    .header-right .po-meta {
+      font-size: 8pt;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .info-card {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+    }
+
+    .info-card h3 {
+      font-size: 7pt;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .info-row {
+      display: flex;
+      font-size: 8.5pt;
+      line-height: 1.7;
+    }
+
+    .info-row .lbl {
+      color: var(--text-light);
+      width: 50px;
+      flex-shrink: 0;
+    }
+
+    .info-row .val {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 9pt;
+    }
+
+    thead th {
+      background: var(--dark);
+      color: #fff;
+      font-weight: 600;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    thead th:first-child { width: 30px; text-align: center; }
+    thead th:nth-child(2) { }
+    thead th:nth-child(3) { width: 80px; text-align: center; }
+    thead th:last-child { width: 70px; text-align: center; }
+
+    tbody td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 9pt;
+    }
+
+    tbody td:first-child { text-align: center; color: var(--text-light); font-size: 8pt; }
+    tbody td:nth-child(3) { text-align: center; font-weight: 600; }
+    tbody td:last-child { text-align: center; font-weight: 700; color: var(--primary); font-size: 10pt; }
+
+    /* Group header */
+    .grp td {
+      background: #f0f7ff;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 8.5pt;
+      padding: 4px 8px;
+      border-top: 1.5px solid var(--primary);
+      border-bottom: 1px solid #dbeafe;
+    }
+
+    /* Subtotal */
+    .sub td {
+      background: var(--bg-subtle);
+      font-weight: 600;
+      font-size: 8pt;
+      color: var(--text);
+      padding: 3px 8px;
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .sub td:last-child { color: var(--text); }
+
+    /* Grand total */
+    .grand td {
+      background: var(--dark);
+      color: #fff;
+      font-weight: 700;
+      font-size: 10pt;
+      padding: 7px 8px;
+    }
+
+    /* Notes */
+    .notes {
+      margin-bottom: 12px;
+    }
+
+    .notes h3 {
+      font-size: 8pt;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .notes ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .notes li {
+      font-size: 7.5pt;
+      color: var(--text-light);
+      padding-left: 10px;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    .notes li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+    }
+
+    /* Signatures */
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      margin-top: 20px;
+    }
+
+    .sig {
+      text-align: center;
+    }
+
+    .sig-line {
+      border-top: 1px solid var(--text);
+      margin-top: 40px;
+      padding-top: 4px;
+      font-size: 8pt;
+      color: var(--text-light);
+    }
+
+    .sig-date {
+      font-size: 7pt;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    /* Footer */
+    .footer {
+      position: absolute;
+      bottom: 12mm;
+      left: 20mm;
+      right: 20mm;
+      text-align: center;
+      font-size: 7pt;
+      color: #aaa;
+      border-top: 1px solid #eee;
+      padding-top: 4px;
+    }
+
+    /* Print — one single page */
+    @media print {
+      @page {
+        size: 210mm 380mm;
+        margin: 0;
+      }
+      body { background: #fff; margin: 0; }
+      .a4-page {
+        margin: 0;
+        padding: 12mm 16mm;
+        box-shadow: none;
+        min-height: auto;
+        width: 210mm;
+      }
+      .no-print { display: none !important; }
+      .footer { position: relative; bottom: auto; left: auto; right: auto; margin-top: 10px; }
+    }
+
+    /* Controls bar */
+    .toolbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: var(--dark);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .toolbar label { color: #9ca3af; font-size: 11px; }
+
+    .toolbar input {
+      background: #1f2937;
+      color: #fff;
+      border: 1px solid #374151;
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: 'Inter';
+    }
+
+    .toolbar button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: auto;
+    }
+
+    .toolbar button:hover { background: #0284c7; }
+    .toolbar-spacer { height: 44px; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar no-print">
+    <label>Supplier:</label>
+    <input type="text" id="supplierName" placeholder="Factory name..." oninput="updateFields()" style="width:180px">
+    <label>Contact:</label>
+    <input type="text" id="supplierContact" placeholder="Contact..." oninput="updateFields()">
+    <button onclick="window.print()">🖨️ Print</button>
+  </div>
+  <div class="toolbar-spacer no-print"></div>
+
+  <div class="a4-page">
+
+    <div class="header">
+      <div class="header-left">
+        <h1>Chanat Chandetrattana</h1>
+        <p>📞 (+66)89/821-6222 · ✉️ chanat6633@gmail.com</p>
+      </div>
+      <div class="header-right">
+        <div class="po-title">PURCHASE ORDER</div>
+        <div class="po-meta">
+          PO No: PO-<script>document.write(new Date().getFullYear())</script>-____<br>
+          Date: <script>
+            const d = new Date();
+            const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            document.write(d.getDate() + ' ' + m[d.getMonth()] + ' ' + d.getFullYear());
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>Buyer</h3>
+        <div class="info-row"><span class="lbl">Name:</span><span class="val">Chanat Chandetrattana</span></div>
+        <div class="info-row"><span class="lbl">Phone:</span><span class="val">(+66)89/821-6222</span></div>
+        <div class="info-row"><span class="lbl">Email:</span><span class="val">chanat6633@gmail.com</span></div>
+        <div class="info-row"><span class="lbl">Ship To:</span><span class="val">Thailand</span></div>
+      </div>
+      <div class="info-card">
+        <h3>Supplier / Factory</h3>
+        <div class="info-row"><span class="lbl">Name:</span><span class="val" id="dispSupplier">—</span></div>
+        <div class="info-row"><span class="lbl">Contact:</span><span class="val" id="dispContact">—</span></div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Model</th>
+          <th>Socket</th>
+          <th>Qty (pairs)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="notes">
+      <h3>Order Requirements</h3>
+      <ul>
+        <li>All quantities are in pairs (2 bulbs per pair)</li>
+        <li>All models must be CANBUS Ready</li>
+        <li>Please confirm availability, pricing, and estimated delivery date</li>
+        <li>Shipping destination: Thailand</li>
+      </ul>
+    </div>
+
+    <div class="signatures">
+      <div class="sig">
+        <div class="sig-line">Buyer — Chanat Chandetrattana</div>
+        <div class="sig-date">Date: ____/____/________</div>
+      </div>
+      <div class="sig">
+        <div class="sig-line">Supplier Confirmation</div>
+        <div class="sig-date">Date: ____/____/________</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Chanat Chandetrattana · (+66)89/821-6222 · chanat6633@gmail.com
+    </div>
+
+  </div>
+
+  <script>
+    const products = [
+      { group: 'R4', items: [
+        { socket: 'H4', qty: 11 }, { socket: 'H11', qty: 8 }, { socket: 'H7', qty: 5 },
+        { socket: '9005/HB3', qty: 3 }, { socket: '9006/HB4', qty: 2 }, { socket: 'D2H/D4H', qty: 1 },
+      ]},
+      { group: 'R9s', items: [
+        { socket: 'H4', qty: 14 }, { socket: 'H11', qty: 11 }, { socket: 'H7', qty: 6 },
+        { socket: '9005/HB3', qty: 4 }, { socket: '9006/HB4', qty: 2 }, { socket: 'D2H/D4H', qty: 3 },
+      ]},
+      { group: 'Q13', items: [
+        { socket: 'H4', qty: 7 }, { socket: 'H11', qty: 5 }, { socket: 'H7', qty: 3 },
+        { socket: '9005/HB3', qty: 2 }, { socket: 'D2H/D4H', qty: 1 },
+      ]},
+      { group: 'R14-APP', items: [
+        { socket: 'H4', qty: 5 }, { socket: 'H11', qty: 3 }, { socket: 'H7', qty: 2 },
+        { socket: '9005/HB3', qty: 1 }, { socket: 'D2H/D4H', qty: 1 },
+      ]},
+    ];
+
+    function updateFields() {
+      document.getElementById('dispSupplier').textContent = document.getElementById('supplierName').value || '—';
+      document.getElementById('dispContact').textContent = document.getElementById('supplierContact').value || '—';
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      let n = 1, total = 0;
+
+      products.forEach(g => {
+        let sub = 0;
+        tbody.insertAdjacentHTML('beforeend', `<tr class="grp"><td></td><td colspan="3">Model ${g.group}</td></tr>`);
+
+        g.items.forEach(i => {
+          sub += i.qty; total += i.qty;
+          tbody.insertAdjacentHTML('beforeend', `
+            <tr>
+              <td>${n++}</td>
+              <td>${g.group}</td>
+              <td>${i.socket}</td>
+              <td><input type="number" value="${i.qty}" min="0" style="width:40px;text-align:center;border:1px solid #ddd;border-radius:3px;padding:2px 4px;font-size:9pt;font-weight:700;font-family:Inter;color:#0EA5E9" onchange="recalc()"></td>
+            </tr>
+          `);
+        });
+
+        tbody.insertAdjacentHTML('beforeend', `<tr class="sub"><td></td><td colspan="2" style="text-align:right">Subtotal — ${g.group}</td><td style="text-align:center" class="sub-qty">${sub} pairs</td></tr>`);
+      });
+
+      tbody.insertAdjacentHTML('beforeend', `<tr class="grand"><td></td><td colspan="2" style="text-align:right">GRAND TOTAL</td><td style="text-align:center" id="grandQty">${total} pairs</td></tr>`);
+    }
+
+    function recalc() {
+      const inputs = document.querySelectorAll('#tableBody input[type=number]');
+      const subs = document.querySelectorAll('.sub-qty');
+      let total = 0, idx = 0;
+
+      products.forEach((g, gi) => {
+        let s = 0;
+        g.items.forEach(() => { s += parseInt(inputs[idx++].value) || 0; });
+        total += s;
+        subs[gi].textContent = s + ' pairs';
+      });
+
+      document.getElementById('grandQty').textContent = total + ' pairs';
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

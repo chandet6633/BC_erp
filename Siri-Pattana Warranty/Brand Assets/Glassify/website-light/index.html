@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>GLASSIFY — World Class Films</title>
+    <meta name="description" content="ฟิล์มกรองแสงเทคโนโลยีระดับโลก ที่ออกแบบมาเพื่อรถของคุณ — GLASSIFY World Class Films"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style>
+        /* ============================================
+           GLASSIFY — Frosted Daylight Theme
+           "Apple Clean × Frosted Daylight"
+           ============================================ */
+        :root {
+            /* Light canvas */
+            --canvas-white: #FFFFFF;
+            --canvas-ice: #F8FAFF;
+            --canvas-frost: #EFF3FB;
+            --canvas-light-blue: #E0EAFF;
+
+            /* Glass surfaces (light mode) */
+            --glass-card: rgba(255, 255, 255, 0.72);
+            --glass-card-hover: rgba(255, 255, 255, 0.88);
+            --glass-border: rgba(59, 130, 246, 0.10);
+            --glass-border-hover: rgba(59, 130, 246, 0.20);
+            --glass-blur: blur(40px) saturate(180%);
+            --glass-blur-light: blur(24px) saturate(160%);
+            --glass-shadow: 0 8px 32px rgba(59, 130, 246, 0.06), 0 1px 3px rgba(0,0,0,0.04);
+            --glass-shadow-hover: 0 20px 56px rgba(59, 130, 246, 0.10), 0 2px 6px rgba(0,0,0,0.06);
+
+            /* Text */
+            --text-primary: #0F172A;
+            --text-secondary: #334155;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+
+            /* Brand — Ocean Blue */
+            --brand: #3B82F6;
+            --brand-deep: #2563EB;
+            --brand-glow: rgba(59, 130, 246, 0.25);
+            --brand-soft: rgba(59, 130, 246, 0.08);
+            --brand-surface: rgba(59, 130, 246, 0.05);
+
+            /* Tier Colors */
+            --tier-blackout: #71717A;
+            --tier-spectre: #3B82F6;
+            --tier-sentinel: #D97706;
+            --tier-phantom: #7C3AED;
+
+            /* Spacing */
+            --section-py: clamp(48px, 7vw, 80px);
+            --content-max: 1200px;
+            --card-radius: 24px;
+
+            /* Animation */
+            --spring: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration: 500ms;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+            background: var(--canvas-ice);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+            .mesh-blob { display: none; }
+        }
+
+        /* ============================================
+           CANVAS — Soft Light with Pastel Blobs
+           ============================================ */
+        .page-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: linear-gradient(180deg, var(--canvas-white) 0%, var(--canvas-ice) 40%, var(--canvas-frost) 100%);
+        }
+
+        .mesh-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .mesh-blob-1 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #93C5FD, transparent 70%);
+            top: -10%; right: -5%;
+            animation: meshFloat1 20s ease-in-out infinite;
+        }
+        .mesh-blob-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #A5B4FC, transparent 70%);
+            bottom: 20%; left: -8%;
+            animation: meshFloat2 25s ease-in-out infinite;
+        }
+        .mesh-blob-3 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, #67E8F9, transparent 70%);
+            top: 40%; right: 15%;
+            animation: meshFloat3 18s ease-in-out infinite;
+        }
+        .mesh-blob-4 {
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, #C4B5FD, transparent 70%);
+            bottom: -5%; right: 30%;
+            opacity: 0.08;
+            animation: meshFloat1 22s ease-in-out infinite reverse;
+        }
+
+        @keyframes meshFloat1 { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-60px) scale(1.1); } 66% { transform: translate(-30px,30px) scale(0.95); } }
+        @keyframes meshFloat2 { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(-50px,40px) scale(1.05); } 66% { transform: translate(35px,-45px) scale(0.9); } }
+        @keyframes meshFloat3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,50px) scale(1.15); } }
+
+        .page-content { position: relative; z-index: 2; }
+        .container { max-width: var(--content-max); margin: 0 auto; padding: 0 24px; }
+
+        /* ============================================
+           NAV — Frosted Glass Pill (Light)
+           ============================================ */
+        .nav-float {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            width: min(calc(100% - 32px), 800px); z-index: 100;
+            background: var(--glass-card);
+            backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 12px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: all var(--duration) var(--spring);
+            box-shadow: var(--glass-shadow);
+        }
+        .nav-float.scrolled {
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.08);
+        }
+
+        .nav-logo {
+            font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem;
+            letter-spacing: -0.02em; color: var(--brand); text-decoration: none;
+        }
+        .nav-logo:hover { opacity: 0.8; }
+
+        .nav-links { display: flex; gap: 8px; list-style: none; }
+        .nav-links a {
+            font-size: 0.8125rem; font-weight: 500; color: var(--text-muted);
+            text-decoration: none; padding: 6px 14px; border-radius: 12px;
+            transition: all 0.25s var(--spring);
+        }
+        .nav-links a:hover { color: var(--text-primary); background: var(--brand-soft); }
+        .nav-links a.active { color: var(--brand); background: var(--brand-soft); }
+
+        .nav-cta {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; background: var(--brand); color: white;
+            border: none; border-radius: 12px; font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s var(--spring); text-decoration: none;
+            box-shadow: 0 4px 16px var(--brand-glow);
+        }
+        .nav-cta:hover {
+            background: var(--brand-deep); transform: translateY(-1px);
+            box-shadow: 0 8px 24px var(--brand-glow);
+        }
+        .nav-menu-btn { display: none; background: none; border: none; cursor: pointer; color: var(--text-primary); padding: 4px; }
+
+        /* ============================================
+           HERO
+           ============================================ */
+        .hero {
+            min-height: 100svh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            padding: 120px 24px 80px; position: relative;
+        }
+
+        .hero-label {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 20px; background: var(--glass-card);
+            backdrop-filter: var(--glass-blur-light); border: 1px solid var(--glass-border);
+            border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.3em;
+            text-transform: uppercase; color: var(--text-muted); margin-bottom: 32px;
+            box-shadow: var(--glass-shadow);
+        }
+        .hero-label-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--brand); box-shadow: 0 0 8px var(--brand-glow);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+
+        .hero-title {
+            font-family: 'Outfit', sans-serif; font-weight: 900;
+            font-size: clamp(4rem, 12vw, 8rem); letter-spacing: -0.05em;
+            line-height: 0.9; margin-bottom: 28px;
+            padding-right: 0.15em; padding-left: 0.05em; /* Fix Y clipping */
+            background: linear-gradient(135deg, var(--brand) 0%, #1D4ED8 30%, #3B82F6 50%, #60A5FA 70%, var(--brand) 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShimmer 6s ease-in-out infinite;
+        }
+        @keyframes textShimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+        .hero-subtitle {
+            font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+            font-size: clamp(0.9375rem, 2vw, 1.125rem); font-weight: 400;
+            color: var(--text-muted); max-width: 520px; margin: 0 auto 48px; line-height: 1.9;
+        }
+
+        .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+        .btn-glass-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 16px 32px; background: var(--brand); color: white;
+            border: none; border-radius: 16px; font-family: 'Inter','Noto Sans Thai',sans-serif;
+            font-size: 0.875rem; font-weight: 600; cursor: pointer;
+            transition: all 0.4s var(--spring); text-decoration: none;
+            box-shadow: 0 8px 32px var(--brand-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .btn-glass-primary:hover {
+            background: var(--brand-deep); transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 16px 48px var(--brand-glow);
+        }
+
+        .btn-glass-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 16px 32px; background: var(--glass-card);
+            backdrop-filter: var(--glass-blur-light); color: var(--text-primary);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            font-family: 'Inter','Noto Sans Thai',sans-serif; font-size: 0.875rem;
+            font-weight: 500; cursor: pointer; transition: all 0.4s var(--spring);
+            text-decoration: none; box-shadow: var(--glass-shadow);
+        }
+        .btn-glass-secondary:hover {
+            background: var(--glass-card-hover); border-color: var(--glass-border-hover);
+            transform: translateY(-3px); box-shadow: var(--glass-shadow-hover);
+        }
+
+        .hero-scroll {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            color: var(--text-subtle); animation: float 2.5s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(10px); } }
+
+        /* ============================================
+           HERO VIDEO
+           ============================================ */
+        .hero-car-wrap { position: relative; width: 100%; max-width: 900px; margin: -48px auto 0; padding: 0 24px; }
+        .hero-car-frame {
+            position: relative; border-radius: 12px; overflow: hidden;
+            border: 1px solid rgba(59,130,246,0.08);
+            box-shadow: 0 24px 80px rgba(59,130,246,0.08), 0 0 0 1px rgba(255,255,255,0.5);
+            aspect-ratio: 16/9;
+        }
+        .hero-car-frame video, .hero-car-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .hero-car-overlay {
+            position: absolute; inset: 0; pointer-events: none;
+            background: linear-gradient(to bottom, rgba(248,250,255,0.15) 0%, transparent 40%, transparent 60%, rgba(248,250,255,0.3) 100%);
+        }
+        .hero-car-tag {
+            position: absolute; bottom: 20px; right: 20px;
+            background: var(--glass-card); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            padding: 8px 16px; display: flex; align-items: center; gap: 8px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.625rem;
+            color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .hero-car-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: #34D399; box-shadow: 0 0 8px rgba(52,211,153,0.5); }
+
+        /* ============================================
+           TRUST STRIP
+           ============================================ */
+        .trust-strip { padding: 0 24px; margin-bottom: var(--section-py); margin-top: 32px; }
+        .trust-strip-inner {
+            max-width: var(--content-max); margin: 0 auto;
+            background: var(--glass-card); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 20px 32px; display: flex; justify-content: center;
+            gap: clamp(20px,4vw,48px); flex-wrap: wrap; box-shadow: var(--glass-shadow);
+        }
+        .trust-item {
+            display: flex; align-items: center; gap: 10px; color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace; font-size: 0.625rem;
+            letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .trust-icon {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: var(--brand-soft); border: 1px solid rgba(59,130,246,0.12);
+            display: flex; align-items: center; justify-content: center; color: var(--brand);
+        }
+
+        /* ============================================
+           SECTIONS
+           ============================================ */
+        .section { padding: var(--section-py) 0; }
+        .section-header { text-align: center; margin-bottom: 56px; }
+        .section-label {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem;
+            letter-spacing: 0.25em; text-transform: uppercase; color: var(--brand); margin-bottom: 16px;
+        }
+        .section-header h2 {
+            font-family: 'Outfit','Noto Sans Thai',sans-serif; font-weight: 700;
+            font-size: clamp(1.75rem,4vw,2.5rem); letter-spacing: -0.02em;
+            color: var(--text-primary); margin-bottom: 12px;
+        }
+        .section-header p { color: var(--text-muted); font-size: 0.9375rem; max-width: 480px; margin: 0 auto; line-height: 1.7; }
+
+        /* ============================================
+           TIER CARDS
+           ============================================ */
+        .tier-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+        .tier-card {
+            background: var(--glass-card); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); border-radius: var(--card-radius);
+            padding: 28px 24px; display: flex; flex-direction: column;
+            transition: all var(--duration) var(--spring); cursor: pointer;
+            text-decoration: none; color: var(--text-secondary);
+            position: relative; overflow: hidden; box-shadow: var(--glass-shadow);
+        }
+        .tier-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.1), transparent);
+        }
+        .tier-card:hover {
+            background: var(--glass-card-hover); border-color: var(--glass-border-hover);
+            transform: translateY(-8px) scale(1.02); box-shadow: var(--glass-shadow-hover);
+        }
+        .tier-card.flagship {
+            border-color: rgba(124,58,237,0.15); background: rgba(124,58,237,0.04);
+            box-shadow: 0 8px 32px rgba(124,58,237,0.08);
+        }
+        .tier-card.flagship:hover {
+            background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.25);
+            box-shadow: 0 24px 64px rgba(124,58,237,0.12);
+        }
+
+        .tier-badge {
+            display: inline-flex; align-items: center; padding: 5px 12px;
+            border-radius: 10px; font-size: 0.625rem; font-weight: 600;
+            letter-spacing: 0.08em; text-transform: uppercase; width: fit-content;
+            margin-bottom: 18px;
+        }
+        .badge-blackout { background: rgba(113,113,122,0.08); color: var(--tier-blackout); border: 1px solid rgba(113,113,122,0.12); }
+        .badge-spectre { background: rgba(59,130,246,0.08); color: var(--tier-spectre); border: 1px solid rgba(59,130,246,0.12); }
+        .badge-sentinel { background: rgba(217,119,6,0.08); color: var(--tier-sentinel); border: 1px solid rgba(217,119,6,0.12); }
+        .badge-phantom { background: rgba(124,58,237,0.08); color: var(--tier-phantom); border: 1px solid rgba(124,58,237,0.12); }
+
+        .flagship-tag {
+            position: absolute; top: -1px; right: 24px;
+            background: linear-gradient(135deg, var(--tier-phantom), #7C3AED);
+            color: white; padding: 6px 14px; border-radius: 0 0 10px 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.5625rem;
+            font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+            box-shadow: 0 4px 16px rgba(124,58,237,0.3);
+        }
+
+        .tier-code { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text-subtle); margin-bottom: 4px; }
+        .tier-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.375rem; letter-spacing: -0.02em; margin-bottom: 16px; color: var(--text-primary); }
+        .tier-stat { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
+        .tier-stat-value { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 2.25rem; letter-spacing: -0.03em; line-height: 1; color: var(--text-primary); }
+        .tier-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.1em; }
+        .tier-desc { color: var(--text-muted); font-size: 0.8125rem; line-height: 1.75; flex-grow: 1; margin-bottom: 20px; }
+        .tier-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(59,130,246,0.06); padding-top: 16px; }
+        .tier-footer span { font-size: 0.8125rem; font-weight: 600; color: var(--text-muted); transition: color 0.3s; }
+        .tier-card:hover .tier-footer span { color: var(--brand); }
+        .tier-footer-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; color: var(--text-subtle); transition: all 0.3s; }
+        .tier-card:hover .tier-footer-icon { background: rgba(59,130,246,0.12); color: var(--brand); }
+
+        /* ============================================
+           FEATURE CARDS
+           ============================================ */
+        .feature-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        .feature-card {
+            background: var(--glass-card); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); border-radius: var(--card-radius);
+            padding: 36px 28px; text-align: center; transition: all var(--duration) var(--spring);
+            position: relative; overflow: hidden; box-shadow: var(--glass-shadow);
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.08), transparent);
+        }
+        .feature-card:hover {
+            background: var(--glass-card-hover); border-color: var(--glass-border-hover);
+            transform: translateY(-6px); box-shadow: var(--glass-shadow-hover);
+        }
+        .feature-icon-wrap {
+            width: 60px; height: 60px; border-radius: 18px;
+            background: var(--brand-soft); border: 1px solid rgba(59,130,246,0.1);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; color: var(--brand);
+            transition: all 0.4s var(--spring); position: relative;
+        }
+        .feature-icon-wrap::after {
+            content: ''; position: absolute; inset: -4px; border-radius: 22px;
+            background: radial-gradient(circle, var(--brand-glow), transparent 70%);
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .feature-card:hover .feature-icon-wrap { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.2); transform: scale(1.08); }
+        .feature-card:hover .feature-icon-wrap::after { opacity: 1; }
+        .feature-card h4 { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 1.0625rem; margin-bottom: 10px; color: var(--text-primary); }
+        .feature-card p { color: var(--text-muted); font-size: 0.8125rem; line-height: 1.8; }
+
+        /* ============================================
+           SHOWCASE
+           ============================================ */
+        .showcase { padding: var(--section-py) 0; }
+        .showcase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+        .showcase-image-frame {
+            border-radius: 12px; overflow: hidden;
+            border: 1px solid var(--glass-border); box-shadow: 0 16px 60px rgba(59,130,246,0.08);
+            position: relative; aspect-ratio: 16/9;
+        }
+        .showcase-image-frame img, .showcase-image-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .showcase-image-frame::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(59,130,246,0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .showcase-content { padding: 20px 0; }
+        .showcase-content h3 { font-family: 'Outfit','Noto Sans Thai',sans-serif; font-weight: 700; font-size: clamp(1.5rem,3vw,2rem); letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 16px; }
+        .showcase-content p { color: var(--text-muted); font-size: 0.9375rem; line-height: 1.8; margin-bottom: 28px; }
+        .showcase-specs { display: flex; flex-direction: column; gap: 12px; }
+        .showcase-spec {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            background: var(--glass-card); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 14px;
+            transition: all 0.3s var(--spring);
+        }
+        .showcase-spec:hover { background: var(--glass-card-hover); border-color: var(--glass-border-hover); }
+        .showcase-spec-icon {
+            width: 36px; height: 36px; min-width: 36px; border-radius: 10px;
+            background: var(--brand-soft); border: 1px solid rgba(59,130,246,0.1);
+            display: flex; align-items: center; justify-content: center; color: var(--brand);
+        }
+        .showcase-spec-text { font-size: 0.8125rem; color: var(--text-secondary); }
+        .showcase-spec-text strong { display: block; font-weight: 600; margin-bottom: 2px; color: var(--text-primary); }
+        .showcase-spec-text small { color: var(--text-muted); font-size: 0.75rem; }
+
+        /* ============================================
+           CTA
+           ============================================ */
+        .cta-section { padding: var(--section-py) 0; }
+        .cta-glass {
+            background: var(--glass-card); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); border-radius: 32px;
+            padding: 64px 40px; text-align: center; position: relative; overflow: hidden;
+            box-shadow: var(--glass-shadow);
+        }
+        .cta-glass::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.04), transparent 50%);
+            pointer-events: none;
+        }
+        .cta-glass h2 { font-family: 'Outfit','Noto Sans Thai',sans-serif; font-weight: 800; font-size: clamp(1.5rem,3.5vw,2.25rem); color: var(--text-primary); margin-bottom: 12px; letter-spacing: -0.02em; }
+        .cta-glass p { color: var(--text-muted); font-size: 0.9375rem; margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .cta-image { width: 100%; max-width: 500px; margin: 0 auto 32px; border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border); box-shadow: 0 8px 40px rgba(59,130,246,0.08); }
+        .cta-image img { display: block; width: 100%; height: 200px; object-fit: cover; }
+
+        /* ============================================
+           FOOTER
+           ============================================ */
+        .footer { border-top: 1px solid rgba(59,130,246,0.06); padding: 64px 24px 32px; background: var(--canvas-white); }
+        .footer-grid { max-width: var(--content-max); margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid rgba(59,130,246,0.06); }
+        .footer-brand-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.15rem; color: var(--brand); letter-spacing: -0.02em; margin-bottom: 12px; }
+        .footer-brand-desc { color: var(--text-muted); font-size: 0.8125rem; line-height: 1.7; margin-bottom: 20px; }
+        .footer-socials { display: flex; gap: 8px; }
+        .footer-social-link {
+            width: 36px; height: 36px; border-radius: 12px;
+            background: var(--brand-soft); border: 1px solid rgba(59,130,246,0.08);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); text-decoration: none; transition: all 0.25s var(--spring); cursor: pointer;
+        }
+        .footer-social-link:hover { background: var(--brand); border-color: var(--brand); color: white; transform: translateY(-2px); box-shadow: 0 4px 16px var(--brand-glow); }
+        .footer-col h5 { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 20px; }
+        .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .footer-col a { font-size: 0.8125rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; display: flex; align-items: center; gap: 8px; }
+        .footer-col a:hover { color: var(--brand); }
+        .footer-bottom { max-width: var(--content-max); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .footer-bottom p { font-family: 'JetBrains Mono', monospace; font-size: 0.625rem; color: var(--text-subtle); letter-spacing: 0.12em; text-transform: uppercase; }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1024px) { .tier-grid { grid-template-columns: repeat(2,1fr); } .footer-grid { grid-template-columns: 1fr 1fr; } .showcase-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .nav-links,.nav-cta { display: none; } .nav-menu-btn { display: flex; } .nav-float { width: calc(100% - 32px); } .feature-grid,.tier-grid { grid-template-columns: 1fr; } .footer-grid { grid-template-columns: 1fr; gap: 32px; } .footer-bottom { flex-direction: column; gap: 8px; text-align: center; } .cta-glass { padding: 48px 24px; border-radius: 24px; } }
+        @media (max-width: 375px) { .hero-title { font-size: 3.5rem; } .tier-card { padding: 24px 20px; } }
+    </style>
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+
+    <style>
+        @media (max-width: 768px) {
+            .nav-links.mobile-open {
+                display: flex !important;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: var(--glass-card);
+                padding: 16px;
+                border-radius: 16px;
+                margin-top: 12px;
+                border: 1px solid var(--glass-border);
+                box-shadow: var(--glass-shadow);
+                backdrop-filter: var(--glass-blur);
+                z-index: 1000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-canvas"></div>
+<div class="mesh-blob mesh-blob-1"></div>
+<div class="mesh-blob mesh-blob-2"></div>
+<div class="mesh-blob mesh-blob-3"></div>
+<div class="mesh-blob mesh-blob-4"></div>
+
+<div class="page-content">
+
+    <nav class="nav-float" id="mainNav">
+        <a href="index.html" class="nav-logo">GLASSIFY</a>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="products.html">Products</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="technology.html">Technology</a></li>
+            <li><a href="pricing.html#simulator">Simulator</a></li>
+            <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <a href="contact.html" class="nav-cta">Book VIP <i data-lucide="arrow-right" style="width:13px;height:13px;"></i></a>
+        <button class="nav-menu-btn" aria-label="Open menu"><i data-lucide="menu" style="width:20px;height:20px;"></i></button>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-label"><span class="hero-label-dot"></span>World Class Films</div>
+        <h1 class="hero-title">GLASSIFY</h1>
+        <p class="hero-subtitle">ฟิล์มกรองแสงเทคโนโลยีระดับโลก ที่เกิดมาเพื่อยกระดับประสบการณ์<br/>การขับขี่และการปกป้องรถของคุณ</p>
+        <div class="hero-actions">
+            <a href="products.html" class="btn-glass-primary">ดูผลิตภัณฑ์ / View Products <i data-lucide="chevron-right" style="width:16px;height:16px;"></i></a>
+            <a href="contact.html" class="btn-glass-secondary">นัดหมาย VIP <i data-lucide="calendar" style="width:16px;height:16px;"></i></a>
+        </div>
+    </section>
+
+    <div class="hero-car-wrap">
+        <div class="hero-car-frame">
+            <video autoplay muted loop playsinline poster="images/hero-car.png">
+                <source src="videos/Light_transforming_over_202604191007.mp4" type="video/mp4"/>
+                <img src="images/hero-car.png" alt="Premium sedan with Glassify window tinting"/>
+            </video>
+            <div class="hero-car-overlay"></div>
+            <div class="hero-car-tag"><span class="hero-car-tag-dot"></span>CX-95 // CERAMIC CRYSTAL Applied</div>
+        </div>
+    </div>
+
+    <section class="trust-strip">
+        <div class="trust-strip-inner">
+            <div class="trust-item"><div class="trust-icon"><i data-lucide="atom" style="width:14px;height:14px;"></i></div>Nano-Ceramic</div>
+            <div class="trust-item"><div class="trust-icon"><i data-lucide="sparkles" style="width:14px;height:14px;"></i></div>High-IR Nano Ceramic</div>
+            <div class="trust-item"><div class="trust-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></div>Made for Thailand</div>
+            <div class="trust-item"><div class="trust-icon"><i data-lucide="shield-check" style="width:14px;height:14px;"></i></div>7 Years Warranty</div>
+        </div>
+    </section>
+
+    <section class="showcase">
+        <div class="container">
+            <div class="showcase-grid">
+                <div class="showcase-image-frame">
+                    <video autoplay muted loop playsinline poster="images/film-closeup.png">
+                        <source src="videos/Car_window_with_202604181132.mp4" type="video/mp4"/>
+                        <img src="images/film-closeup.png" alt="Light prism refraction through Glassify tinted glass"/>
+                    </video>
+                </div>
+                <div class="showcase-content">
+                    <div class="section-label"><i data-lucide="scan" style="width:14px;height:14px;"></i>Precision Installation</div>
+                    <h3>งานฝีมือระดับวิศวกรรม</h3>
+                    <p>ทุกแผ่นฟิล์มถูกติดตั้งโดยช่างผู้เชี่ยวชาญด้วยเทคนิคเฉพาะ ไร้ฟองอากาศ ไร้รอยขีดข่วน มองไม่เห็นขอบฟิล์ม</p>
+                    <div class="showcase-specs">
+                        <div class="showcase-spec"><div class="showcase-spec-icon"><i data-lucide="layers" style="width:16px;height:16px;"></i></div><div class="showcase-spec-text"><strong>Multi-Layer Nano Structure</strong><small>โครงสร้างหลายชั้นระดับนาโนเมตร</small></div></div>
+                        <div class="showcase-spec"><div class="showcase-spec-icon"><i data-lucide="thermometer-sun" style="width:16px;height:16px;"></i></div><div class="showcase-spec-text"><strong>Total Solar Energy Rejected</strong><small>สกัดกั้นพลังงานความร้อนสูงสุด 95%+</small></div></div>
+                        <div class="showcase-spec"><div class="showcase-spec-icon"><i data-lucide="eye" style="width:16px;height:16px;"></i></div><div class="showcase-spec-text"><strong>Crystal Clear Optics</strong><small>ทัศนวิสัยคมชัดทั้งกลางวันและกลางคืน</small></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label"><i data-lucide="layers" style="width:14px;height:14px;"></i> Product Lineup</div>
+                <h2>4 ระดับการปกป้อง</h2>
+                <p>ทุกรุ่นออกแบบเพื่อสภาพอากาศเมืองร้อน ครอบคลุมทุกความต้องการ</p>
+            </div>
+            <div class="tier-grid">
+                <a href="products.html" class="tier-card">
+                    <div class="tier-badge badge-blackout">Entry</div>
+                    <div class="tier-code">CC-60</div>
+                    <div class="tier-name">Carbon</div>
+                    <div class="tier-stat"><span class="tier-stat-value" style="color:var(--tier-blackout)">60%</span><span class="tier-stat-label">TSER</span></div>
+                    <p class="tier-desc">ความเป็นส่วนตัวสูงสุดด้วยโทนสีดำสนิท สำหรับผู้ที่ต้องการปกปิดห้องโดยสาร</p>
+                    <div class="tier-footer"><span>ดูรายละเอียด</span><div class="tier-footer-icon"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i></div></div>
+                </a>
+                <a href="products.html" class="tier-card">
+                    <div class="tier-badge badge-spectre">Best Value</div>
+                    <div class="tier-code">CM-80</div>
+                    <div class="tier-name">Ceramic</div>
+                    <div class="tier-stat"><span class="tier-stat-value" style="color:var(--tier-spectre)">80%</span><span class="tier-stat-label">TSER</span></div>
+                    <p class="tier-desc">Nano-Ceramic กันความร้อนสูง ราคาสมเหตุสมผล ความคมชัดระดับสูง</p>
+                    <div class="tier-footer"><span>ดูรายละเอียด</span><div class="tier-footer-icon"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i></div></div>
+                </a>
+                <a href="products.html" class="tier-card">
+                    <div class="tier-badge badge-sentinel">Popular</div>
+                    <div class="tier-code">CQ-95</div>
+                    <div class="tier-name">Ceramic Quartz</div>
+                    <div class="tier-stat"><span class="tier-stat-value" style="color:var(--tier-sentinel)">95%</span><span class="tier-stat-label">TSER</span></div>
+                    <p class="tier-desc">High-IR Nano Ceramic กันร้อนเต็มขั้น รุ่นขายดีอันดับ 1</p>
+                    <div class="tier-footer"><span>ดูรายละเอียด</span><div class="tier-footer-icon"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i></div></div>
+                </a>
+                <a href="products.html" class="tier-card flagship">
+                    <div class="flagship-tag">Elite</div>
+                    <div class="tier-badge badge-phantom">Ceramic Crystal</div>
+                    <div class="tier-code">CX-95</div>
+                    <div class="tier-name">Ceramic Crystal</div>
+                    <div class="tier-stat"><span class="tier-stat-value" style="color:var(--tier-phantom)">95%+</span><span class="tier-stat-label">TSER</span></div>
+                    <p class="tier-desc">จุดสูงสุดของวิศวกรรมฟิล์ม ปฏิเสธความร้อนเบ็ดเสร็จ รับประกัน 7 ปี</p>
+                    <div class="tier-footer"><span>ดูรายละเอียด</span><div class="tier-footer-icon"><i data-lucide="arrow-right" style="width:14px;height:14px;"></i></div></div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label"><i data-lucide="shield-check" style="width:14px;height:14px;"></i> Why Glassify</div>
+                <h2>ทำไมต้อง Glassify?</h2>
+                <p>มากกว่าฟิล์มกรองแสง — มาตรฐานใหม่ของการปกป้องรถ</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card"><div class="feature-icon-wrap"><i data-lucide="thermometer-sun" style="width:22px;height:22px;"></i></div><h4>กันร้อนระดับสูงสุด</h4><p>TSER สูงสุด 95%+ ลดอุณหภูมิห้องโดยสารได้มากกว่า 60% ลดภาระแอร์ ประหยัดน้ำมัน</p></div>
+                <div class="feature-card"><div class="feature-icon-wrap"><i data-lucide="shield-check" style="width:22px;height:22px;"></i></div><h4>ปกป้อง UV 99.9%</h4><p>ปกป้องผิวหนังจากรังสี UVA/UVB และป้องกันเบาะ คอนโซล แดชบอร์ดเสื่อมสภาพ</p></div>
+                <div class="feature-card"><div class="feature-icon-wrap"><i data-lucide="signal" style="width:22px;height:22px;"></i></div><h4>ไม่รบกวนสัญญาณ</h4><p>ไม่กวนสัญญาณ GPS, 5G, WiFi หรือ ETC ใช้งานได้ตามปกติ 100%</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-glass">
+                <div class="cta-image"><img src="images/film-rolls.png" alt="Glassify film product rolls"/></div>
+                <h2>เริ่มต้นปกป้องรถของคุณ</h2>
+                <p>นัดหมายปรึกษาผู้เชี่ยวชาญฟรี เพื่อเลือกรุ่นที่เหมาะกับรถและไลฟ์สไตล์ของคุณ</p>
+                <a href="contact.html" class="btn-glass-primary">นัดหมาย VIP <i data-lucide="arrow-right" style="width:16px;height:16px;"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-grid">
+            <div>
+                <div class="footer-brand-name">GLASSIFY</div>
+                <p class="footer-brand-desc">Elevating the automotive experience through world-class film technology.</p>
+                <div class="footer-socials" style="display:none">
+                    <a href="#" class="footer-social-link" aria-label="Facebook"><i data-lucide="facebook" style="width:15px;height:15px;"></i></a>
+                    <a href="#" class="footer-social-link" aria-label="Instagram"><i data-lucide="instagram" style="width:15px;height:15px;"></i></a>
+                    <a href="#" class="footer-social-link" aria-label="TikTok"><i data-lucide="music-2" style="width:15px;height:15px;"></i></a>
+                </div>
+            </div>
+            <div class="footer-col"><h5>Navigation</h5><ul><li><a href="index.html">Home</a></li><li><a href="products.html">Products</a></li><li><a href="pricing.html">Pricing</a></li><li><a href="technology.html">Technology</a></li><li><a href="contact.html">Contact</a></li></ul></div>
+            <div class="footer-col"><h5>Contact</h5><ul><li><a href="tel:089-821-6222"><i data-lucide="phone" style="width:13px;height:13px;"></i>089-821-6222</a></li><li><a href="#"><i data-lucide="message-circle" style="width:13px;height:13px;"></i>glassify</a></li><li><a href="#"><i data-lucide="map-pin" style="width:13px;height:13px;"></i>View Maps</a></li></ul></div>
+            <div class="footer-col"><h5>Legal</h5><ul><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms of Service</a></li><li><a href="terms.html#warranty">Warranty Info</a></li></ul></div>
+        </div>
+        <div class="footer-bottom"><p>© 2026 GLASSIFY. All rights reserved.</p><p>Designed for Perfection</p></div>
+    </footer>
+</div>
+
+<script>
+    lucide.createIcons();
+    const nav = document.getElementById('mainNav');
+    window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 60); }, { passive: true });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuBtn = document.querySelector('.nav-menu-btn');
+    const mobileNavLinks = document.querySelector('.nav-links');
+    if (mobileMenuBtn && mobileNavLinks) {
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileNavLinks.classList.toggle('mobile-open');
+        });
+    }
+});
+</script>
+</body>
+</html>

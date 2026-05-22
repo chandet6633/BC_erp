@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KENSHO Beam — Logo Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;700;900&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Sawarabi+Mincho&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #111;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 12px;
+            color: #444;
+            margin-bottom: 60px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .logo-card {
+            background: #0A0A0A;
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .logo-card:hover {
+            border-color: #0EA5E9;
+        }
+
+        .logo-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 280px;
+            padding: 40px;
+            background: #050508;
+        }
+
+        .logo-info {
+            padding: 20px 24px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .logo-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .logo-info p {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .logo-info .tags {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .logo-info .tag {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #1a1a1a;
+            color: #888;
+        }
+
+        .tag.rec {
+            background: #0EA5E920;
+            color: #0EA5E9;
+        }
+
+        /* ========== LOGO STYLES ========== */
+
+        /* --- LOGO 1: Stacked Classic --- */
+        .logo-1 {
+            text-align: center;
+            user-select: none;
+        }
+        .logo-1 .kanji {
+            font-family: 'Sawarabi Mincho', serif;
+            font-size: 28px;
+            color: #C8CDD3;
+            letter-spacing: 12px;
+            margin-bottom: 8px;
+        }
+        .logo-1 .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 8px;
+        }
+        .logo-1 .sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: #C8CDD3;
+            letter-spacing: 14px;
+            margin-top: 2px;
+        }
+        .logo-1 .tagline {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            color: #555;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-top: 14px;
+        }
+
+        /* --- LOGO 2: Horizontal with Kanji Seal --- */
+        .logo-2 {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            user-select: none;
+        }
+        .logo-2 .seal {
+            width: 56px;
+            height: 56px;
+            border: 2px solid #0EA5E9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Sawarabi Mincho', serif;
+            font-size: 22px;
+            color: #0EA5E9;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+        .logo-2 .text-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .logo-2 .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 6px;
+            line-height: 1;
+        }
+        .logo-2 .sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            color: #C8CDD3;
+            letter-spacing: 10px;
+            margin-top: 2px;
+        }
+
+        /* --- LOGO 3: Bold Minimal --- */
+        .logo-3 {
+            text-align: center;
+            user-select: none;
+        }
+        .logo-3 .brand {
+            font-family: 'Inter', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 10px;
+        }
+        .logo-3 .beam {
+            font-family: 'Inter', sans-serif;
+            font-size: 20px;
+            font-weight: 300;
+            color: #0EA5E9;
+            letter-spacing: 18px;
+            margin-top: -2px;
+        }
+
+        /* --- LOGO 4: Kanji-Forward Luxury --- */
+        .logo-4 {
+            text-align: center;
+            user-select: none;
+        }
+        .logo-4 .kanji {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 64px;
+            font-weight: 300;
+            color: #ffffff;
+            letter-spacing: 16px;
+        }
+        .logo-4 .line {
+            width: 40px;
+            height: 1px;
+            background: #0EA5E9;
+            margin: 12px auto;
+        }
+        .logo-4 .brand {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #888;
+            letter-spacing: 10px;
+        }
+
+        /* --- LOGO 5: Racing Stripe --- */
+        .logo-5 {
+            text-align: center;
+            user-select: none;
+            position: relative;
+        }
+        .logo-5 .stripe {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #0EA5E9 30%, #0EA5E9 70%, transparent 100%);
+            transform: translateY(-50%);
+            opacity: 0.3;
+        }
+        .logo-5 .brand {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 52px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .logo-5 .sub {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: #0EA5E9;
+            letter-spacing: 20px;
+            position: relative;
+            z-index: 1;
+            margin-top: -4px;
+        }
+        .logo-5 .kanji-accent {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            color: #444;
+            letter-spacing: 6px;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- LOGO 6: Circular Badge --- */
+        .logo-6 {
+            user-select: none;
+        }
+        .logo-6 .badge {
+            width: 180px;
+            height: 180px;
+            border: 2px solid #C8CDD3;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .logo-6 .badge::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1px solid #333;
+            border-radius: 50%;
+        }
+        .logo-6 .kanji {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            color: #C8CDD3;
+            letter-spacing: 6px;
+            margin-bottom: 4px;
+        }
+        .logo-6 .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 4px;
+        }
+        .logo-6 .sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            color: #0EA5E9;
+            letter-spacing: 8px;
+            margin-top: 1px;
+        }
+        .logo-6 .tagline {
+            font-family: 'Inter', sans-serif;
+            font-size: 7px;
+            font-weight: 400;
+            color: #555;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        /* --- LOGO 7: Slash Mark --- */
+        .logo-7 {
+            text-align: center;
+            user-select: none;
+            position: relative;
+        }
+        .logo-7 .top-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .logo-7 .slash {
+            width: 2px;
+            height: 50px;
+            background: #0EA5E9;
+            transform: skewX(-15deg);
+        }
+        .logo-7 .brand {
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            font-size: 44px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 4px;
+        }
+        .logo-7 .kanji-side {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: #C8CDD3;
+            writing-mode: vertical-rl;
+            letter-spacing: 4px;
+        }
+        .logo-7 .sub {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: #0EA5E9;
+            letter-spacing: 16px;
+            margin-top: 4px;
+        }
+
+        /* --- LOGO 8: Emboss-Ready Compact --- */
+        .logo-8 {
+            user-select: none;
+        }
+        .logo-8 .container {
+            border: 1.5px solid #C8CDD3;
+            border-radius: 4px;
+            padding: 16px 28px;
+            text-align: center;
+            position: relative;
+        }
+        .logo-8 .container::before {
+            content: '顕照';
+            position: absolute;
+            top: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: #C8CDD3;
+            letter-spacing: 4px;
+            background: #050508;
+            padding: 0 10px;
+        }
+        .logo-8 .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 5px;
+        }
+        .logo-8 .sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 400;
+            color: #C8CDD3;
+            letter-spacing: 10px;
+            margin-top: 1px;
+        }
+
+        /* Size preview section */
+        .size-preview {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .size-preview h2 {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        .size-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+        }
+
+        .size-item {
+            text-align: center;
+        }
+
+        .size-item .label {
+            font-size: 10px;
+            color: #444;
+            margin-top: 10px;
+        }
+
+        .size-item .logo-mini {
+            background: #050508;
+            border: 1px solid #1a1a1a;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        /* Color variants */
+        .color-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .color-section h2 {
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        .color-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .color-item {
+            width: 200px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #1a1a1a;
+        }
+
+        .color-item .preview {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .color-item .cname {
+            font-size: 10px;
+            color: #666;
+            padding: 10px;
+            text-align: center;
+            background: #0a0a0a;
+        }
+
+        .on-white .brand, .on-white .sub, .on-white .kanji {
+            color: #0A0A12 !important;
+        }
+        .on-white .sub { color: #333 !important; }
+
+        .on-blue .brand { color: #ffffff !important; }
+        .on-blue .sub { color: #ffffffaa !important; }
+        .on-blue .kanji { color: #ffffffcc !important; }
+
+        .mono-blue .brand { color: #0EA5E9 !important; }
+        .mono-blue .sub { color: #0EA5E980 !important; }
+        .mono-blue .kanji { color: #0EA5E9aa !important; }
+    </style>
+</head>
+<body>
+
+    <h1>KENSHO Beam · 顕照 · Logo Concepts</h1>
+    <p class="subtitle">Production-ready SVG/vector logos — for driver emboss + box sticker</p>
+
+    <div class="grid">
+
+        <!-- LOGO 1 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-1">
+                    <div class="kanji">顕 照</div>
+                    <div class="brand">KENSHO</div>
+                    <div class="sub">B E A M</div>
+                    <div class="tagline">Strike Brighter.</div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>A — Stacked Classic</h3>
+                <p>Full hierarchy with kanji crown. Works great as box sticker.</p>
+                <div class="tags">
+                    <span class="tag">Box Sticker</span>
+                    <span class="tag">Marketing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 2 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-2">
+                    <div class="seal">顕<br>照</div>
+                    <div class="text-group">
+                        <div class="brand">KENSHO</div>
+                        <div class="sub">B E A M</div>
+                    </div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>B — Hanko Seal</h3>
+                <p>Horizontal lockup with kanji seal stamp. Feels authentically Japanese.</p>
+                <div class="tags">
+                    <span class="tag rec">⭐ Recommended</span>
+                    <span class="tag">Box Sticker</span>
+                    <span class="tag">Driver Emboss</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 3 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-3">
+                    <div class="brand">KENSHO</div>
+                    <div class="beam">B E A M</div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>C — Bold Minimal</h3>
+                <p>No kanji, pure typography power. Ultra-clean for embossing.</p>
+                <div class="tags">
+                    <span class="tag">Driver Emboss</span>
+                    <span class="tag">Small Scale</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 4 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-4">
+                    <div class="kanji">顕照</div>
+                    <div class="line"></div>
+                    <div class="brand">K E N S H O  B E A M</div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>D — Kanji Hero</h3>
+                <p>Kanji dominates. Maximum Japanese perception for Thai market.</p>
+                <div class="tags">
+                    <span class="tag rec">⭐ Max Japanese feel</span>
+                    <span class="tag">Box Sticker</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 5 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-5">
+                    <div class="stripe"></div>
+                    <div class="brand">KENSHO</div>
+                    <div class="sub">B E A M</div>
+                    <div class="kanji-accent">顕 照</div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>E — Racing Stripe</h3>
+                <p>Sporty automotive energy with light beam streak.</p>
+                <div class="tags">
+                    <span class="tag">Box Sticker</span>
+                    <span class="tag">Marketing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 6 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-6">
+                    <div class="badge">
+                        <div class="kanji">顕 照</div>
+                        <div class="brand">KENSHO</div>
+                        <div class="sub">B E A M</div>
+                        <div class="tagline">Strike Brighter.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>F — Circular Badge</h3>
+                <p>Stamp/emblem style. Great for driver emboss and round stickers.</p>
+                <div class="tags">
+                    <span class="tag rec">⭐ Driver Emboss</span>
+                    <span class="tag">Round Sticker</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 7 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-7">
+                    <div class="top-row">
+                        <div class="kanji-side">顕照</div>
+                        <div class="slash"></div>
+                        <div class="brand">KENSHO</div>
+                    </div>
+                    <div class="sub">B E A M</div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>G — Vertical Kanji Slash</h3>
+                <p>Vertical kanji with beam slash. Unique and distinctly Japanese layout.</p>
+                <div class="tags">
+                    <span class="tag">Box Sticker</span>
+                    <span class="tag">Signage</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGO 8 -->
+        <div class="logo-card">
+            <div class="logo-display">
+                <div class="logo-8">
+                    <div class="container">
+                        <div class="brand">KENSHO</div>
+                        <div class="sub">B E A M</div>
+                    </div>
+                </div>
+            </div>
+            <div class="logo-info">
+                <h3>H — Framed Compact</h3>
+                <p>Bordered mark with floating kanji. Works at any size.</p>
+                <div class="tags">
+                    <span class="tag rec">⭐ Most Versatile</span>
+                    <span class="tag">Driver Emboss</span>
+                    <span class="tag">Box Sticker</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Color Variants -->
+    <div class="color-section">
+        <h2>Color Variants · Logo B (Hanko Seal)</h2>
+        <div class="color-row">
+            <div class="color-item">
+                <div class="preview" style="background: #050508;">
+                    <div class="logo-2" style="transform: scale(0.6);">
+                        <div class="seal">顕<br>照</div>
+                        <div class="text-group">
+                            <div class="brand">KENSHO</div>
+                            <div class="sub">B E A M</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cname">On Black (primary)</div>
+            </div>
+            <div class="color-item">
+                <div class="preview on-white" style="background: #f5f5f5;">
+                    <div class="logo-2" style="transform: scale(0.6);">
+                        <div class="seal" style="border-color: #0A0A12; color: #0A0A12;">顕<br>照</div>
+                        <div class="text-group">
+                            <div class="brand">KENSHO</div>
+                            <div class="sub">B E A M</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cname">On White (inverted)</div>
+            </div>
+            <div class="color-item">
+                <div class="preview" style="background: #050508;">
+                    <div class="logo-2 mono-blue" style="transform: scale(0.6);">
+                        <div class="seal">顕<br>照</div>
+                        <div class="text-group">
+                            <div class="brand">KENSHO</div>
+                            <div class="sub">B E A M</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cname">Mono Blue (accent)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Size Preview -->
+    <div class="size-preview">
+        <h2>Scale Test · How it looks at actual size</h2>
+        <div class="size-row">
+            <div class="size-item">
+                <div class="logo-mini" style="width: 300px; height: 80px;">
+                    <div class="logo-8" style="transform: scale(0.8);">
+                        <div class="container">
+                            <div class="brand">KENSHO</div>
+                            <div class="sub">B E A M</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="label">Box Sticker (~8cm)</div>
+            </div>
+            <div class="size-item">
+                <div class="logo-mini" style="width: 120px; height: 50px;">
+                    <div class="logo-8" style="transform: scale(0.35);">
+                        <div class="container">
+                            <div class="brand">KENSHO</div>
+                            <div class="sub">B E A M</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="label">Driver Emboss (~3cm)</div>
+            </div>
+            <div class="size-item">
+                <div class="logo-mini" style="width: 60px; height: 30px;">
+                    <div class="logo-3" style="transform: scale(0.2);">
+                        <div class="brand">KENSHO</div>
+                        <div class="beam">B E A M</div>
+                    </div>
+                </div>
+                <div class="label">Tiny (~1.5cm)</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+import { createMasterPage } from './master-factory.js'
+import { fetchFullList } from '../services/pb.js'
+
+export const initMasterCustomerPage = createMasterPage({
+    title: 'ลูกค้า', icon: 'people', collection: 'customers',
+    fields: [
+        { key: 'cust_code', label: 'รหัสลูกค้า', readonly: true, placeholder: 'สร้างอัตโนมัติ' },
+        { key: 'prefix', label: 'คำนำหน้า', type: 'select', options: ['นาย', 'นาง', 'นางสาว', 'บริษัท', 'ห้างหุ้นส่วน'] },
+        { key: 'name', label: 'ชื่อ-นามสกุล', required: true },
+        { key: 'tax_id', label: 'เลขประจำตัวผู้เสียภาษี' },
+        { key: 'phone', label: 'เบอร์โทรศัพท์' },
+        { key: 'email', label: 'อีเมล', type: 'email' },
+        { key: 'address', label: 'ที่อยู่', type: 'textarea' },
+        { key: 'credit_limit', label: 'วงเงินเครดิต', type: 'number' },
+        { key: 'points', label: 'แต้มสะสม', type: 'number' },
+        { key: 'notes', label: 'หมายเหตุ', type: 'textarea' },
+    ],
+    columns: [
+        { key: 'cust_code', label: 'รหัสลูกค้า' },
+        { key: 'name', label: 'ชื่อ' },
+        { key: 'phone', label: 'เบอร์โทร' },
+        { key: 'email', label: 'อีเมล' },
+        { key: 'credit_limit', label: 'วงเงิน' },
+        { key: 'points', label: 'แต้ม' },
+    ],
+    // Auto-generate cust_code when creating a new customer if not set
+    beforeSave: async (data, editingId) => {
+        if (!editingId && !data.cust_code) {
+            try {
+                const jwt = localStorage.getItem('mungkhud_jwt') || ''
+                const res = await fetch('/api/data/custom/generate-doc-id?prefix=CUST&table=customers&field=cust_code', {
+                    headers: { 'Authorization': `Bearer ${jwt}` }
+                })
+                const d = await res.json()
+                data.cust_code = d.doc_no || `CUST-${Date.now()}`
+            } catch {
+                data.cust_code = `CUST-${Date.now()}`
+            }
+        }
+        return data
+    }
+})

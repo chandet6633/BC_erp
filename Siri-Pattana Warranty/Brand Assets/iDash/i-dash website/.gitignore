@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build cache
+.next/
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Text extraction files (not needed for deployment)
+*.txt
+!robots.txt

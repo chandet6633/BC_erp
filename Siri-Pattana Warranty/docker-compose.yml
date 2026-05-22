@@ -1,0 +1,24 @@
+services:
+  siri-pattana-warranty:
+    build: .
+    container_name: siri-pattana-warranty
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      NOCODB_URL: "${NOCODB_URL:-}"
+      NOCODB_TOKEN: "${NOCODB_TOKEN:-}"
+      NOCODB_WARRANTIES_TABLE: "${NOCODB_WARRANTIES_TABLE:-warranties}"
+      NOCODB_PRODUCTS_TABLE: "${NOCODB_PRODUCTS_TABLE:-products}"
+      NOCODB_FILM_OPTIONS_TABLE: "${NOCODB_FILM_OPTIONS_TABLE:-film_options}"
+      NOCODB_INSTALL_CENTERS_TABLE: "${NOCODB_INSTALL_CENTERS_TABLE:-install_centers}"
+      NOCODB_ADMIN_USERS_TABLE: "${NOCODB_ADMIN_USERS_TABLE:-admin_users}"
+      SESSION_SECRET: "${SESSION_SECRET:-change-me}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      ADMIN_DISPLAY_NAME: "${ADMIN_DISPLAY_NAME:-Siri Pattana Admin}"
+    volumes:
+      - ./data:/app/data
+      - ./server.js:/app/server.js:ro
+      - ./public:/app/public:ro

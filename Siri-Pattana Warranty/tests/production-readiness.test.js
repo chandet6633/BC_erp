@@ -93,8 +93,23 @@ test("production warranty workflow is protected, registerable, printable, and de
   assert.equal(printed.status, 200);
   assert.equal((await printed.json()).record.extra.printed, true);
 
+  const incompleteRegistration = await patchJson(`/api/warranties/${idashCard.uniqueId}`, {
+    customerName: "Missing Center",
+    phone: "0800000000",
+    vehicleBrand: "Toyota",
+    vehicleModel: "Camry",
+    plateNo: "TEST-1234",
+    province: "Bangkok"
+  });
+  assert.equal(incompleteRegistration.status, 400);
+
   const registered = await patchJson(`/api/warranties/${idashCard.uniqueId}`, {
+    brandId: "glassify",
     product: idash.products[0].name,
+    variant: "PHANTOM",
+    warrantyYears: 99,
+    status: "pending",
+    adminUpdate: true,
     customerName: "Production Test",
     phone: "0800000000",
     installCenter: "Siri Pattana HQ",
@@ -102,14 +117,23 @@ test("production warranty workflow is protected, registerable, printable, and de
     vehicleBrand: "Toyota",
     vehicleModel: "Camry",
     plateNo: "TEST-1234",
-    extra: { deviceSerial: "DUT-01", vehicleTemplate: "size-l" }
+    province: "Bangkok",
+    extra: { printed: false, vehicleTemplate: "size-l" }
   });
   assert.equal(registered.status, 200);
   const registeredRecord = (await registered.json()).record;
   assert.equal(registeredRecord.status, "registered");
+  assert.equal(registeredRecord.brandId, "idash");
+  assert.equal(registeredRecord.product, idash.products[0].name);
+  assert.equal(registeredRecord.variant, idash.products[0].variant);
+  assert.equal(registeredRecord.warrantyYears, 1);
   assert.equal(registeredRecord.installDate, todayLocal());
   assert.equal(registeredRecord.expiryDate, addYears(todayLocal(), 1));
   assert.equal(registeredRecord.phone, "0800000000");
+  assert.equal(registeredRecord.extra.printed, true);
+
+  const serialLookup = await fetch(`${BASE_URL}/api/warranties/${encodeURIComponent(idashCard.serial)}`);
+  assert.equal(serialLookup.status, 404);
 
   const secondRegister = await patchJson(`/api/warranties/${idashCard.uniqueId}`, { customerName: "Duplicate" });
   assert.equal(secondRegister.status, 409);

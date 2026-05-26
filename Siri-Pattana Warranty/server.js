@@ -20,10 +20,13 @@ const NOCODB_FILM_OPTIONS_TABLE = process.env.NOCODB_FILM_OPTIONS_TABLE || "film
 const NOCODB_INSTALL_CENTERS_TABLE = process.env.NOCODB_INSTALL_CENTERS_TABLE || "install_centers";
 const NOCODB_ADMIN_USERS_TABLE = process.env.NOCODB_ADMIN_USERS_TABLE || "admin_users";
 const NOCODB_VEHICLE_MODELS_TABLE = process.env.NOCODB_VEHICLE_MODELS_TABLE || "vehicle_models";
+const APP_BASE_URL = trimSlash(process.env.APP_BASE_URL || "");
 const SESSION_SECRET = process.env.SESSION_SECRET || "change-me";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const ADMIN_DISPLAY_NAME = process.env.ADMIN_DISPLAY_NAME || "Admin";
+
+validateProductionConfig();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -64,7 +67,7 @@ const brands = [
     tagline: "Pro. Beyond Performance.",
     category: "Android head unit warranty",
     warrantyLabel: "1 year standard coverage",
-    accent: "#2DD4BF",
+    accent: "#007AFF",
     dark: "#0A0A0F",
     logo: "/brand-assets/iDash/idash-static-site/img/main%20logo.png",
     hero: "/brand-assets/iDash/i-dash%20website/hero-product.png",
@@ -75,7 +78,7 @@ const brands = [
       { name: "iDash Core", variant: "Core", years: 1 },
       { name: "iDash Eco", variant: "Eco", years: 1 }
     ],
-    fields: ["deviceSerial", "vehicle"]
+    fields: ["vehicle"]
   },
   {
     id: "kensho",
@@ -186,6 +189,36 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (url.pathname === "/api/qr-image" && req.method === "GET") {
+    const data = url.searchParams.get("data") || "";
+    if (!data) {
+      sendJson(res, 400, { error: "QR data is required" });
+      return;
+    }
+    const size = clampNumber(url.searchParams.get("size"), 80, 1000, 400);
+    const margin = clampNumber(url.searchParams.get("margin"), 0, 20, 2);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=${margin}&data=${encodeURIComponent(data)}`;
+    let response;
+    try {
+      response = await fetch(qrUrl);
+    } catch (error) {
+      console.warn(`QR image fetch failed: ${error.message}`);
+      sendJson(res, 502, { error: "QR image service failed" });
+      return;
+    }
+    if (!response.ok) {
+      sendJson(res, 502, { error: "QR image service failed" });
+      return;
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.writeHead(200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=604800, immutable"
+    });
+    res.end(buffer);
+    return;
+  }
+
   if (url.pathname === "/api/auth/login" && req.method === "POST") {
     const body = await readJson(req);
     const user = await findAdminUser(clean(body.username));
@@ -288,7 +321,7 @@ async function handleApi(req, res, url) {
       sendJson(res, 400, { error: "Selected product is not available in the catalog." });
       return;
     }
-    const baseUrl = clean(payload.baseUrl) || `${url.protocol}//${url.host}`;
+    const baseUrl = clean(payload.baseUrl) || APP_BASE_URL || requestBaseUrl(req, url);
     const created = [];
 
     for (let index = 0; index < batchSize; index += 1) {
@@ -361,25 +394,16 @@ async function handleApi(req, res, url) {
       sendJson(res, 409, { error: "Warranty card is already registered", record: existing });
       return;
     }
-    payload.phone = digitsOnly(payload.phone);
-    payload.installDate = localToday();
-    payload.expiryDate = "";
-    if (payload.phone.length < 8) {
+    const registration = buildPublicRegistration(existing, payload);
+    if (!registration.customerName || !registration.vehicleBrand || !registration.vehicleModel || !registration.plateNo || !registration.province || !registration.installCenter) {
+      sendJson(res, 400, { error: "Customer, vehicle, plate, province, and install center are required." });
+      return;
+    }
+    if (registration.phone.length < 8) {
       sendJson(res, 400, { error: "Phone number must contain numbers only." });
       return;
     }
-    const updated = await updateWarranty(uniqueId, normalizeWarranty({
-      ...existing,
-      ...payload,
-      extra: {
-        ...(existing.extra || {}),
-        ...(payload.extra || {})
-      },
-      uniqueId,
-      serial: existing.serial,
-      status: "registered",
-      createdAt: existing.createdAt
-    }));
+    const updated = await updateWarranty(uniqueId, normalizeWarranty(registration));
     sendJson(res, 200, { record: updated });
     return;
   }
@@ -498,13 +522,65 @@ function normalizeWarranty(input) {
   };
 }
 
+function buildPublicRegistration(existing, payload) {
+  const brand = brands.find((item) => item.id === existing.brandId) || brands[0];
+  const today = localToday();
+  const existingExtra = existing.extra && typeof existing.extra === "object" ? existing.extra : {};
+  const payloadExtra = payload.extra && typeof payload.extra === "object" ? payload.extra : {};
+  const protectedExtra = {};
+  ["printed", "printBatchNote"].forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(existingExtra, key)) protectedExtra[key] = existingExtra[key];
+  });
+
+  const next = {
+    ...existing,
+    customerName: clean(payload.customerName),
+    phone: digitsOnly(payload.phone),
+    email: clean(payload.email),
+    vehicleBrand: clean(payload.vehicleBrand),
+    vehicleModel: clean(payload.vehicleModel),
+    plateNo: clean(payload.plateNo),
+    province: clean(payload.province),
+    chassisNo: clean(payload.chassisNo),
+    installCenter: clean(payload.installCenter),
+    installDate: today,
+    expiryDate: "",
+    notes: clean(payload.notes),
+    status: "registered",
+    extra: {
+      ...existingExtra,
+      ...payloadExtra,
+      ...protectedExtra
+    },
+    uniqueId: existing.uniqueId,
+    serial: existing.serial,
+    brandId: existing.brandId,
+    brandName: existing.brandName,
+    scanUrl: existing.scanUrl,
+    createdAt: existing.createdAt
+  };
+
+  if (brand.id === "glassify") {
+    const years = clampNumber(payload.warrantyYears, 1, 99, Number(existing.warrantyYears || 7) || 7);
+    next.product = clean(payload.product) || existing.product;
+    next.variant = clean(payload.variant) || existing.variant || next.product;
+    next.warrantyYears = years;
+  } else {
+    next.product = existing.product;
+    next.variant = existing.variant;
+    next.warrantyYears = Number(existing.warrantyYears || brand.products[0]?.years || 1);
+  }
+
+  return next;
+}
+
 async function createWarranty(record) {
   if (NOCODB_URL && NOCODB_TOKEN) {
     const created = await nocodbRequest("", {
       method: "POST",
       body: JSON.stringify(toNocoRecord(record))
     });
-    return fromNocoRecord({ ...record, ...created });
+    return fromNocoRecord({ ...record, ...flattenNocoRecord(created) });
   }
 
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -524,7 +600,7 @@ async function updateWarranty(uniqueId, nextRecord) {
       method: "PATCH",
       body: JSON.stringify({ Id: recordId, ...toNocoRecord(nextRecord) })
     });
-    return fromNocoRecord({ ...nextRecord, ...updated, Id: recordId });
+    return fromNocoRecord({ ...nextRecord, ...flattenNocoRecord(updated), Id: recordId });
   }
 
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -555,8 +631,30 @@ async function deleteWarranty(uniqueId) {
 }
 
 async function findWarrantyByUniqueId(uniqueId) {
-  const records = await listWarranties({ q: uniqueId, brandId: "", limit: 500 });
-  return records.find((record) => record.uniqueId === uniqueId || record.serial === uniqueId) || null;
+  const id = clean(uniqueId);
+  if (!id) return null;
+
+  if (NOCODB_URL && NOCODB_TOKEN) {
+    const pageSize = 1000;
+    let offset = 0;
+    for (let page = 0; page < 100; page += 1) {
+      const params = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+      const response = await nocodbRequest(`?${params}`);
+      const pageRecords = Array.isArray(response) ? response : response.list || response.records || [];
+      const found = pageRecords
+        .map(fromNocoRecord)
+        .find((record) => record.uniqueId === id);
+      if (found) return found;
+      const isLastPage = response.pageInfo?.isLastPage === true || pageRecords.length < pageSize;
+      if (isLastPage) break;
+      offset += pageSize;
+    }
+    return null;
+  }
+
+  const records = await readLocalRecords();
+  const found = records.find((record) => record.uniqueId === id);
+  return found ? fromNocoRecord(found) : null;
 }
 
 async function listWarranties({ q, brandId, limit }) {
@@ -572,7 +670,7 @@ async function listWarranties({ q, brandId, limit }) {
   }
 
   return records
-    .map((record) => fromNocoRecord(record.fields || record))
+    .map(fromNocoRecord)
     .filter((record) => !brandId || record.brandId === brandId)
     .filter((record) => {
       if (!normalizedQ) return true;
@@ -632,7 +730,7 @@ async function listCatalog(type, { activeOnly = true, brandId = "" } = {}) {
   }
   const list = Array.isArray(response) ? response : response.list || response.records || [];
   return list
-    .map((record) => fromNocoRecord(record.fields || record))
+    .map(fromNocoRecord)
     .map(normalizeCatalogRecord)
     .filter((record) => !activeOnly || record.active)
     .filter((record) => !brandId || record.brandId === brandId)
@@ -646,7 +744,7 @@ async function createCatalog(type, payload) {
     method: "POST",
     body: JSON.stringify(record)
   });
-  return normalizeCatalogRecord({ ...record, ...created });
+  return normalizeCatalogRecord({ ...record, ...flattenNocoRecord(created) });
 }
 
 async function updateCatalog(type, id, payload) {
@@ -656,7 +754,7 @@ async function updateCatalog(type, id, payload) {
     method: "PATCH",
     body: JSON.stringify({ Id: Number(id), ...record })
   });
-  return normalizeCatalogRecord({ ...record, ...updated, Id: Number(id) });
+  return normalizeCatalogRecord({ ...record, ...flattenNocoRecord(updated), Id: Number(id) });
 }
 
 async function deleteCatalog(type, id) {
@@ -771,7 +869,7 @@ function toNocoRecord(record) {
 }
 
 function fromNocoRecord(record) {
-  const copy = { ...record };
+  const copy = { ...flattenNocoRecord(record) };
   if (typeof copy.extra === "string") {
     try {
       copy.extra = copy.extra ? JSON.parse(copy.extra) : {};
@@ -782,12 +880,24 @@ function fromNocoRecord(record) {
   return copy;
 }
 
+function flattenNocoRecord(record) {
+  if (!record || typeof record !== "object") return {};
+  if (record.fields && typeof record.fields === "object") {
+    return {
+      ...record.fields,
+      Id: record.Id ?? record.id ?? record.fields.Id,
+      id: record.id ?? record.fields.id
+    };
+  }
+  return record;
+}
+
 async function findAdminUser(username) {
   if (!username) return null;
   if (NOCODB_URL && NOCODB_TOKEN) {
     try {
       const response = await nocodbTableRequest(NOCODB_ADMIN_USERS_TABLE, "?limit=1000");
-      const users = (response.list || response.records || response || []).map((record) => fromNocoRecord(record.fields || record));
+      const users = (response.list || response.records || response || []).map(fromNocoRecord);
       const user = users.find((item) => String(item.username || "").toLowerCase() === username.toLowerCase());
       if (user) {
         return {
@@ -911,6 +1021,12 @@ function sendText(res, status, text) {
   res.end(text);
 }
 
+function clampNumber(value, min, max, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(number)));
+}
+
 function addYears(dateString, years) {
   const match = String(dateString || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return "";
@@ -944,8 +1060,24 @@ function localToday() {
   return `${year}-${month}-${day}`;
 }
 
+function requestBaseUrl(req, url) {
+  const forwardedProto = clean(req.headers["x-forwarded-proto"]).split(",")[0];
+  const forwardedHost = clean(req.headers["x-forwarded-host"]).split(",")[0];
+  const proto = forwardedProto || url.protocol.replace(/:$/, "") || "http";
+  const host = forwardedHost || req.headers.host || url.host;
+  return `${proto}://${host}`;
+}
+
 function trimSlash(value) {
   return value.replace(/\/+$/, "");
+}
+
+function validateProductionConfig() {
+  if (process.env.NODE_ENV !== "production") return;
+  if (!SESSION_SECRET || SESSION_SECRET === "change-me") {
+    console.error("SESSION_SECRET must be set to a strong value in production.");
+    process.exit(1);
+  }
 }
 
 function loadDotEnv(filePath) {

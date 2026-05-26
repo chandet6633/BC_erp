@@ -6,7 +6,14 @@ let activeTab = "generate";
 let catalog = { products: [], filmOptions: [], installCenters: [], vehicleModels: [] };
 let catalogLoaded = false;
 let adminUser = null;
-let adminRecordsState = { records: [], filtered: [], selectedId: "", status: "", printSelectedIds: new Set() };
+let adminRecordsState = {
+  records: [],
+  filtered: [],
+  selectedId: "",
+  status: "",
+  printSelectedIds: new Set(),
+  glassifyDownloadSelectedIds: new Set()
+};
 const ADMIN_ROUTES = new Set(["/", "/admin", "/glassify", "/idash", "/kensho"]);
 const CERT_REF_W = 1414;
 const CERT_REF_H = 2000;
@@ -73,6 +80,10 @@ const THAI_PROVINCES = [
 ];
 const KENSHO_LOGO = "/brand-assets/KENSHO%20Beam/website/img/logo.svg";
 const GLASSIFY_LOGO = "/brand-assets/Glassify/glassify_logo_website.svg";
+const IDASH_LOGO = "/brand-assets/iDash/idash-static-site/img/main%20logo.png";
+const IDASH_HERO = "/brand-assets/iDash/i-dash%20website/hero-product.png";
+const IDASH_CARPLAY = "/brand-assets/iDash/i-dash%20website/img/apple%20carplay%20interface%201.png";
+const IDASH_CHIP = "/brand-assets/iDash/i-dash%20website/img/snapdragon_icore_mockup.png";
 const GLASSIFY_DEFAULT_VEHICLE_VIDEO = "/media/glassify/vehicles/sedan.mp4";
 const GLASSIFY_VEHICLE_ASSETS = {
   "sedan": "/media/glassify/vehicles/sedan.mp4",
@@ -282,6 +293,33 @@ function renderBrandWorkspaceHero(brand) {
     ? "Physical cards are printed without product. Customer selects film during QR registration."
     : "Physical cards are printed with product already assigned.";
   const logo = brand.logo ? `<img class="workspace-logo" src="${brand.logo}" alt="${brand.name}">` : `<strong>${escapeHtml(brand.name)}</strong>`;
+  if (brand.id === "idash") {
+    return `
+      <header class="workspace-hero idash-admin-hero">
+        <div class="workspace-identity idash-admin-identity">
+          <img class="workspace-logo idash-admin-logo" src="${IDASH_LOGO}" alt="${brand.name}">
+          <div>
+            <p class="eyebrow">Pro. Beyond Performance.</p>
+            <h1>iDash Warranty Console</h1>
+            <p class="lead">Manage QR warranty cards for smart head units with the same black glass, CarPlay-ready character as the iDash website.</p>
+            <div class="idash-admin-chips">
+              <span>Warranty ID tracking</span>
+              <span>1 year coverage</span>
+              <span>Install center record</span>
+            </div>
+          </div>
+        </div>
+        <div class="idash-admin-visual" aria-label="${escapeHtml(brand.name)} setup summary">
+          <img src="${IDASH_HERO}" alt="">
+          <div class="idash-admin-stat-row">
+            <div><span>Catalog items</span><strong>${activeItems}</strong></div>
+            <div><span>Warranty rule</span><strong>${escapeHtml(coverage)}</strong></div>
+          </div>
+          <p>${escapeHtml(cardRule)}</p>
+        </div>
+      </header>
+    `;
+  }
   return `
     <header class="workspace-hero">
       <div class="workspace-identity">
@@ -395,6 +433,10 @@ async function renderScanRegister() {
     renderGlassifyRegister(record);
     return;
   }
+  if (currentBrand.id === "idash") {
+    renderIdashRegister(record);
+    return;
+  }
 
   app.innerHTML = `
     <section class="brand-page" style="--brand-accent:${currentBrand.accent};--brand-dark:${currentBrand.dark}">
@@ -447,6 +489,10 @@ async function renderDetails() {
     renderGlassifyDetails(record);
     return;
   }
+  if (currentBrand.id === "idash") {
+    renderIdashDetails(record);
+    return;
+  }
 
   app.innerHTML = `
     <section class="brand-page" style="--brand-accent:${currentBrand.accent};--brand-dark:${currentBrand.dark}">
@@ -494,35 +540,68 @@ function renderGlassifyOpeningOverlay(record) {
 }
 
 function registrationStep1(record) {
+  const vehicleVisuals = {
+    sedan: {
+      image: "/brand-assets/Glassify/website-light/simulation/assets/vehicle_icons/sedan-m.png",
+      sub: "Sedan"
+    },
+    suv: {
+      image: "/brand-assets/Glassify/website-light/simulation/assets/vehicle_icons/suv.png",
+      sub: "SUV"
+    },
+    mpv: {
+      image: "/brand-assets/Glassify/website-light/simulation/assets/vehicle_icons/suv.png",
+      sub: "MPV / Van"
+    },
+    "pick-up": {
+      image: "/brand-assets/Glassify/website-light/simulation/assets/vehicle_icons/pickup.png",
+      sub: "Pick-up"
+    },
+    ppv: {
+      image: "/brand-assets/Glassify/website-light/simulation/assets/vehicle_icons/ppv.png",
+      sub: "PPV"
+    }
+  };
+  const vehicleOrder = ["sedan", "pick-up", "suv", "mpv", "ppv"];
+  const orderedVehicleTemplates = [
+    ...vehicleOrder.map((value) => CERT_TEMPLATES.find((item) => item.value === value)).filter(Boolean),
+    ...CERT_TEMPLATES.filter((item) => !vehicleOrder.includes(item.value))
+  ];
+
   return `
-    <label class="full" style="margin-bottom:0; font-size:13px; color:#1e3a6e;">Choose Vehicle Type / เลือกประเภทรถ</label>
+    <label class="vehicle-type-label full">Choose Vehicle Type / เลือกประเภทรถ</label>
     <div class="vehicle-character-selector-wrap full">
-      <button class="vehicle-scroll-btn left" type="button" data-scroll="left">‹</button>
+      <button class="vehicle-scroll-btn left" type="button" data-scroll="left" aria-label="Scroll vehicle types left">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
       <div class="vehicle-character-selector" id="vehicle-char-selector">
-        ${CERT_TEMPLATES.map((item, idx) => {
+        ${orderedVehicleTemplates.map((item) => {
           const isSelected = item.value === (record.extra?.vehicleTemplate || "sedan");
-          let emoji = "🚗";
-          let sub = "Sedan";
-          if (item.value === "sedan") { emoji = "🚗"; sub = "Sedan"; }
-          else if (item.value === "suv") { emoji = "🚙"; sub = "SUV"; }
-          else if (item.value === "mpv") { emoji = "🚐"; sub = "MPV / Van"; }
-          else if (item.value === "pick-up") { emoji = "🛻"; sub = "Pick-up"; }
-          else if (item.value === "ppv") { emoji = "🚜"; sub = "PPV"; }
+          const visual = vehicleVisuals[item.value] || vehicleVisuals.sedan;
+          const visualMarkup = visual.svg
+            ? visual.svg
+            : `<img class="vehicle-char-image" src="${escapeHtml(visual.image)}" alt="" loading="lazy">`;
           return `
-            <div class="vehicle-char-card ${isSelected ? "selected" : ""}" data-value="${item.value}">
-              <div class="vehicle-char-badge">✓</div>
-              <div class="vehicle-char-icon">${emoji}</div>
-              <div class="vehicle-char-title">${item.label.split(" ")[0]}</div>
-              <div class="vehicle-char-subtitle">${sub}</div>
+            <div class="vehicle-char-card ${isSelected ? "selected" : ""}" data-value="${escapeHtml(item.value)}">
+              <div class="vehicle-char-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="vehicle-char-visual" aria-hidden="true">
+                ${visualMarkup}
+              </div>
+              <div class="vehicle-char-title">${escapeHtml(item.label.split(" ")[0])}</div>
+              <div class="vehicle-char-subtitle">${escapeHtml(visual.sub)}</div>
             </div>
           `;
         }).join("")}
       </div>
-      <button class="vehicle-scroll-btn right" type="button" data-scroll="right">›</button>
+      <button class="vehicle-scroll-btn right" type="button" data-scroll="right" aria-label="Scroll vehicle types right">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
     </div>
     
     <select name="vehicleTemplate" style="display:none;">
-      ${CERT_TEMPLATES.map((item) => `<option value="${item.value}" ${item.value === (record.extra?.vehicleTemplate || "sedan") ? "selected" : ""}>${item.label}</option>`).join("")}
+      ${orderedVehicleTemplates.map((item) => `<option value="${item.value}" ${item.value === (record.extra?.vehicleTemplate || "sedan") ? "selected" : ""}>${item.label}</option>`).join("")}
     </select>
   `;
 }
@@ -780,6 +859,240 @@ function renderGlassifyDetails(record) {
   document.getElementById("save-glassify-card")?.addEventListener("click", () => saveGlassifyCardImage(record));
 }
 
+function renderIdashRegister(record) {
+  hidePublicChrome();
+  app.innerHTML = `
+    <section class="idash-public-page idash-register-page">
+      <div class="idash-register-hero">
+        <div>
+          <img src="${IDASH_LOGO}" alt="iDash">
+          <span>Activate Warranty</span>
+        </div>
+        <div class="idash-register-serial">
+          <span>Card ID</span>
+          <strong>${escapeHtml(record.serial)}</strong>
+        </div>
+      </div>
+      <div class="idash-public-grid">
+        <form id="register-form" class="idash-form-panel idash-wizard-panel">
+          <datalist id="vehicle-brand-options">${vehicleMakes().map((make) => `<option value="${escapeHtml(make)}"></option>`).join("")}</datalist>
+          <datalist id="vehicle-model-options">${vehicleModelsForMake(record.vehicleBrand).map((model) => `<option value="${escapeHtml(model)}"></option>`).join("")}</datalist>
+          <datalist id="province-options">${THAI_PROVINCES.map((province) => `<option value="${escapeHtml(province)}"></option>`).join("")}</datalist>
+
+          <div class="wizard-progress-track">
+            <div class="wizard-progress-bar" id="wizard-progress-bar"></div>
+            ${[
+              ["Product", "สินค้า"],
+              ["Type", "ประเภทรถ"],
+              ["Model", "รุ่นรถ"],
+              ["Plate", "ทะเบียน"],
+              ["Install", "ติดตั้ง"],
+              ["Customer", "ลูกค้า"]
+            ].map(([label, thai], index) => `
+              <div class="wizard-step-node ${index === 0 ? "active" : ""}" data-step-node="${index + 1}">
+                <div class="wizard-step-circle">
+                  <span>${index + 1}</span>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="wizard-step-label">${label} / ${thai}</div>
+              </div>
+            `).join("")}
+          </div>
+
+          <div class="wizard-step active" data-step="1">
+            <h2 class="panel-title">Product & Device <span> / ข้อมูลสินค้า</span></h2>
+            <div class="form-grid">
+              ${idashRegistrationStep1(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn idash-primary" type="button" data-next-step="1">Next Step</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="2">
+            <h2 class="panel-title">Vehicle Type <span> / ประเภทรถ</span></h2>
+            <div class="form-grid">
+              ${registrationStep1(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn idash-secondary" type="button" data-prev-step="2">Back</button>
+              <button class="btn idash-primary" type="button" data-next-step="2">Next Step</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="3">
+            <h2 class="panel-title">Vehicle Model <span> / รุ่นรถ</span></h2>
+            <div class="form-grid">
+              ${registrationStep2(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn idash-secondary" type="button" data-prev-step="3">Back</button>
+              <button class="btn idash-primary" type="button" data-next-step="3">Next Step</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="4">
+            <h2 class="panel-title">Registration Plate <span> / ทะเบียนรถ</span></h2>
+            <div class="form-grid">
+              ${registrationStep3(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn idash-secondary" type="button" data-prev-step="4">Back</button>
+              <button class="btn idash-primary" type="button" data-next-step="4">Next Step</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="5">
+            <h2 class="panel-title">Install Center <span> / ศูนย์ติดตั้ง</span></h2>
+            <div class="form-grid">
+              ${idashRegistrationStep5(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn idash-secondary" type="button" data-prev-step="5">Back</button>
+              <button class="btn idash-primary" type="button" data-next-step="5">Next Step</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="6">
+            <h2 class="panel-title">Customer Information <span> / ข้อมูลลูกค้า</span></h2>
+            <div class="form-grid">
+              ${registrationStep6(record)}
+            </div>
+            <div class="actions wizard-nav-btns">
+              <button class="btn idash-secondary" type="button" data-prev-step="6">Back</button>
+              <button class="btn idash-primary" type="submit">Activate Warranty</button>
+            </div>
+          </div>
+
+          <div id="register-status" class="status-line">This iDash warranty can be activated one time.</div>
+        </form>
+
+        <aside class="idash-preview-panel">
+          <h2 class="panel-title">Live warranty card <span> / ตัวอย่างบัตร</span></h2>
+          <div id="warranty-preview"></div>
+        </aside>
+      </div>
+    </section>
+  `;
+  bindScanRegisterForm(record);
+  refreshPreview(record);
+}
+
+function idashRegistrationStep1(record) {
+  const installDate = today();
+  const product = record.product || currentBrand.products[0]?.name || currentBrand.name;
+  return `
+    <label style="display:none;">Warranty No.
+      <input name="serial" value="${escapeHtml(record.serial)}" readonly>
+    </label>
+    <label style="display:none;">Install date
+      <input name="installDate" type="date" value="${escapeHtml(installDate)}" min="${escapeHtml(installDate)}" max="${escapeHtml(installDate)}" readonly required>
+    </label>
+    <label class="full">Product / สินค้า
+      <input value="${escapeHtml(product)}" readonly>
+      <input type="hidden" name="product" value="${escapeHtml(product)}">
+    </label>
+  `;
+}
+
+function idashRegistrationStep5(record) {
+  return `
+    <label class="full">Chassis number / เลขตัวถัง
+      <input name="chassisNo" placeholder="Optional chassis number" value="${escapeHtml(record.chassisNo || "")}">
+    </label>
+    <label class="full">Install center / ศูนย์ติดตั้ง
+      <select name="installCenter" required>
+        <option value="">Please select... / กรุณาเลือก</option>
+        ${installCenterOptions().map((center) => {
+          const value = center.location ? `${center.name} - ${center.location}` : center.name;
+          return `<option value="${escapeHtml(value)}" data-store="${escapeHtml(center.name)}" data-location="${escapeHtml(center.location)}" ${value === record.installCenter ? "selected" : ""}>${escapeHtml(value)}</option>`;
+        }).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function renderIdashDetails(record) {
+  hidePublicChrome();
+  app.innerHTML = `
+    <section class="idash-public-page idash-details-page">
+      <div class="idash-details-grid">
+        ${renderIdashWarrantyCard(record)}
+        ${renderIdashProductStage(record, "details")}
+      </div>
+      <div class="actions idash-detail-actions">
+        <button class="btn idash-primary" type="button" id="save-idash-card">Save image</button>
+        <a class="btn idash-secondary" href="https://idashthailand.com/">Back to iDash website</a>
+      </div>
+    </section>
+  `;
+  document.getElementById("save-idash-card")?.addEventListener("click", () => saveIdashWarrantyImage(record));
+}
+
+function renderIdashProductStage(record, mode) {
+  const product = record.product || "iDash Smart Display";
+  return `
+    <aside class="idash-product-stage ${mode === "details" ? "compact" : ""}">
+      <div class="idash-grid-bg"></div>
+      <div class="idash-stage-copy">
+        <img src="${IDASH_LOGO}" alt="iDash">
+        <p>Pro. Beyond Performance.</p>
+        <h2>${escapeHtml(product)}</h2>
+        <div class="idash-stage-meta">
+          <span>CarPlay ready</span>
+          <span>DSP sound</span>
+          <span>Vision 360</span>
+        </div>
+      </div>
+      <div class="idash-device-frame">
+        <div class="idash-device-sidebar">
+          <span>MIC</span>
+          <span>RST</span>
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+        <div class="idash-screen-face">
+          <img src="${IDASH_CARPLAY}" alt="">
+        </div>
+      </div>
+      <div class="idash-hero-unit">
+        <img src="${IDASH_HERO}" alt="">
+      </div>
+      <div class="idash-chip-card">
+        <img src="${IDASH_CHIP}" alt="">
+        <div>
+          <span>Warranty ID</span>
+          <strong>${escapeHtml(record.serial || "-")}</strong>
+        </div>
+      </div>
+    </aside>
+  `;
+}
+
+function renderIdashWarrantyCard(record) {
+  const expiryDate = record.expiryDate || addYears(record.installDate, Number(record.warrantyYears || 1));
+  return `
+    <article class="idash-warranty-card">
+      <div class="idash-card-topline">
+        <img src="${IDASH_LOGO}" alt="iDash">
+        <span>${escapeHtml(statusLabel(record))}</span>
+      </div>
+      <p class="idash-card-kicker">Digital product warranty</p>
+      <h1>${escapeHtml(record.product || "iDash Smart Display")}</h1>
+      <div class="idash-serial">${escapeHtml(record.serial || "-")}</div>
+      <div class="idash-warranty-rows">
+        ${recordRow("Customer", record.customerName || "-")}
+        ${recordRow("Phone", record.phone || "-")}
+        ${recordRow("Vehicle", [record.vehicleBrand, record.vehicleModel].filter(Boolean).join(" ") || "-")}
+        ${recordRow("Plate", [record.plateNo, record.province].filter(Boolean).join(" ") || "-")}
+        ${recordRow("Install center", record.installCenter || "-")}
+        ${recordRow("Coverage", `${record.installDate || "-"} to ${expiryDate || "-"}`)}
+      </div>
+    </article>
+  `;
+}
+
 function renderKenshoRegister(record) {
   hidePublicChrome();
   app.innerHTML = `
@@ -793,10 +1106,96 @@ function renderKenshoRegister(record) {
             <p>Activate beam warranty / \u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19\u0e44\u0e1f</p>
             <h1>${escapeHtml(record.serial)}</h1>
           </div>
-          ${registrationFields(record)}
-          <div class="actions">
-            <button class="btn kensho-primary" type="submit">Activate warranty / \u0e40\u0e1b\u0e34\u0e14\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19\u0e01\u0e32\u0e23\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19</button>
+
+          <datalist id="vehicle-brand-options">${vehicleMakes().map((make) => `<option value="${escapeHtml(make)}"></option>`).join("")}</datalist>
+          <datalist id="vehicle-model-options">${vehicleModelsForMake(record.vehicleBrand).map((model) => `<option value="${escapeHtml(model)}"></option>`).join("")}</datalist>
+          <datalist id="province-options">${THAI_PROVINCES.map((province) => `<option value="${escapeHtml(province)}"></option>`).join("")}</datalist>
+
+          <div class="wizard-progress-track">
+            <div class="wizard-progress-bar" id="wizard-progress-bar"></div>
+            ${[
+              ["Product", "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32"],
+              ["Type", "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16"],
+              ["Model", "\u0e23\u0e38\u0e48\u0e19\u0e23\u0e16"],
+              ["Plate", "\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19"],
+              ["Install", "\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07"],
+              ["Customer", "\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32"]
+            ].map(([label, thai], index) => `
+              <div class="wizard-step-node ${index === 0 ? "active" : ""}" data-step-node="${index + 1}">
+                <div class="wizard-step-circle">
+                  <span>${index + 1}</span>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="wizard-step-label">${label} / ${thai}</div>
+              </div>
+            `).join("")}
           </div>
+
+          <div class="wizard-step active" data-step="1">
+            <h2 class="panel-title">Product & Socket <span> / \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32</span></h2>
+            <div class="form-grid">
+              ${kenshoRegistrationStep1(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn kensho-primary" type="button" data-next-step="1">Next Step / \u0e16\u0e31\u0e14\u0e44\u0e1b</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="2">
+            <h2 class="panel-title">Vehicle Type <span> / \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e23\u0e16</span></h2>
+            <div class="form-grid">
+              ${registrationStep1(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn kensho-secondary" type="button" data-prev-step="2">Back / \u0e22\u0e49\u0e2d\u0e19\u0e01\u0e25\u0e31\u0e1a</button>
+              <button class="btn kensho-primary" type="button" data-next-step="2">Next Step / \u0e16\u0e31\u0e14\u0e44\u0e1b</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="3">
+            <h2 class="panel-title">Vehicle Model <span> / \u0e23\u0e38\u0e48\u0e19\u0e23\u0e16</span></h2>
+            <div class="form-grid">
+              ${registrationStep2(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn kensho-secondary" type="button" data-prev-step="3">Back / \u0e22\u0e49\u0e2d\u0e19\u0e01\u0e25\u0e31\u0e1a</button>
+              <button class="btn kensho-primary" type="button" data-next-step="3">Next Step / \u0e16\u0e31\u0e14\u0e44\u0e1b</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="4">
+            <h2 class="panel-title">Registration Plate <span> / \u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e23\u0e16</span></h2>
+            <div class="form-grid">
+              ${registrationStep3(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn kensho-secondary" type="button" data-prev-step="4">Back / \u0e22\u0e49\u0e2d\u0e19\u0e01\u0e25\u0e31\u0e1a</button>
+              <button class="btn kensho-primary" type="button" data-next-step="4">Next Step / \u0e16\u0e31\u0e14\u0e44\u0e1b</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="5">
+            <h2 class="panel-title">Install Center <span> / \u0e28\u0e39\u0e19\u0e22\u0e4c\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07</span></h2>
+            <div class="form-grid">
+              ${kenshoRegistrationStep5(record)}
+            </div>
+            <div class="wizard-nav-btns">
+              <button class="btn kensho-secondary" type="button" data-prev-step="5">Back / \u0e22\u0e49\u0e2d\u0e19\u0e01\u0e25\u0e31\u0e1a</button>
+              <button class="btn kensho-primary" type="button" data-next-step="5">Next Step / \u0e16\u0e31\u0e14\u0e44\u0e1b</button>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="6">
+            <h2 class="panel-title">Customer Information <span> / \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32</span></h2>
+            <div class="form-grid">
+              ${registrationStep6(record)}
+            </div>
+            <div class="actions wizard-nav-btns">
+              <button class="btn kensho-secondary" type="button" data-prev-step="6">Back / \u0e22\u0e49\u0e2d\u0e19\u0e01\u0e25\u0e31\u0e1a</button>
+              <button class="btn kensho-primary" type="submit">Activate warranty / \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19</button>
+            </div>
+          </div>
+
           <div id="register-status" class="status-line">Product is locked from the physical card. Complete customer details once. / \u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e16\u0e39\u0e01\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e08\u0e32\u0e01\u0e1a\u0e31\u0e15\u0e23\u0e08\u0e23\u0e34\u0e07\u0e41\u0e25\u0e49\u0e27 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a\u0e16\u0e49\u0e27\u0e19</div>
         </form>
       </div>
@@ -804,6 +1203,45 @@ function renderKenshoRegister(record) {
   `;
   bindScanRegisterForm(record);
   bindKenshoOpening();
+}
+
+function kenshoRegistrationStep1(record) {
+  const installDate = today();
+  const product = record.product || currentBrand.products[0]?.name || "KENSHO Beam";
+  return `
+    <label style="display:none;">Warranty No.
+      <input name="serial" value="${escapeHtml(record.serial)}" readonly>
+    </label>
+    <label style="display:none;">Install date
+      <input name="installDate" type="date" value="${escapeHtml(installDate)}" min="${escapeHtml(installDate)}" max="${escapeHtml(installDate)}" readonly required>
+    </label>
+    <label class="full">Product / \u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32
+      <input value="${escapeHtml(product)}" readonly>
+      <input type="hidden" name="product" value="${escapeHtml(product)}">
+    </label>
+    <label class="full">Socket type / \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e02\u0e31\u0e49\u0e27\u0e44\u0e1f
+      <select name="extraSocket" required>
+        ${["H4", "H7", "H11", "HB3 / 9005", "HB4 / 9006", "9012"].map((socket) => `<option ${socket === record.extra?.socket ? "selected" : ""}>${socket}</option>`).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function kenshoRegistrationStep5(record) {
+  return `
+    <label class="full">Chassis number / \u0e40\u0e25\u0e02\u0e15\u0e31\u0e27\u0e16\u0e31\u0e07
+      <input name="chassisNo" placeholder="Optional chassis number" value="${escapeHtml(record.chassisNo || "")}">
+    </label>
+    <label class="full">Install center / \u0e28\u0e39\u0e19\u0e22\u0e4c\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07
+      <select name="installCenter" required>
+        <option value="">Please select... / \u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01</option>
+        ${installCenterOptions().map((center) => {
+          const value = center.location ? `${center.name} - ${center.location}` : center.name;
+          return `<option value="${escapeHtml(value)}" data-store="${escapeHtml(center.name)}" data-location="${escapeHtml(center.location)}" ${value === record.installCenter ? "selected" : ""}>${escapeHtml(value)}</option>`;
+        }).join("")}
+      </select>
+    </label>
+  `;
 }
 
 function renderKenshoDetails(record) {
@@ -1089,7 +1527,14 @@ function renderGenerator(scopeBrandId = "") {
         <div id="generator-status" class="status-line">Generated cards are pending until a customer registers.</div>
       </form>
       <aside class="result-panel">
-        <h2 class="panel-title">Generated cards</h2>
+        <div class="panel-head">
+          <h2 class="panel-title">Generated cards</h2>
+          <div class="actions compact-actions glassify-generated-tools hidden" id="glassify-generated-tools">
+            <button class="btn btn-ghost" type="button" id="select-generated-glassify">Select all</button>
+            <button class="btn btn-dark" type="button" id="download-generated-glassify" disabled>Download fronts</button>
+          </div>
+        </div>
+        <div id="generated-selection-status" class="status-line hidden">Select Glassify cards to download front images only.</div>
         <div id="generated-cards" class="generated-cards"></div>
       </aside>
     </div>
@@ -1098,7 +1543,8 @@ function renderGenerator(scopeBrandId = "") {
 
 function renderAdminRecords(scopeBrandId = "") {
   const scopedBrand = brands.find((brand) => brand.id === scopeBrandId);
-  const showKenshoPrintTools = !scopeBrandId || scopeBrandId === "kensho";
+  const showKenshoPrintTools = !scopeBrandId || scopeBrandId === "kensho" || scopeBrandId === "idash";
+  const showGlassifyDownloadTools = !scopeBrandId || scopeBrandId === "glassify";
   const brandFilter = scopedBrand
     ? `
       <input type="hidden" name="brandId" value="${scopedBrand.id}">
@@ -1148,13 +1594,25 @@ function renderAdminRecords(scopeBrandId = "") {
           ${showKenshoPrintTools ? `
             <div id="kensho-print-tools" class="batch-print-tools">
               <div>
-                <strong>KENSHO A4 print</strong>
-                <span id="kensho-print-status">Select unprinted KENSHO cards for duplex print.</span>
+                <strong>Name card A4 print</strong>
+                <span id="kensho-print-status">Select unprinted iDash or KENSHO cards for duplex print.</span>
               </div>
               <div class="batch-print-actions">
-                <button class="btn btn-ghost" type="button" id="select-unprinted-kensho">Select unprinted</button>
+                <button class="btn btn-ghost" type="button" id="select-unprinted-kensho">Select visible</button>
                 <button class="btn btn-dark" type="button" id="print-selected-a4" disabled>Print A4</button>
                 <button class="btn btn-ghost" type="button" id="mark-selected-printed" disabled>Mark printed</button>
+              </div>
+            </div>
+          ` : ""}
+          ${showGlassifyDownloadTools ? `
+            <div id="glassify-download-tools" class="batch-print-tools glassify-download-tools">
+              <div>
+                <strong>Glassify front images</strong>
+                <span id="glassify-download-status">Select Glassify cards to download QR front PNGs.</span>
+              </div>
+              <div class="batch-print-actions">
+                <button class="btn btn-ghost" type="button" id="select-visible-glassify">Select visible</button>
+                <button class="btn btn-dark" type="button" id="download-selected-glassify-fronts" disabled>Download fronts</button>
               </div>
             </div>
           ` : ""}
@@ -1372,9 +1830,9 @@ function registrationFields(record) {
         <label>Warranty product / สินค้ารับประกัน
           <input value="Selected by film series below / เลือกตามซีรีส์ฟิล์มด้านล่าง" readonly>
         </label>
-      ` : currentBrand.id === "kensho" ? `
+      ` : currentBrand.id === "kensho" || currentBrand.id === "idash" ? `
         <label>Product / สินค้า
-          <input value="${escapeHtml(record.product || currentBrand.products[0]?.name || "KENSHO Beam")}" readonly>
+          <input value="${escapeHtml(record.product || currentBrand.products[0]?.name || currentBrand.name)}" readonly>
           <input type="hidden" name="product" value="${escapeHtml(record.product || currentBrand.products[0]?.name || "")}">
         </label>
       ` : `
@@ -1879,6 +2337,30 @@ function bindGenerator() {
   if (!form) return;
   const productSelect = form.product;
   let generated = [];
+  let generatedGlassifySelectedIds = new Set();
+
+  function getGeneratedGlassifyRecords() {
+    return generated.filter((record) => record.brandId === "glassify");
+  }
+
+  function getSelectedGeneratedGlassifyRecords() {
+    return getGeneratedGlassifyRecords().filter((record) => generatedGlassifySelectedIds.has(record.uniqueId));
+  }
+
+  function updateGeneratedGlassifyTools() {
+    const glassifyRecords = getGeneratedGlassifyRecords();
+    const selected = getSelectedGeneratedGlassifyRecords();
+    const tools = document.getElementById("glassify-generated-tools");
+    const status = document.getElementById("generated-selection-status");
+    if (tools) tools.classList.toggle("hidden", glassifyRecords.length === 0);
+    if (status) {
+      status.classList.toggle("hidden", glassifyRecords.length === 0);
+      status.textContent = glassifyRecords.length
+        ? `${selected.length} selected. Only the QR-code front side will be downloaded.`
+        : "Select Glassify cards to download front images only.";
+    }
+    document.getElementById("download-generated-glassify")?.toggleAttribute("disabled", selected.length === 0);
+  }
 
   function fillProducts() {
     const brandId = form.elements.brandId?.value || form.dataset.brandId || brands[0]?.id;
@@ -1920,9 +2402,36 @@ function bindGenerator() {
     }
 
     generated = data.records || [];
+    generatedGlassifySelectedIds = new Set(generated.filter((record) => record.brandId === "glassify").map((record) => record.uniqueId));
     status.textContent = `Generated ${generated.length} physical card record(s).`;
     document.getElementById("download-csv").disabled = generated.length === 0;
-    cards.innerHTML = generated.map(renderGeneratedCard).join("");
+    cards.innerHTML = generated.map((record) => renderGeneratedCard(record, {
+      selectable: record.brandId === "glassify",
+      checked: generatedGlassifySelectedIds.has(record.uniqueId)
+    })).join("");
+    updateGeneratedGlassifyTools();
+  });
+
+  document.getElementById("generated-cards")?.addEventListener("change", (event) => {
+    if (!event.target.matches("[data-generated-glassify-select]")) return;
+    const uniqueId = event.target.dataset.generatedGlassifySelect;
+    if (event.target.checked) generatedGlassifySelectedIds.add(uniqueId);
+    else generatedGlassifySelectedIds.delete(uniqueId);
+    updateGeneratedGlassifyTools();
+  });
+
+  document.getElementById("select-generated-glassify")?.addEventListener("click", () => {
+    generatedGlassifySelectedIds = new Set(getGeneratedGlassifyRecords().map((record) => record.uniqueId));
+    document.querySelectorAll("[data-generated-glassify-select]").forEach((input) => {
+      input.checked = true;
+    });
+    updateGeneratedGlassifyTools();
+  });
+
+  document.getElementById("download-generated-glassify")?.addEventListener("click", async () => {
+    const selected = getSelectedGeneratedGlassifyRecords();
+    if (!selected.length) return;
+    await downloadGlassifyPhysicalFrontImages(selected);
   });
 
   document.getElementById("download-csv").addEventListener("click", () => {
@@ -1954,7 +2463,7 @@ function bindAdminRecords() {
   document.getElementById("admin-results")?.addEventListener("click", async (event) => {
     const row = event.target.closest("[data-record-id]");
     if (!row) return;
-    if (event.target.closest("[data-printed-toggle], [data-print-select], .printed-check, .print-select-check")) return;
+    if (event.target.closest("[data-printed-toggle], [data-print-select], [data-glassify-download-select], .printed-check, .print-select-check")) return;
     selectAdminRecord(row.dataset.recordId);
   });
   document.getElementById("admin-results")?.addEventListener("change", async (event) => {
@@ -1964,6 +2473,10 @@ function bindAdminRecords() {
     }
     if (event.target.matches("[data-print-select]")) {
       updatePrintSelection(event.target.dataset.printSelect, event.target.checked);
+      return;
+    }
+    if (event.target.matches("[data-glassify-download-select]")) {
+      updateGlassifyDownloadSelection(event.target.dataset.glassifyDownloadSelect, event.target.checked);
     }
   });
   document.getElementById("delete-record")?.addEventListener("click", deleteSelectedRecord);
@@ -1971,6 +2484,8 @@ function bindAdminRecords() {
   document.getElementById("select-unprinted-kensho")?.addEventListener("click", selectVisibleUnprintedKenshoCards);
   document.getElementById("print-selected-a4")?.addEventListener("click", printSelectedKenshoA4);
   document.getElementById("mark-selected-printed")?.addEventListener("click", () => markKenshoCardsPrinted());
+  document.getElementById("select-visible-glassify")?.addEventListener("click", selectVisibleGlassifyCards);
+  document.getElementById("download-selected-glassify-fronts")?.addEventListener("click", downloadSelectedGlassifyFronts);
   loadAdminRecords(form);
 }
 
@@ -1989,6 +2504,7 @@ async function loadAdminRecords(form) {
     const data = await response.json();
     adminRecordsState.records = data.records || [];
     prunePrintSelection();
+    pruneGlassifyDownloadSelection();
     const records = filterAdminRecords(adminRecordsState.records, form);
     updateAdminKpis(records);
     status.textContent = `${records.length} card(s) loaded.`;
@@ -2066,6 +2582,7 @@ function renderAdminRecordList(records) {
     results.innerHTML = `<p class="status-line lookup-empty">No records yet.</p>`;
     document.getElementById("admin-detail").innerHTML = `<div class="admin-detail-empty">No warranty record selected.</div>`;
     updateBatchPrintTools();
+    updateGlassifyDownloadTools();
     return;
   }
   const selectedExists = records.some((record) => record.uniqueId === adminRecordsState.selectedId);
@@ -2073,6 +2590,7 @@ function renderAdminRecordList(records) {
   results.innerHTML = records.map(renderLookupRow).join("");
   selectAdminRecord(adminRecordsState.selectedId);
   updateBatchPrintTools();
+  updateGlassifyDownloadTools();
 }
 
 function renderLookupRow(record) {
@@ -2081,6 +2599,8 @@ function renderLookupRow(record) {
   const status = record.status === "pending" ? "Pending" : "Registered";
   const canBatchPrint = isPrintableKenshoCard(record);
   const printChecked = adminRecordsState.printSelectedIds.has(record.uniqueId) ? "checked" : "";
+  const canDownloadGlassifyFront = isGlassifyPhysicalCard(record);
+  const glassifyChecked = adminRecordsState.glassifyDownloadSelectedIds.has(record.uniqueId) ? "checked" : "";
   return `
     <article class="lookup-row ${active}" data-record-id="${escapeHtml(record.uniqueId)}">
       <div>
@@ -2092,6 +2612,12 @@ function renderLookupRow(record) {
           <label class="print-select-check" title="Add this unprinted card to A4 print sheet">
             <input type="checkbox" data-print-select="${escapeHtml(record.uniqueId)}" ${printChecked}>
             Print
+          </label>
+        ` : ""}
+        ${canDownloadGlassifyFront ? `
+          <label class="print-select-check" title="Add this Glassify QR front to image download">
+            <input type="checkbox" data-glassify-download-select="${escapeHtml(record.uniqueId)}" ${glassifyChecked}>
+            Front
           </label>
         ` : ""}
         <label class="printed-check" title="Card physically printed">
@@ -2111,10 +2637,11 @@ function selectAdminRecord(uniqueId) {
   const detail = document.getElementById("admin-detail");
   if (!record || !detail) return;
   detail.innerHTML = renderAdminRecordDetail(record);
-  if (record.status === "registered" && !["kensho", "glassify"].includes(record.brandId)) {
+  if (record.status === "registered" && !["kensho", "glassify", "idash"].includes(record.brandId)) {
     drawCertificate(record, document.getElementById("admin-detail-canvas"));
   }
   updateBatchPrintTools();
+  updateGlassifyDownloadTools();
 }
 
 function renderAdminRecordDetail(record) {
@@ -2124,7 +2651,9 @@ function renderAdminRecordDetail(record) {
       ? `<div class="kensho-admin-warranty-preview">${renderKenshoWarrantyCard(record)}</div>`
       : record.brandId === "glassify"
         ? `<div class="glassify-admin-warranty-preview">${renderGlassifyWarrantyCard(record)}</div>`
-        : `<canvas id="admin-detail-canvas" class="certificate-canvas" width="1240" height="1754"></canvas>`
+        : record.brandId === "idash"
+          ? `<div class="idash-admin-warranty-preview">${renderIdashWarrantyCard(record)}</div>`
+          : `<canvas id="admin-detail-canvas" class="certificate-canvas" width="1240" height="1754"></canvas>`
     : `<div class="admin-physical-detail">${renderGeneratedCard(record)}</div>`;
   return `
     <div class="admin-detail-preview">${preview}</div>
@@ -2163,7 +2692,7 @@ async function updatePrintedStatus(uniqueId, printed) {
 }
 
 function isPrintableKenshoCard(record) {
-  return record?.brandId === "kensho" && record.status === "pending" && !record.extra?.printed;
+  return ["kensho", "idash"].includes(record?.brandId) && record.status === "pending" && !record.extra?.printed;
 }
 
 function prunePrintSelection() {
@@ -2173,6 +2702,54 @@ function prunePrintSelection() {
 
 function getSelectedPrintableKenshoRecords() {
   return adminRecordsState.records.filter((record) => adminRecordsState.printSelectedIds.has(record.uniqueId) && isPrintableKenshoCard(record));
+}
+
+function isGlassifyPhysicalCard(record) {
+  return record?.brandId === "glassify" && Boolean(record.scanUrl);
+}
+
+function pruneGlassifyDownloadSelection() {
+  const validIds = new Set(adminRecordsState.records.filter(isGlassifyPhysicalCard).map((record) => record.uniqueId));
+  adminRecordsState.glassifyDownloadSelectedIds = new Set([...adminRecordsState.glassifyDownloadSelectedIds].filter((id) => validIds.has(id)));
+}
+
+function getSelectedGlassifyPhysicalRecords() {
+  return adminRecordsState.records.filter((record) => adminRecordsState.glassifyDownloadSelectedIds.has(record.uniqueId) && isGlassifyPhysicalCard(record));
+}
+
+function updateGlassifyDownloadSelection(uniqueId, selected) {
+  const record = adminRecordsState.records.find((item) => item.uniqueId === uniqueId);
+  if (!record || !isGlassifyPhysicalCard(record)) return;
+  if (selected) adminRecordsState.glassifyDownloadSelectedIds.add(uniqueId);
+  else adminRecordsState.glassifyDownloadSelectedIds.delete(uniqueId);
+  updateGlassifyDownloadTools();
+}
+
+function selectVisibleGlassifyCards() {
+  adminRecordsState.filtered.filter(isGlassifyPhysicalCard).forEach((record) => adminRecordsState.glassifyDownloadSelectedIds.add(record.uniqueId));
+  renderAdminRecordList(adminRecordsState.filtered);
+}
+
+function updateGlassifyDownloadTools() {
+  const tools = document.getElementById("glassify-download-tools");
+  if (!tools) return;
+  pruneGlassifyDownloadSelection();
+  const visible = adminRecordsState.filtered.filter(isGlassifyPhysicalCard).length;
+  const selected = getSelectedGlassifyPhysicalRecords();
+  const status = document.getElementById("glassify-download-status");
+  if (status) {
+    status.textContent = `${selected.length} selected. ${visible} Glassify card(s) visible. Front side only.`;
+  }
+  document.getElementById("download-selected-glassify-fronts")?.toggleAttribute("disabled", selected.length === 0);
+}
+
+async function downloadSelectedGlassifyFronts() {
+  const records = getSelectedGlassifyPhysicalRecords();
+  if (!records.length) {
+    alert("Select at least one Glassify card first.");
+    return;
+  }
+  await downloadGlassifyPhysicalFrontImages(records);
 }
 
 function updatePrintSelection(uniqueId, selected) {
@@ -2196,7 +2773,7 @@ function updateBatchPrintTools() {
   const selected = getSelectedPrintableKenshoRecords();
   const status = document.getElementById("kensho-print-status");
   if (status) {
-    status.textContent = `${selected.length} selected. ${printableVisible} unprinted KENSHO card(s) visible.`;
+    status.textContent = `${selected.length} selected. ${printableVisible} unprinted name card(s) visible.`;
   }
   document.getElementById("print-selected-a4")?.toggleAttribute("disabled", selected.length === 0);
   document.getElementById("mark-selected-printed")?.toggleAttribute("disabled", selected.length === 0);
@@ -2205,10 +2782,10 @@ function updateBatchPrintTools() {
 function printSelectedKenshoA4() {
   const records = getSelectedPrintableKenshoRecords();
   if (!records.length) {
-    alert("Select at least one unprinted KENSHO card first.");
+    alert("Select at least one unprinted name card first.");
     return;
   }
-  const printWindow = window.open("", "kensho-a4-print", "width=980,height=1200");
+  const printWindow = window.open("", "name-card-a4-print", "width=980,height=1200");
   if (!printWindow) {
     alert("Please allow pop-ups so the A4 print sheet can open.");
     return;
@@ -2222,7 +2799,7 @@ function printSelectedKenshoA4() {
 async function markKenshoCardsPrinted(ids = [...adminRecordsState.printSelectedIds]) {
   const records = adminRecordsState.records.filter((record) => ids.includes(record.uniqueId) && isPrintableKenshoCard(record));
   if (!records.length) return;
-  if (!confirm(`Mark ${records.length} selected KENSHO card(s) as physically printed?`)) return;
+  if (!confirm(`Mark ${records.length} selected physical card(s) as printed?`)) return;
   for (const record of records) {
     const nextExtra = { ...(record.extra || {}), printed: true };
     const response = await apiFetch(`/api/warranties/${encodeURIComponent(record.uniqueId)}`, {
@@ -2267,12 +2844,181 @@ function downloadDetailPng() {
     saveGlassifyCardImage(record);
     return;
   }
+  if (record?.brandId === "idash" && record.status === "registered") {
+    saveIdashWarrantyImage(record);
+    return;
+  }
   const canvas = document.getElementById("admin-detail-canvas");
   if (!canvas) {
     alert("Save image is available after a card has been registered.");
     return;
   }
   downloadCanvas(canvas, `${record?.serial || "warranty-card"}.png`);
+}
+
+async function saveIdashWarrantyImage(record) {
+  try {
+    const canvas = document.createElement("canvas");
+    const scale = 2;
+    const width = 560;
+    const height = 720;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+
+    const [logo, hero, carplay, chip] = await Promise.all([
+      loadImage(IDASH_LOGO).catch(() => null),
+      loadImage(IDASH_HERO).catch(() => null),
+      loadImage(IDASH_CARPLAY).catch(() => null),
+      loadImage(IDASH_CHIP).catch(() => null)
+    ]);
+
+    ctx.fillStyle = "#050505";
+    roundRect(ctx, 0, 0, width, height, 8);
+    ctx.fill();
+
+    const bg = ctx.createLinearGradient(0, 0, width, height);
+    bg.addColorStop(0, "#061525");
+    bg.addColorStop(0.45, "#08090d");
+    bg.addColorStop(1, "#111028");
+    ctx.fillStyle = bg;
+    roundRect(ctx, 0, 0, width, height, 8);
+    ctx.fill();
+
+    ctx.save();
+    roundRect(ctx, 0, 0, width, height, 8);
+    ctx.clip();
+    if (hero) {
+      ctx.globalAlpha = 0.82;
+      drawCoverImage(ctx, hero, 248, 0, width - 248, 460);
+      ctx.globalAlpha = 1;
+      const heroFade = ctx.createLinearGradient(210, 0, width, 0);
+      heroFade.addColorStop(0, "#050505");
+      heroFade.addColorStop(0.28, "rgba(5,5,5,0.68)");
+      heroFade.addColorStop(0.72, "rgba(5,5,5,0.18)");
+      heroFade.addColorStop(1, "rgba(5,5,5,0.72)");
+      ctx.fillStyle = heroFade;
+      ctx.fillRect(190, 0, width - 190, 460);
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.055)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= width; x += 28) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= height; y += 28) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, 8.5, 8.5, width - 17, height - 17, 8);
+    ctx.stroke();
+    ctx.restore();
+
+    if (logo) drawContainedImage(ctx, logo, 30, 44, 118, 46);
+    drawMono(ctx, "PRO. BEYOND PERFORMANCE.", 30, 130, 13, "#79c7ff", 900);
+    drawCanvasText(ctx, record.product || "iDash Smart Display", 30, 176, 36, "#fff", 900, 0.95, 265);
+
+    [
+      ["CarPlay ready", 30, 210, 108],
+      ["DSP sound", 148, 210, 92],
+      ["Vision 360", 250, 210, 96]
+    ].forEach(([text, x, y, w]) => {
+      ctx.fillStyle = "rgba(255,255,255,0.06)";
+      roundRect(ctx, x, y, w, 34, 8);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      roundRect(ctx, x + 0.5, y + 0.5, w - 1, 33, 8);
+      ctx.stroke();
+      drawCanvasText(ctx, text, x + 11, y + 22, 12, "#fff", 900, 1, w - 18);
+    });
+
+    const deviceX = 24;
+    const deviceY = 270;
+    const deviceW = width - 48;
+    const deviceH = 282;
+    ctx.fillStyle = "#111114";
+    roundRect(ctx, deviceX, deviceY, deviceW, deviceH, 16);
+    ctx.fill();
+    ctx.strokeStyle = "#343438";
+    ctx.lineWidth = 3;
+    roundRect(ctx, deviceX + 1.5, deviceY + 1.5, deviceW - 3, deviceH - 3, 16);
+    ctx.stroke();
+
+    ctx.fillStyle = "#17171a";
+    roundRect(ctx, deviceX + 7, deviceY + 10, 42, deviceH - 20, 10);
+    ctx.fill();
+    drawMono(ctx, "MIC", deviceX + 15, deviceY + 34, 7, "#74777f", 800);
+    drawMono(ctx, "RST", deviceX + 15, deviceY + 62, 7, "#74777f", 800);
+    [87, 121, 155].forEach((offset) => {
+      ctx.strokeStyle = "#64676f";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(deviceX + 28, deviceY + offset, 8, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    const screenX = deviceX + 50;
+    const screenY = deviceY + 14;
+    const screenW = deviceW - 64;
+    const screenH = deviceH - 28;
+    ctx.save();
+    roundRect(ctx, screenX, screenY, screenW, screenH, 10);
+    ctx.clip();
+    if (carplay) drawCoverImage(ctx, carplay, screenX, screenY, screenW, screenH);
+    else {
+      const fallback = ctx.createLinearGradient(screenX, screenY, screenX + screenW, screenY + screenH);
+      fallback.addColorStop(0, "#2b0b18");
+      fallback.addColorStop(0.5, "#141b48");
+      fallback.addColorStop(1, "#70213a");
+      ctx.fillStyle = fallback;
+      ctx.fillRect(screenX, screenY, screenW, screenH);
+    }
+    ctx.restore();
+
+    ctx.fillStyle = "rgba(0,0,0,0.88)";
+    roundRect(ctx, 26, 580, width - 52, 116, 8);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    roundRect(ctx, 26.5, 580.5, width - 53, 115, 8);
+    ctx.stroke();
+
+    if (chip) drawCoverImage(ctx, chip, 42, 596, 66, 66);
+    else {
+      ctx.fillStyle = "#07111f";
+      roundRect(ctx, 42, 596, 66, 66, 6);
+      ctx.fill();
+    }
+    drawMono(ctx, "WARRANTY ID", 124, 610, 11, "#8f9299", 900);
+    drawMono(ctx, record.serial || "-", 124, 633, 15, "#fff", 900);
+
+    const vehicle = [record.vehicleBrand, record.vehicleModel].filter(Boolean).join(" ") || "-";
+    const plate = [record.plateNo, record.province].filter(Boolean).join(" ") || "-";
+    const infoRows = [
+      ["NAME", record.customerName || "-"],
+      ["CAR", vehicle],
+      ["PLATE", plate]
+    ];
+    let infoY = 612;
+    infoRows.forEach(([label, value]) => {
+      drawMono(ctx, label, 310, infoY, 9, "#74777f", 900);
+      drawCanvasText(ctx, value, 360, infoY + 1, 11, "#f8fbff", 850, 1.08, 160);
+      infoY += 24;
+    });
+
+    downloadCanvas(canvas, `${safeDownloadName(record.serial || "idash-warranty-card")}.png`);
+  } catch (error) {
+    console.error(error);
+    alert("Could not save the iDash warranty image. Please try again.");
+  }
 }
 
 async function saveKenshoWarrantyImage(record) {
@@ -2358,6 +3104,61 @@ function downloadCanvas(canvas, filename) {
   link.href = canvas.toDataURL("image/png");
   link.download = filename;
   link.click();
+}
+
+async function downloadGlassifyPhysicalFrontImages(records) {
+  const glassifyRecords = records.filter(isGlassifyPhysicalCard);
+  if (!glassifyRecords.length) {
+    alert("Select at least one Glassify card first.");
+    return;
+  }
+  try {
+    for (const record of glassifyRecords) {
+      const canvas = await createGlassifyPhysicalFrontCanvas(record);
+      downloadCanvas(canvas, `${safeDownloadName(record.serial || record.uniqueId || "glassify-card")}-front.png`);
+      await wait(160);
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Could not download one of the Glassify front images. Please check the QR image service and try again.");
+  }
+}
+
+async function createGlassifyPhysicalFrontCanvas(record) {
+  const [template, qr] = await Promise.all([
+    loadImage("/template/glassify-front.png"),
+    loadImage(proxiedQrImageSrc(record.scanUrl)).catch(() => loadImage(qrImageSrc(record.scanUrl)))
+  ]);
+  const width = template.naturalWidth || template.width || 638;
+  const height = template.naturalHeight || template.height || 1016;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  ctx.drawImage(template, 0, 0, width, height);
+
+  const qrSize = width * 0.47;
+  const qrX = width * 0.25;
+  const qrY = height * 0.229;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(qrX, qrY, qrSize, qrSize);
+  ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
+
+  ctx.fillStyle = "#07070a";
+  ctx.font = `900 ${Math.round(width * 0.05)}px Consolas, "JetBrains Mono", monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(record.serial || "-", width / 2, height * 0.732);
+  return canvas;
+}
+
+function safeDownloadName(value) {
+  return String(value || "download").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "-");
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function saveGlassifyCardImage(record) {
@@ -2772,6 +3573,13 @@ function drawContainedImage(ctx, image, x, y, w, h) {
   ctx.drawImage(image, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
+function drawCoverImage(ctx, image, x, y, w, h) {
+  const ratio = Math.max(w / image.width, h / image.height);
+  const dw = image.width * ratio;
+  const dh = image.height * ratio;
+  ctx.drawImage(image, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   r = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
@@ -2913,6 +3721,10 @@ function refreshPreview(record) {
     preview.innerHTML = renderGlassifyWarrantyCard(record, "preview");
     return;
   }
+  if (record.brandId === "idash") {
+    preview.innerHTML = renderIdashWarrantyCard(record);
+    return;
+  }
   preview.innerHTML = `<canvas id="certificate-preview" class="certificate-canvas" width="1240" height="1754"></canvas>`;
   drawCertificate(record, document.getElementById("certificate-preview"));
 }
@@ -2931,7 +3743,7 @@ async function drawCertificate(record, canvas) {
   ctx.drawImage(image, 0, 0, width, height);
 
   const expiryDate = record.expiryDate || addYears(record.installDate, Number(record.warrantyYears || 1));
-  const extraText = record.extra?.filmPosition || record.extra?.deviceSerial || record.extra?.socket || record.variant || "";
+  const extraText = record.extra?.filmPosition || record.extra?.socket || record.variant || "";
   const isGlassify = record.brandId === "glassify";
   const values = {
     frontFilm: isGlassify ? record.extra?.frontFilm || "" : record.product || "",
@@ -2968,10 +3780,19 @@ function drawCertText(ctx, canvas, key, value) {
   ctx.fillText(String(value || ""), x, y);
 }
 
-function renderGeneratedCard(record) {
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=${encodeURIComponent(record.scanUrl)}`;
-  if (record.brandId === "glassify") return renderGlassifyPhysicalCard(record, qrSrc);
+function qrImageSrc(scanUrl) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=${encodeURIComponent(scanUrl)}`;
+}
+
+function proxiedQrImageSrc(scanUrl) {
+  return `/api/qr-image?size=400&margin=2&data=${encodeURIComponent(scanUrl)}`;
+}
+
+function renderGeneratedCard(record, options = {}) {
+  const qrSrc = qrImageSrc(record.scanUrl);
+  if (record.brandId === "glassify") return renderGlassifyPhysicalCard(record, qrSrc, options);
   if (record.brandId === "kensho") return renderKenshoPhysicalCard(record, qrSrc);
+  if (record.brandId === "idash") return renderIdashPhysicalCard(record, qrSrc);
   return `
     <article class="physical-card">
       <div class="card-template">
@@ -2985,9 +3806,57 @@ function renderGeneratedCard(record) {
   `;
 }
 
-function renderGlassifyPhysicalCard(record, qrSrc) {
+function renderIdashPhysicalCard(record, qrSrc) {
+  return `
+    <article class="physical-card idash-physical-card">
+      <div class="idash-name-card-set" aria-label="iDash physical warranty card">
+        <section class="idash-name-card idash-name-card-front">
+          <div class="idash-name-card-grid"></div>
+          <div class="idash-card-glow glow-one"></div>
+          <div class="idash-card-glow glow-two"></div>
+          <img class="idash-name-card-logo" src="${IDASH_LOGO}" alt="iDash">
+          <div class="idash-name-device">
+            <div class="idash-name-device-bar"></div>
+            <div class="idash-name-device-screen">
+              <img src="${IDASH_CARPLAY}" alt="">
+            </div>
+          </div>
+          <div class="idash-name-card-copy">
+            <span>Physical warranty card / บัตรรับประกันสินค้า</span>
+            <strong>${escapeHtml(record.product || "iDash Smart Display")}</strong>
+            <em>1 Year Warranty / รับประกัน 1 ปี</em>
+          </div>
+        </section>
+        <section class="idash-name-card idash-name-card-back">
+          <div class="idash-name-card-grid"></div>
+          <div class="idash-name-card-qr-box">
+            <img src="${qrSrc}" alt="QR for ${escapeHtml(record.serial)}">
+          </div>
+          <div class="idash-name-card-back-copy">
+            <strong>Scan to activate / สแกนเพื่อลงทะเบียน</strong>
+            <span>Card ID / เลขบัตร</span>
+            <em>${escapeHtml(record.serial)}</em>
+          </div>
+        </section>
+      </div>
+      <a href="${escapeHtml(record.scanUrl)}" target="_blank" rel="noopener">${escapeHtml(record.scanUrl)}</a>
+      <button class="btn btn-ghost" type="button" onclick="window.open('${escapeJs(record.scanUrl)}','_blank')">Test scan</button>
+    </article>
+  `;
+}
+
+function renderGlassifyPhysicalCard(record, qrSrc, options = {}) {
+  const selector = options.selectable
+    ? `
+      <label class="physical-card-select">
+        <input type="checkbox" data-generated-glassify-select="${escapeHtml(record.uniqueId)}" ${options.checked ? "checked" : ""}>
+        Select front image
+      </label>
+    `
+    : "";
   return `
     <article class="physical-card glassify-physical-card">
+      ${selector}
       <div class="glassify-template-set" aria-label="Glassify physical warranty card">
         <section class="glassify-template-card glassify-template-front">
           <img class="glassify-template-bg" src="/template/glassify-front.png" alt="Glassify warranty card front">
@@ -3117,6 +3986,7 @@ function renderKenshoPhysicalCard(record, qrSrc) {
 function renderKenshoA4PrintDocument(records) {
   const chunks = chunkRecords(records, 10);
   const selectedIds = JSON.stringify(records.map((record) => record.uniqueId));
+  const sheetLabel = printSheetBrandLabel(records);
   return `
     <!doctype html>
     <html>
@@ -3124,13 +3994,13 @@ function renderKenshoA4PrintDocument(records) {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <base href="${escapeHtml(location.origin)}/">
-        <title>KENSHO A4 warranty card print</title>
+        <title>Name card A4 warranty print</title>
         <style>${kenshoA4PrintCss()}</style>
       </head>
       <body>
         <div class="print-toolbar">
           <div>
-            <strong>KENSHO A4 duplex print</strong>
+            <strong>Name card A4 duplex print</strong>
             <span>${records.length} card(s). Front pages are followed by matching back pages.</span>
           </div>
           <div>
@@ -3142,13 +4012,13 @@ function renderKenshoA4PrintDocument(records) {
           <section class="a4-sheet">
             <div class="sheet-note">KENSHO Beam physical warranty cards · Front side · Sheet ${index + 1}</div>
             <div class="a4-card-grid">
-              ${chunk.map((record) => renderKenshoPrintCardSide(record, "front")).join("")}
+              ${chunk.map((record) => renderPrintCardSide(record, "front")).join("")}
             </div>
           </section>
           <section class="a4-sheet">
             <div class="sheet-note">KENSHO Beam physical warranty cards · Back side · Sheet ${index + 1}</div>
             <div class="a4-card-grid">
-              ${chunk.map((record) => renderKenshoPrintCardSide(record, "back")).join("")}
+              ${chunk.map((record) => renderPrintCardSide(record, "back")).join("")}
             </div>
           </section>
         `).join("")}
@@ -3164,11 +4034,58 @@ function renderKenshoA4PrintDocument(records) {
         </script>
       </body>
     </html>
+  `.replaceAll("KENSHO Beam physical warranty cards", `${escapeHtml(sheetLabel)} physical warranty cards`);
+}
+
+function printSheetBrandLabel(records) {
+  const brandNames = [...new Set(records.map((record) => record.brandName || record.brandId).filter(Boolean))];
+  if (!brandNames.length) return "Warranty";
+  if (brandNames.length === 1) return brandNames[0];
+  return brandNames.join(" / ");
+}
+
+function renderPrintCardSide(record, side) {
+  if (record.brandId === "idash") return renderIdashPrintCardSide(record, side);
+  return renderKenshoPrintCardSide(record, side);
+}
+
+function renderIdashPrintCardSide(record, side) {
+  const qrSrc = qrImageSrc(record.scanUrl);
+  if (side === "back") {
+    return `
+      <article class="idash-print-card idash-print-back">
+        <div class="idash-print-grid"></div>
+        <div class="idash-print-qr-frame">
+          <img src="${qrSrc}" alt="QR for ${escapeHtml(record.serial)}">
+        </div>
+        <div class="idash-print-back-copy">
+          <strong>Scan to activate / สแกนเพื่อลงทะเบียน</strong>
+          <span>Card ID / เลขบัตร</span>
+          <em>${escapeHtml(record.serial)}</em>
+        </div>
+      </article>
+    `;
+  }
+  return `
+    <article class="idash-print-card idash-print-front">
+      <div class="idash-print-grid"></div>
+      <div class="idash-print-glow glow-one"></div>
+      <div class="idash-print-glow glow-two"></div>
+      <img class="print-idash-logo" src="${IDASH_LOGO}" alt="iDash">
+      <div class="idash-print-device">
+        <div></div>
+      </div>
+      <div class="idash-print-front-copy">
+        <span>Physical warranty card / บัตรรับประกันสินค้า</span>
+        <strong>${escapeHtml(record.product || "iDash")}</strong>
+        <em>1 Year Warranty / รับประกัน 1 ปี</em>
+      </div>
+    </article>
   `;
 }
 
 function renderKenshoPrintCardSide(record, side) {
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=${encodeURIComponent(record.scanUrl)}`;
+  const qrSrc = qrImageSrc(record.scanUrl);
   if (side === "back") {
     return `
       <article class="kensho-print-card kensho-print-back">
@@ -3398,6 +4315,244 @@ function kenshoA4PrintCss() {
       font-weight: 900;
       letter-spacing: 0.04em;
     }
+    .idash-print-card {
+      position: relative;
+      width: 90mm;
+      height: 54mm;
+      overflow: hidden;
+      border: 0.28mm solid rgba(255,255,255,0.18);
+      background: #050505;
+      color: #fff;
+      isolation: isolate;
+      break-inside: avoid;
+    }
+    .idash-print-grid {
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(rgba(255,255,255,0.045) 0.22mm, transparent 0.22mm),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 0.22mm, transparent 0.22mm),
+        radial-gradient(circle at 16% 18%, rgba(0,122,255,0.28), transparent 30%),
+        radial-gradient(circle at 88% 18%, rgba(88,86,214,0.24), transparent 28%),
+        linear-gradient(135deg, #050505 0%, #111118 58%, #000 100%);
+      background-size: 7mm 7mm, 7mm 7mm, auto, auto, auto;
+    }
+    .idash-print-grid::after {
+      content: "";
+      position: absolute;
+      inset: 3mm;
+      border: 0.24mm solid rgba(255,255,255,0.12);
+    }
+    .idash-print-glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(5mm);
+      opacity: 0.45;
+    }
+    .idash-print-glow.glow-one { right: 8mm; top: 4mm; width: 28mm; height: 28mm; background: rgba(0,122,255,0.55); }
+    .idash-print-glow.glow-two { left: 8mm; bottom: 4mm; width: 26mm; height: 26mm; background: rgba(88,86,214,0.45); }
+    .print-idash-logo {
+      position: absolute;
+      left: 6mm;
+      top: 5mm;
+      z-index: 2;
+      width: 28mm;
+      height: auto;
+    }
+    .idash-print-device {
+      position: absolute;
+      right: 6mm;
+      top: 12mm;
+      z-index: 1;
+      width: 38mm;
+      height: 22mm;
+      padding: 1.5mm;
+      border: 0.5mm solid #343438;
+      border-radius: 2mm;
+      background: linear-gradient(180deg, #2a2a2a, #111);
+      box-shadow: 0 4mm 9mm rgba(0,0,0,0.42);
+      transform: rotate(-3deg);
+    }
+    .idash-print-device div {
+      width: 100%;
+      height: 100%;
+      border-radius: 1.2mm;
+      background:
+        linear-gradient(135deg, rgba(0,122,255,0.74), rgba(88,86,214,0.62)),
+        linear-gradient(90deg, #111, #222);
+    }
+    .idash-print-front-copy {
+      position: absolute;
+      left: 6mm;
+      right: 6mm;
+      bottom: 5.5mm;
+      display: grid;
+      gap: 1.45mm;
+    }
+    .idash-print-front-copy span,
+    .idash-print-back-copy span {
+      color: #90c5ff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 6.5pt;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .idash-print-front-copy strong {
+      max-width: 72mm;
+      color: #fff;
+      font-size: 22pt;
+      font-weight: 900;
+      line-height: 0.96;
+      text-transform: uppercase;
+      text-shadow: 0.55mm 0.55mm 0 #151522;
+    }
+    .idash-print-front-copy em {
+      width: fit-content;
+      padding: 1mm 2mm;
+      border: 0.24mm solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 7.5pt;
+      font-style: normal;
+      font-weight: 850;
+    }
+    .idash-print-back {
+      display: grid;
+      grid-template-columns: 30mm minmax(0, 1fr);
+      align-items: center;
+      gap: 6mm;
+      padding: 7mm;
+    }
+    .idash-print-qr-frame {
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 30mm;
+      height: 30mm;
+      padding: 1.5mm;
+      border: 0.28mm solid rgba(255,255,255,0.34);
+      border-radius: 1.8mm;
+      background: #fff;
+    }
+    .idash-print-qr-frame img { width: 100%; height: 100%; display: block; }
+    .idash-print-back-copy {
+      z-index: 1;
+      display: grid;
+      gap: 1.6mm;
+      min-width: 0;
+    }
+    .idash-print-back-copy strong {
+      color: #fff;
+      font-size: 16pt;
+      font-weight: 900;
+      line-height: 1.05;
+      text-shadow: 0.45mm 0.45mm 0 #151522;
+    }
+    .idash-print-back-copy em {
+      color: #fff;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 10pt;
+      font-style: normal;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+    .idash-print-card {
+      border-color: rgba(255,255,255,0.16);
+      border-radius: 1.8mm;
+      background:
+        radial-gradient(circle at 16% 18%, rgba(0, 122, 255, 0.24), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(236, 72, 153, 0.18), transparent 28%),
+        linear-gradient(135deg, #05070b 0%, #101117 54%, #020305 100%);
+      box-shadow: inset 0 0 0 0.22mm rgba(255,255,255,0.04);
+    }
+    .idash-print-grid {
+      opacity: 0.72;
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 0.22mm, transparent 0.22mm),
+        linear-gradient(90deg, rgba(255,255,255,0.030) 0.22mm, transparent 0.22mm),
+        linear-gradient(135deg, rgba(0, 122, 255, 0.10), rgba(236, 72, 153, 0.08) 44%, rgba(20, 184, 166, 0.08));
+      background-size: 7mm 7mm, 7mm 7mm, auto;
+    }
+    .idash-print-grid::after {
+      inset: 3.3mm;
+      border-color: rgba(255,255,255,0.13);
+    }
+    .idash-print-front::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 0 34%;
+      z-index: -2;
+      background:
+        linear-gradient(90deg, rgba(5,7,11,0.92), rgba(5,7,11,0.20) 42%, rgba(5,7,11,0.66)),
+        url("/brand-assets/iDash/i-dash%20website/hero-product.png") center / cover no-repeat;
+      opacity: 0.92;
+    }
+    .idash-print-front::after,
+    .idash-print-back::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 22%, transparent 72%, rgba(255,255,255,0.06));
+    }
+    .print-idash-logo {
+      width: 28mm;
+      height: auto;
+      filter: drop-shadow(0 2.5mm 5mm rgba(0,0,0,0.42));
+    }
+    .idash-print-device {
+      display: none;
+    }
+    .idash-print-glow {
+      z-index: -2;
+      opacity: 0.38;
+    }
+    .idash-print-glow.glow-one { right: 14mm; top: 4mm; background: rgba(0,122,255,0.52); }
+    .idash-print-glow.glow-two { left: 8mm; bottom: 3mm; background: rgba(236,72,153,0.34); }
+    .idash-print-front-copy {
+      left: 6.5mm;
+      right: auto;
+      bottom: 5.7mm;
+      max-width: 51mm;
+      gap: 1.5mm;
+    }
+    .idash-print-front-copy span,
+    .idash-print-back-copy span {
+      color: #78d4ff;
+      font-size: 5.8pt;
+      letter-spacing: 0.14em;
+    }
+    .idash-print-front-copy strong {
+      max-width: 49mm;
+      font-size: 19pt;
+      line-height: 0.96;
+      text-shadow: 0 2.5mm 5mm rgba(0,0,0,0.42);
+    }
+    .idash-print-front-copy em {
+      border-color: rgba(120, 212, 255, 0.30);
+      border-radius: 99mm;
+      background: rgba(1, 12, 24, 0.74);
+      color: #e7f8ff;
+    }
+    .idash-print-back {
+      grid-template-columns: 32mm minmax(0, 1fr);
+      gap: 6mm;
+    }
+    .idash-print-qr-frame {
+      width: 32mm;
+      height: 32mm;
+      border-color: rgba(120, 212, 255, 0.32);
+      border-radius: 2.2mm;
+    }
+    .idash-print-back-copy strong {
+      font-size: 15pt;
+      text-shadow: 0 2.5mm 5mm rgba(0,0,0,0.42);
+    }
+    .idash-print-back-copy em {
+      color: #e7f8ff;
+    }
     @media print {
       body { background: #fff; }
       .print-toolbar { display: none !important; }
@@ -3415,12 +4570,19 @@ function kenshoA4PrintCss() {
 
 function loadImage(url) {
   if (!imageCache.has(url)) {
-    imageCache.set(url, new Promise((resolve, reject) => {
+    const promise = new Promise((resolve, reject) => {
       const image = new Image();
+      if (/^https?:\/\//i.test(url) && !url.startsWith(location.origin)) {
+        image.crossOrigin = "anonymous";
+      }
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error(`Could not load ${url}`));
+      image.onerror = () => {
+        imageCache.delete(url);
+        reject(new Error(`Could not load ${url}`));
+      };
       image.src = url;
-    }));
+    });
+    imageCache.set(url, promise);
   }
   return imageCache.get(url);
 }
@@ -3466,9 +4628,9 @@ function getBrandContent(brand) {
             <img class="brand-logo" src="${brand.logo}" alt="${brand.name}">
             <p class="eyebrow">Pro. Beyond Performance.</p>
             <h1>iDash card scan for head unit warranty.</h1>
-            <p class="lead">A dark, dashboard-style registration experience for Apple-ready smart displays and device serial tracking.</p>
+            <p class="lead">A dark, dashboard-style registration experience for Apple-ready smart displays and warranty activation.</p>
             <div class="hero-meta">
-              <span class="meta-chip">Device serial</span>
+              <span class="meta-chip">Warranty ID</span>
               <span class="meta-chip">Install center</span>
               <span class="meta-chip">1 year coverage</span>
             </div>
@@ -3574,13 +4736,7 @@ function getExtraField(brand) {
     `;
   }
 
-  if (brand.id === "idash") {
-    return `
-      <label>Device serial / \u0e40\u0e25\u0e02\u0e0b\u0e35\u0e40\u0e23\u0e35\u0e22\u0e25\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c
-        <input name="extraDeviceSerial" placeholder="Head unit serial number / \u0e40\u0e25\u0e02\u0e0b\u0e35\u0e40\u0e23\u0e35\u0e22\u0e25\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07">
-      </label>
-    `;
-  }
+  if (brand.id === "idash") return "";
 
   return `
     <label>Socket type / \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e02\u0e31\u0e49\u0e27\u0e44\u0e1f
@@ -3605,7 +4761,6 @@ function readExtra(formData) {
     rearSeries: formData.get("rearSeries") || "",
     rearFilm: formData.get("rearFilm") || "",
     filmPosition: formData.get("extraFilmPosition") || "",
-    deviceSerial: formData.get("extraDeviceSerial") || "",
     socket: formData.get("extraSocket") || "",
     vehicleTemplate: formData.get("vehicleTemplate") || "sedan"
   };

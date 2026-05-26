@@ -7,6 +7,9 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       PORT: 3000
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      APP_BASE_URL: "${APP_BASE_URL:-}"
       NOCODB_URL: "${NOCODB_URL:-}"
       NOCODB_TOKEN: "${NOCODB_TOKEN:-}"
       NOCODB_WARRANTIES_TABLE: "${NOCODB_WARRANTIES_TABLE:-warranties}"
@@ -14,11 +17,21 @@ services:
       NOCODB_FILM_OPTIONS_TABLE: "${NOCODB_FILM_OPTIONS_TABLE:-film_options}"
       NOCODB_INSTALL_CENTERS_TABLE: "${NOCODB_INSTALL_CENTERS_TABLE:-install_centers}"
       NOCODB_ADMIN_USERS_TABLE: "${NOCODB_ADMIN_USERS_TABLE:-admin_users}"
-      SESSION_SECRET: "${SESSION_SECRET:-change-me}"
+      NOCODB_VEHICLE_MODELS_TABLE: "${NOCODB_VEHICLE_MODELS_TABLE:-vehicle_models}"
+      SESSION_SECRET: "${SESSION_SECRET:?Set SESSION_SECRET in .env.production}"
       ADMIN_USERNAME: "${ADMIN_USERNAME:-}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
       ADMIN_DISPLAY_NAME: "${ADMIN_DISPLAY_NAME:-Siri Pattana Admin}"
     volumes:
-      - ./data:/app/data
-      - ./server.js:/app/server.js:ro
-      - ./public:/app/public:ro
+      - warranty-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  warranty-data:

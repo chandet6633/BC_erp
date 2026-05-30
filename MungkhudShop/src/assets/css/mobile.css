@@ -41,6 +41,31 @@
 }
 
 /* ═══════════════════════════════════════════════════
+   TABLET BREAKPOINT (≤900px) — Kanban + Job form
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    /* BUG 61 FIX: Kanban board wraps on tablet instead of overflowing */
+    .kanban-board {
+        flex-wrap: wrap;
+        gap: var(--sp-3);
+    }
+
+    .kanban-column {
+        min-width: calc(50% - var(--sp-3));
+        flex: 1 1 calc(50% - var(--sp-3));
+    }
+
+    /* BUG 91 FIX: Job form 2-column grid collapses on tablet */
+    .job-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .job-section {
+        max-width: 100%;
+    }
+}
+
+/* ═══════════════════════════════════════════════════
    TABLET BREAKPOINT (≤1024px)
    ═══════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
@@ -111,7 +136,28 @@
 
     .topnav-left,
     .topnav-right {
-        gap: var(--sp-2);
+        gap: var(--sp-1);
+    }
+
+    .topnav-left {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .topnav-right {
+        flex-shrink: 0;
+    }
+
+    .branch-selector {
+        min-width: 0;
+    }
+
+    .branch-select {
+        max-width: 128px;
+    }
+
+    .user-menu {
+        display: none;
     }
 
     .branch-selector .branch-label-text {
@@ -150,7 +196,7 @@
     }
 
     .btn-sm {
-        min-height: 36px;
+        min-height: 44px; /* Ensure 44px minimum for touch */
         padding: var(--sp-2) var(--sp-3);
         font-size: 0.85rem;
     }
@@ -163,30 +209,66 @@
         grid-template-columns: 1fr;
     }
 
+    /* BUG 61 FIX: Kanban single column on phone */
+    .kanban-column {
+        min-width: 100%;
+        flex: 1 1 100%;
+    }
+
     .form-control {
         min-height: 44px;
         padding: var(--sp-3);
         font-size: 1rem;
     }
 
-    /* ── Data Grid: Horizontal scroll ── */
-    .data-grid {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
+    /* ── Data Grid: Table to Card Conversion ── */
     .data-grid table {
-        min-width: 600px;
+        min-width: 100%;
+        display: block;
     }
 
-    .data-grid th {
-        padding: var(--sp-2) var(--sp-3);
-        font-size: 0.75rem;
+    .data-grid thead {
+        display: none; /* Hide table headers */
+    }
+
+    .data-grid tbody, .data-grid tr {
+        display: block;
+        width: 100%;
+    }
+
+    .data-grid tr {
+        margin-bottom: var(--sp-3);
+        border: 1px solid var(--bc-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        padding: var(--sp-2);
     }
 
     .data-grid td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: var(--sp-2) var(--sp-3);
         font-size: 0.85rem;
+        border: none;
+        border-bottom: 1px dashed var(--bc-border);
+    }
+
+    .data-grid td:last-child {
+        border-bottom: none;
+    }
+
+    /* Use data-label for headers */
+    .data-grid td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--color-text-muted);
+        margin-right: var(--sp-4);
+        flex-shrink: 0;
+    }
+    
+    .data-grid td > * {
+        text-align: right;
     }
 
     /* ── Grid Footer / Pagination ── */

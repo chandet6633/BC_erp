@@ -5,7 +5,7 @@ import '../../services/authService.js';
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const ADMIN_PASSWORD = '280612';
+// BUG 23 FIX: Removed hardcoded ADMIN_PASSWORD
 const LATE_THRESHOLD_HOUR = 8;   // After 08:00 = late
 const COLLECTION_ATT = 'hr_attendance';
 const COLLECTION_EMP = 'users';
@@ -175,8 +175,14 @@ function onDeptChange(deptValue, nameSelectId) {
         updateButtons();
         return;
     }
-    const names = employeeRoster.filter(e => e.branch_id === deptValue).map(e => e.name).sort();
-    populateSelect(nameSel, names, '– เลือกชื่อ –');
+    const emps = employeeRoster.filter(e => e.branch_id === deptValue).sort((a,b) => a.name.localeCompare(b.name));
+    nameSel.innerHTML = `<option value="">– เลือกชื่อ –</option>`;
+    emps.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id; 
+        opt.textContent = e.name;
+        nameSel.appendChild(opt);
+    });
     nameSel.disabled = false;
     namesLoaded = true;
     updateButtons();
@@ -235,6 +241,15 @@ window.toggleAdmin = function () {
         if (currentUser && !isOwnerOrAdmin) {
             const deptSel = document.getElementById('deptSelect');
             const nameSel = document.getElementById('nameSelect');
+            
+            // Re-populate names for the branch since it might have been cleared
+            onDeptChange(currentUser.branch, 'nameSelect');
+            
+            const match = employeeRoster.find(e => e.name === currentUser.name || e.id === currentUser.id);
+            if (match) {
+                nameSel.value = match.id;
+            }
+            
             deptSel.disabled = true;
             nameSel.disabled = true;
         }
@@ -242,23 +257,34 @@ window.toggleAdmin = function () {
         updateButtons();
     } else {
         const pw = prompt('กรุณาใส่รหัสผ่านผู้ดูแลระบบ:');
-        if (pw === ADMIN_PASSWORD) {
-            isAdminMode = true;
-            document.getElementById('adminToggle').innerHTML = '<span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">lock_open</span> ออกจากโหมดผู้ดูแล';
-            document.getElementById('adminToggle').classList.add('active');
-            document.getElementById('adminBar').classList.add('show');
-            document.getElementById('adminFields').classList.add('show');
-            
-            // Unlock dropdowns
-            document.getElementById('deptSelect').disabled = false;
-            document.getElementById('nameSelect').disabled = false;
-            const now = new Date();
-            document.getElementById('overrideDate').value = now.toISOString().split('T')[0];
-            document.getElementById('overrideTime').value = now.toTimeString().slice(0, 5);
-            showToast('เข้าสู่โหมดผู้ดูแลแล้ว', 'success');
-            updateButtons();
-        } else if (pw !== null) {
-            showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+        if (pw !== null) {
+            // BUG 23 FIX: Use secure API call instead of plaintext frontend password
+            fetch('/api/auth/pin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pw, roleGroup: 'manager' })
+            }).then(async (res) => {
+                if (res.ok) {
+                    isAdminMode = true;
+                    document.getElementById('adminToggle').innerHTML = '<span class="material-icons-outlined" style="font-size:1.1rem;vertical-align:text-bottom">lock_open</span> ออกจากโหมดผู้ดูแล';
+                    document.getElementById('adminToggle').classList.add('active');
+                    document.getElementById('adminBar').classList.add('show');
+                    document.getElementById('adminFields').classList.add('show');
+                    
+                    // Unlock dropdowns
+                    document.getElementById('deptSelect').disabled = false;
+                    document.getElementById('nameSelect').disabled = false;
+                    const now = new Date();
+                    document.getElementById('overrideDate').value = now.toISOString().split('T')[0];
+                    document.getElementById('overrideTime').value = now.toTimeString().slice(0, 5);
+                    showToast('เข้าสู่โหมดผู้ดูแลแล้ว', 'success');
+                    updateButtons();
+                } else {
+                    showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+                }
+            }).catch(() => {
+                showToast('เกิดข้อผิดพลาด', 'error');
+            });
         }
     }
 };
@@ -296,8 +322,13 @@ window.doPunch = async function (type) {
                 store = `GPS: ${Number(lat).toFixed(5)}, ${Number(lon).toFixed(5)}`;
             }
 
+            // BUG 7 FIX: Map selected ID to name
+            const selectedId = name;
+            const emp = employeeRoster.find(e => e.id === selectedId);
+            
             await window.pb.collection(COLLECTION_ATT).create({
-                employee_id: name, // In this system we use Name as employee_id for simplicity since users table lacks a clean ID
+                name: emp ? emp.name : selectedId,
+                employee_id: selectedId,
                 department: dept, // actually branch
                 type: type, // IN or OUT
                 timestamp: timestamp,

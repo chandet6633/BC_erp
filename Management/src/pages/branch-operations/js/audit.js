@@ -454,10 +454,27 @@ document.title = `ตรวจสอบข้อมูล | ${branchDisplay}`;
 window.runFullAudit = async function () {
     window.showLoading();
 
-    const branchFilter = `${window.getBranchFilter()}`;
+    let branchFilter = window.getBranchFilter() ? `(${window.getBranchFilter()})` : '';
+    
+    // BUG 35 FIX: Server-side Date Windowing (Anti-OOM)
+    const from = document.getElementById('auditDateFrom').value;
+    const to = document.getElementById('auditDateTo').value;
+    let dateFilter = '';
+    
+    if (from && to) {
+        dateFilter = `open_date >= '${from}' && open_date <= '${to} 23:59:59'`;
+    }
+    
+    let finalTxFilter = branchFilter;
+    let finalSiFilter = branchFilter;
+    if (dateFilter) {
+        finalTxFilter = finalTxFilter ? `${finalTxFilter} && (${dateFilter})` : dateFilter;
+        finalSiFilter = finalSiFilter ? `${finalSiFilter} && (${dateFilter})` : dateFilter;
+    }
+
     const [txRes, siRes, pgRes, expRes] = await Promise.all([
-        window.TransactionService.getFullTransactions({ filter: branchFilter }),
-        window.TransactionService.getFullServiceItems({ filter: branchFilter }),
+        window.TransactionService.getFullTransactions({ filter: finalTxFilter }),
+        window.TransactionService.getFullServiceItems({ filter: finalSiFilter }),
         window.TransactionService.getFullProductGroups({ filter: branchFilter }),
         window.EntryService.getExpenses(1, 100000, { filter: branchFilter }).then(r => r.items)
     ]);

@@ -136,7 +136,7 @@ function translateCondition(expr) {
     for (const op of operators) {
         const idx = findOperator(expr, op.pb)
         if (idx !== -1) {
-            const field = expr.substring(0, idx).trim()
+            let field = expr.substring(0, idx).trim()
             let value = expr.substring(idx + op.pb.length).trim()
 
             // Strip quotes from value
@@ -146,6 +146,9 @@ function translateCondition(expr) {
             if (op.noco === 'neq' && value === '' && field === 'id') {
                 return '' // id!="" is always-true in PB
             }
+
+            // Map 'id' to 'Id' for NocoDB
+            if (field === 'id') field = 'Id'
 
             return `(${field},${op.noco},${value})`
         }

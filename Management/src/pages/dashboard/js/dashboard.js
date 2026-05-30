@@ -21,7 +21,7 @@ const destroyChart = k => { if (charts[k]) { charts[k].destroy(); delete charts[
 
 // Get job date as YYYY-MM-DD string
 function jobDate(j) {
-    return (j.start_date || j.end_date || j.CreatedAt || '').slice(0, 10);
+    return (j.start_date || j.end_date || j.CreatedAtAt || '').slice(0, 10);
 }
 function jobMonth(j) {
     const d = jobDate(j);
@@ -89,7 +89,7 @@ function initSelectors() {
             ySelM.appendChild(opt);
         }
         mSel.addEventListener('change', () => { selectedMonth = +mSel.value; renderAll(); });
-        ySelM.addEventListener('change', () => { selectedYear = +ySelM.value; renderAll(); });
+        ySelM.addEventListener('change', () => { selectedYear = +ySelM.value; fetchAndRender(); });
     }
 
     // Quarterly
@@ -103,7 +103,7 @@ function initSelectors() {
             ySelQ.appendChild(opt);
         }
         qSel.addEventListener('change', () => { selectedQuarter = +qSel.value; renderAll(); });
-        ySelQ.addEventListener('change', () => { selectedYear = +ySelQ.value; renderAll(); });
+        ySelQ.addEventListener('change', () => { selectedYear = +ySelQ.value; fetchAndRender(); });
     }
 
     // Yearly
@@ -114,7 +114,7 @@ function initSelectors() {
             if (y === selectedYear) opt.selected = true;
             ySelY.appendChild(opt);
         }
-        ySelY.addEventListener('change', () => { selectedYear = +ySelY.value; renderAll(); });
+        ySelY.addEventListener('change', () => { selectedYear = +ySelY.value; fetchAndRender(); });
     }
 
     const branchSel = document.getElementById('branchSelect');
@@ -135,10 +135,13 @@ async function fetchAndRender() {
     tabs.forEach(t => t.style.display = 'none');
 
     try {
+        const yearStart = `${selectedYear}-01-01 00:00:00`;
+        const yearEnd = `${selectedYear}-12-31 23:59:59`;
+        
         const results = await Promise.allSettled([
-            window.pb.collection('jobs').getFullList(),
-            window.pb.collection('job_items').getFullList(),
-            window.pb.collection('financial_ledger').getFullList(),
+            window.pb.collection('jobs').getFullList({ filter: `created >= '${yearStart}' && created <= '${yearEnd}'` }),
+            window.pb.collection('job_items').getFullList({ filter: `created >= '${yearStart}' && created <= '${yearEnd}'` }),
+            window.pb.collection('financial_ledger').getFullList({ filter: `date >= '${yearStart}' && date <= '${yearEnd}'` }),
             window.pb.collection('products').getFullList(),
             window.pb.collection('branches').getFullList()
         ]);
@@ -273,8 +276,8 @@ function renderAll() {
     const branchExpenses = filterByBranch(allExpenses);
 
     // Apply timeframe filter
-    const periodJobs = filterByTimeframe(branchJobs, j => j.start_date || j.end_date || j.CreatedAt);
-    const periodExpenses = filterByTimeframe(branchExpenses, e => e.date || e.CreatedAt);
+    const periodJobs = filterByTimeframe(branchJobs, j => j.start_date || j.end_date || j.CreatedAtAt);
+    const periodExpenses = filterByTimeframe(branchExpenses, e => e.date || e.CreatedAtAt);
 
     const completedJobs = periodJobs.filter(j => j.status === 'completed' || j.status === 'invoiced');
     const opExpenses = periodExpenses.filter(e => e.entry_type === 'expense');
@@ -286,12 +289,16 @@ function renderAll() {
     // COGS from job items — coerce IDs to string for comparison
     const jobIds = new Set(completedJobs.map(j => String(j.id || j.Id)));
     const relevantItems = allJobItems.filter(i => jobIds.has(String(i.job_id)));
+    // BUG 8 FIX: COGS must prioritize historical snapshot (i.cost) over current master catalog cost
     const productMap = {};
-    allProducts.forEach(p => { productMap[p.name] = p; productMap[p.code] = p; });
+    allProducts.forEach(p => { productMap[p.name] = p; productMap[p.code] = p; productMap[String(p.id)] = p; });
     const cogs = relevantItems.reduce((s, i) => {
-        const itemName = i.product_name || i.item_name || '';
-        const prod = productMap[itemName];
-        const unitCost = prod ? Number(prod.cost || 0) : Number(i.cost || 0);
+        let unitCost = Number(i.cost || 0);
+        if (unitCost === 0) {
+            const itemName = i.product_name || i.item_name || '';
+            const prod = productMap[String(i.product_id)] || productMap[itemName];
+            unitCost = prod ? Number(prod.cost || 0) : 0;
+        }
         return s + unitCost * Number(i.qty || 1);
     }, 0);
 
@@ -331,7 +338,7 @@ function renderRevenueTrend(jobs) {
     const dataPoints = {};
     
     jobs.forEach(j => {
-        const dStr = j.start_date || j.end_date || j.CreatedAt;
+        const dStr = j.start_date || j.end_date || j.CreatedAtAt;
         if (!dStr) return;
         const d = new Date(dStr);
         let label = '';
@@ -410,11 +417,11 @@ function renderExpenseDonut(expenses) {
                     
                     const headers = ['วันที่', 'รายการ', 'สาขา', 'ยอดเงิน'];
                     const rows = matched.map(exp => {
-                        const d = (exp.date || exp.CreatedAt) ? new Date(exp.date || exp.CreatedAt).toLocaleDateString('th-TH') : '-';
+                        const d = (exp.date || exp.CreatedAtAt) ? new Date(exp.date || exp.CreatedAtAt).toLocaleDateString('th-TH') : '-';
                         return `<tr>
                             <td>${d}</td>
-                            <td>${exp.description || exp.notes || '-'}</td>
-                            <td>${exp.branch_id || '-'}</td>
+                            <td>${window.escHtml(exp.description || exp.notes || '-')}</td>
+                            <td>${window.escHtml(exp.branch_id || '-')}</td>
                             <td style="text-align:right; font-weight:600; color:#ef4444;">${fmt(exp.amount)}</td>
                         </tr>`;
                     }).join('');
@@ -508,7 +515,7 @@ function renderHistoricalTrend() {
                 key: d.toISOString().slice(0, 10),
                 label: `${d.getDate()} ${THAI_MONTHS[d.getMonth()+1]}`,
                 matchJob: j => jobDate(j) === d.toISOString().slice(0, 10),
-                matchExp: e => (e.date || e.CreatedAt || '').slice(0, 10) === d.toISOString().slice(0, 10)
+                matchExp: e => (e.date || e.CreatedAtAt || '').slice(0, 10) === d.toISOString().slice(0, 10)
             });
         }
     } else if (timeframe === 'weekly') {
@@ -522,7 +529,7 @@ function renderHistoricalTrend() {
             periods.push({
                 key: kw, label: `W${cw} ${(cy+543).toString().slice(-2)}`,
                 matchJob: j => { const d = jobDate(j); return d ? getISOWeekStr(new Date(d)) === kw : false; },
-                matchExp: e => { const d = (e.date || e.CreatedAt || '').slice(0, 10); return d ? getISOWeekStr(new Date(d)) === kw : false; }
+                matchExp: e => { const d = (e.date || e.CreatedAtAt || '').slice(0, 10); return d ? getISOWeekStr(new Date(d)) === kw : false; }
             });
         }
     } else if (timeframe === 'monthly') {
@@ -533,7 +540,7 @@ function renderHistoricalTrend() {
             periods.push({
                 key: mKey, label: `${THAI_MONTHS[d.getMonth()+1]} ${(d.getFullYear()+543).toString().slice(-2)}`,
                 matchJob: j => jobMonth(j) === mKey,
-                matchExp: e => (e.date || e.CreatedAt || '').slice(0, 7) === mKey
+                matchExp: e => (e.date || e.CreatedAtAt || '').slice(0, 7) === mKey
             });
         }
     } else if (timeframe === 'quarterly') {
@@ -544,7 +551,7 @@ function renderHistoricalTrend() {
             periods.push({
                 key: `${cy}-Q${cq}`, label: `Q${cq} ${(cy+543).toString().slice(-2)}`,
                 matchJob: j => { const dStr = jobDate(j); if(!dStr) return false; const d=new Date(dStr); return d.getFullYear()===cy && Math.floor(d.getMonth()/3)+1===cq; },
-                matchExp: e => { const dStr = (e.date || e.CreatedAt || '').slice(0, 10); if(!dStr) return false; const d=new Date(dStr); return d.getFullYear()===cy && Math.floor(d.getMonth()/3)+1===cq; }
+                matchExp: e => { const dStr = (e.date || e.CreatedAtAt || '').slice(0, 10); if(!dStr) return false; const d=new Date(dStr); return d.getFullYear()===cy && Math.floor(d.getMonth()/3)+1===cq; }
             });
         }
     } else if (timeframe === 'yearly') {
@@ -554,7 +561,7 @@ function renderHistoricalTrend() {
             periods.push({
                 key: `${cy}`, label: `ปี ${cy+543}`,
                 matchJob: j => jobDate(j).startsWith(`${cy}`),
-                matchExp: e => (e.date || e.CreatedAt || '').startsWith(`${cy}`)
+                matchExp: e => (e.date || e.CreatedAtAt || '').startsWith(`${cy}`)
             });
         }
     }
@@ -595,7 +602,7 @@ function renderInsights(jobs) {
 
     const hours = new Array(24).fill(0), days = new Array(7).fill(0);
     jobs.forEach(j => {
-        const ds = j.start_date || j.CreatedAt;
+        const ds = j.start_date || j.CreatedAtAt;
         if (!ds) return;
         const d = new Date(ds);
         if (!isNaN(d)) { hours[d.getHours()]++; days[d.getDay()]++; }

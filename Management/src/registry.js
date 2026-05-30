@@ -97,6 +97,15 @@ export const TOOLS = [
         roles: ['owner', 'manager', 'admin', 'sa'],
         group: 'operations'
     },
+    {
+        id: 'mechanic_dashboard',
+        title: 'หน้างานช่าง',
+        description: 'ดูงานที่ได้รับมอบหมาย ส่ง QC และดูผลงาน',
+        path: '/pages/mechanic/index.html',
+        icon: '<span class="material-icons-outlined">engineering</span>',
+        roles: ['mechanic', 'sa', 'owner', 'manager', 'admin'],
+        group: 'operations'
+    },
 
     // ─────────────── HR ───────────────
     {

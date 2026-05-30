@@ -8,9 +8,7 @@
     <meta name="description" content="MungkhudShop — ระบบบริหารจัดการร้านบริการรถยนต์ครบวงจร" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
     <link rel="stylesheet" href="/assets/css/design-system.css" />
     <link rel="stylesheet" href="/assets/css/layout.css" />
@@ -18,6 +16,15 @@
     <link rel="stylesheet" href="/assets/css/pages.css" />
     <link rel="stylesheet" href="/assets/css/print.css" />
     <link rel="stylesheet" href="/assets/css/mobile.css" />
+    <!-- BUG 99 FIX: PWA Manifest for home-screen installation -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#c8a048" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MungkhudShop" />
+    <link rel="icon" type="image/png" href="/assets/mungkhud_logo.png" />
+    <link rel="apple-touch-icon" href="/assets/mungkhud_logo.png" />
 </head>
 
 <body>
@@ -85,6 +92,10 @@
                     <a href="#/stock-list" class="nav-item" data-route="stock-list">
                         <span class="material-icons-outlined">inventory_2</span>
                         <span class="nav-label">รายการสินค้าคงคลัง</span>
+                    </a>
+                    <a href="#/service-price-list" class="nav-item" data-route="service-price-list">
+                        <span class="material-icons-outlined">home_repair_service</span>
+                        <span class="nav-label">รายการค่าบริการ</span>
                     </a>
                     <a href="#/requisition" class="nav-item" data-route="requisition">
                         <span class="material-icons-outlined">assignment</span>
@@ -169,9 +180,21 @@
                 <!-- Reports -->
                 <div class="nav-group" data-access="admin,owner,manager">
                     <div class="nav-group-label">รายงาน</div>
+                    <a href="#/daily-summary" class="nav-item" data-route="daily-summary">
+                        <span class="material-icons-outlined">point_of_sale</span>
+                        <span class="nav-label">สรุปปิดยอดประจำวัน</span>
+                    </a>
+                    <a href="#/customer-history" class="nav-item" data-route="customer-history">
+                        <span class="material-icons-outlined">manage_search</span>
+                        <span class="nav-label">ประวัติลูกค้า (History)</span>
+                    </a>
                     <a href="#/report-sales" class="nav-item" data-route="report-sales">
                         <span class="material-icons-outlined">bar_chart</span>
                         <span class="nav-label">รายงานบริการ / ขาย</span>
+                    </a>
+                    <a href="#/mechanic-kpi" class="nav-item" data-route="mechanic-kpi">
+                        <span class="material-icons-outlined">engineering</span>
+                        <span class="nav-label">ผลงานช่าง (KPI)</span>
                     </a>
                     <a href="#/report-inventory" class="nav-item" data-route="report-inventory">
                         <span class="material-icons-outlined">analytics</span>
@@ -196,7 +219,7 @@
                     </a>
                     <a href="#/user-permissions" class="nav-item" data-route="user-permissions">
                         <span class="material-icons-outlined">admin_panel_settings</span>
-                        <span class="nav-label">จัดการผู้ใช้ & สิทธิ์</span>
+                        <span class="nav-label">จัดการบทบาท & สิทธิ์</span>
                     </a>
                 </div>
 
@@ -231,6 +254,7 @@
                         <select id="branchSelect" class="branch-select">
                             <option value="main">สาขาหลัก</option>
                         </select>
+                        <span id="branchLabel" class="branch-label" style="display:none;font-weight:600;font-size:0.9rem;"></span>
                     </div>
                 </div>
                 <div class="topnav-right">

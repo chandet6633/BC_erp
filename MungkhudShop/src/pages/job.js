@@ -13,6 +13,7 @@ import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
 import { resetState, getState, setPlateAC, setCustomerAC, setVatToggle, getMechanics } from './job-state.js'
 import { addJobLineRow, recalcTotals } from './job-line-items.js'
 import { loadSearchData, filterLocalSearch, saveJobData, clearJobForm, editJob, deleteJob } from './job-data.js'
+import { printJob } from '../services/print-engine.js'
 
 export function initJobPage(container) {
     resetState()
@@ -53,8 +54,10 @@ function renderSearchTab(panel, mainContainer) {
                         <label class="form-label">สถานะ</label>
                         <select class="form-control" id="searchStatus">
                             <option value="">ทั้งหมด</option>
-                            <option value="open">เปิด</option>
-                            <option value="closed">ปิดงาน</option>
+                            <option value="pending">รับรถ</option>
+                            <option value="in_progress">กำลังซ่อม</option>
+                            <option value="qc_done">รอเก็บเงิน</option>
+                            <option value="completed">เสร็จสิ้น</option>
                             <option value="cancelled">ยกเลิก</option>
                         </select>
                     </div>
@@ -75,12 +78,13 @@ function renderSearchTab(panel, mainContainer) {
         <div id="jobSearchResults" style="margin-top:var(--sp-4);"></div>
     `
     panel.querySelector('#btnSearchJob').addEventListener('click', () => loadSearchData(panel, mainContainer))
-    panel.querySelector('#searchKeyword').addEventListener('input', () => filterLocalSearch(panel, mainContainer))
+    // BUG 63 FIX: Debounce live search to avoid re-rendering on every keystroke
+    const debouncedFilter = window.debounce ? window.debounce(() => filterLocalSearch(panel, mainContainer), 350) : () => filterLocalSearch(panel, mainContainer)
+    panel.querySelector('#searchKeyword').addEventListener('input', debouncedFilter)
     loadSearchData(panel, mainContainer)
 }
 
 function renderAddEditTab(panel, mainContainer) {
-    const newId = generateDocId('JOB')
     const today = new Date().toISOString().slice(0, 10)
 
     panel.innerHTML = `
@@ -88,7 +92,7 @@ function renderAddEditTab(panel, mainContainer) {
             <div class="toolbar-actions">
                 <button class="btn btn-primary touch-target" id="btnSaveJob"><span class="material-icons-outlined">save</span> บันทึก</button>
                 <button class="btn btn-outline touch-target" id="btnClearJob"><span class="material-icons-outlined">refresh</span> ล้างฟอร์ม</button>
-                <button class="btn btn-success touch-target" id="btnCloseJob" style="display:none;"><span class="material-icons-outlined">check_circle</span> ปิดงาน</button>
+                <button class="btn btn-outline touch-target" id="btnPrintJob" style="display:none;"><span class="material-icons-outlined">print</span> พิมพ์</button>
                 <button class="btn btn-danger touch-target" id="btnCancelJob" style="display:none;"><span class="material-icons-outlined">cancel</span> ยกเลิกงาน</button>
             </div>
         </div>
@@ -100,13 +104,15 @@ function renderAddEditTab(panel, mainContainer) {
                 <div class="form-row-2">
                     <div class="form-group">
                         <label class="form-label">เลขใบงาน</label>
-                        <input type="text" class="form-control" id="jobDocId" value="${newId}" readonly>
+                        <input type="text" class="form-control" id="jobDocId" value="กำลังสร้าง..." readonly>
                     </div>
                     <div class="form-group">
                         <label class="form-label">สถานะ</label>
                         <select class="form-control" id="jobStatus" disabled>
-                            <option value="open">เปิด</option>
-                            <option value="closed">ปิดงาน</option>
+                            <option value="pending">รับรถ/รอจัดช่าง</option>
+                            <option value="in_progress">กำลังซ่อม</option>
+                            <option value="qc_done">รอเก็บเงิน</option>
+                            <option value="completed">เสร็จสิ้น</option>
                             <option value="cancelled">ยกเลิก</option>
                         </select>
                     </div>
@@ -325,6 +331,20 @@ function renderAddEditTab(panel, mainContainer) {
                     <button class="btn btn-sm btn-outline" id="btnAddPayment"><span class="material-icons-outlined" style="font-size:16px;">add</span> เพิ่มช่องทาง</button>
                     <span class="text-sm text-muted" style="align-self:center;" id="paymentSumLabel">ยอดชำระ: ฿0.00</span>
                 </div>
+                <div class="form-group" style="margin-top:var(--sp-4);">
+                    <label class="form-label">สลิปโอนเงิน / หลักฐานชำระเงิน (ถ้ามี)</label>
+                    <input type="file" id="jobPaymentProof" accept="image/*" capture="environment" class="form-control">
+                    <div id="jobPaymentUploading" style="display:none; margin-top:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--color-primary);margin-bottom:4px;">
+                            <span class="material-icons-outlined" style="font-size:16px;animation:spin 1s linear infinite;">cloud_upload</span>
+                            <span>กำลังอัพโหลดหลักฐาน...</span>
+                        </div>
+                        <div style="width:100%;height:4px;background:var(--color-border,#e2e8f0);border-radius:2px;overflow:hidden;">
+                            <div id="jobUploadBar" style="height:100%;width:30%;background:var(--color-primary,#1d4ed8);border-radius:2px;animation:uploadProgress 1.2s ease-in-out infinite;"></div>
+                        </div>
+                    </div>
+                    <div id="jobPaymentProofPreview" style="margin-top:8px;"></div>
+                </div>
             </div>
         </div>
     `
@@ -367,10 +387,10 @@ function renderAddEditTab(panel, mainContainer) {
 
             // Service history badge
             const plate = v.plate_number
-            fetchFullList('jobs', { where: `(plate,eq,${plate})`, requestKey: null }).then(prevJobs => {
+            fetchFullList('jobs', { filter: `(plate,eq,${plate})`, requestKey: null }).then(prevJobs => {
                 const badge = panel.querySelector('#jobServiceBadge')
                 if (!badge) return
-                const closedJobs = prevJobs.filter(j => j.status === 'closed')
+                const closedJobs = prevJobs.filter(j => j.status === 'closed' || j.status === 'completed')
                 if (closedJobs.length === 0) {
                     badge.style.display = 'none'
                     return
@@ -412,9 +432,9 @@ function renderAddEditTab(panel, mainContainer) {
             const custs = await fetchFullList('customers')
             return custs.map(c => ({
                 id: c.id,
-                code: c.code,
+                code: c.cust_code,
                 label: c.name,
-                secondary: c.phone || '',
+                secondary: `${c.cust_code ? '[' + c.cust_code + '] ' : ''}${c.phone || ''}`,
                 _raw: c
             }))
         },
@@ -438,6 +458,12 @@ function renderAddEditTab(panel, mainContainer) {
         try {
             const mechanics = await getMechanics()
             const leadSel = panel.querySelector('#jobLeadMechanic')
+            if (mechanics.length === 0) {
+                const opt = document.createElement('option')
+                opt.value = ''
+                opt.textContent = 'ไม่มีช่างในสาขานี้'
+                leadSel.appendChild(opt)
+            }
             mechanics.forEach(m => {
                 const opt = document.createElement('option')
                 opt.value = m.id
@@ -465,77 +491,13 @@ function renderAddEditTab(panel, mainContainer) {
 
     panel.querySelector('#btnSaveJob').addEventListener('click', () => saveJobData(panel, mainContainer))
     panel.querySelector('#btnClearJob').addEventListener('click', () => clearJobForm(panel))
-
-    panel.querySelector('#btnCloseJob').addEventListener('click', async () => {
+    
+    panel.querySelector('#btnPrintJob').addEventListener('click', () => {
         const { editingId } = getState()
-        const rows = panel.querySelectorAll('#jobItemsBody tr:not(.grid-empty)')
-        let belowCostItems = []
-        try {
-            const products = await fetchFullList('products')
-            const productMap = {}
-            products.forEach(p => { productMap[p.id] = p; productMap[p.code] = p })
-            rows.forEach(tr => {
-                const typeBtn = tr.querySelector('.item-type-btn')
-                if (typeBtn?.dataset?.type === 'adhoc') return
-
-                const prodId = tr.querySelector('.item-prod')?.dataset?.selectedId || tr.querySelector('.item-prod')?.value
-                const unitPrice = parseFloat(tr.querySelector('.item-price')?.value) || 0
-                const prod = productMap[prodId]
-                if (prod && prod.cost > 0 && unitPrice < prod.cost) {
-                    belowCostItems.push(`${prod.name || prod.code}: ขาย ฿${unitPrice} < ทุน ฿${prod.cost}`)
-                }
-            })
-        } catch (_) { /* ignore */ }
-
-        let msg = 'คุณต้องการปิดใบงานนี้?'
-        if (belowCostItems.length > 0) {
-            msg = `⚠️ พบสินค้าราคาต่ำกว่าทุน:\n${belowCostItems.join('\n')}\n\nยืนยันปิดงาน?`
-        }
-
-        if (await showConfirm('ปิดงาน', msg)) {
-            const jItems = await fetchFullList('job_items', { filter: `job_id='${sanitizeFilter(editingId)}'` })
-            let totalCost = 0
-            const itemsForLedger = []
-            try {
-                const products = await fetchFullList('products', { requestKey: null })
-                const pMap = {}
-                products.forEach(p => { pMap[p.id] = p })
-                for (const ji of jItems) {
-                    if (ji.type === 'adhoc') continue
-                    const prod = pMap[ji.product_id]
-                    const cost = prod ? (prod.cost || 0) : 0
-                    totalCost += cost * (ji.qty || 0)
-                    if (ji.product_id && ji.qty) {
-                        itemsForLedger.push({ product_id: ji.product_id, qty: ji.qty, unit_price: ji.unit_price || 0 })
-                    }
-                }
-            } catch (_) { /* products might not load */ }
-
-            const grandTotal = parseFloat(panel.dataset.total) || 0
-            const profit = grandTotal - totalCost
-
-            await updateRecord('jobs', editingId, {
-                status: 'closed',
-                end_date: new Date().toISOString(),
-                total_cost: Math.round(totalCost * 100) / 100,
-                profit: Math.round(profit * 100) / 100
-            })
-
-            const jobNo = panel.querySelector('#jobDocId').value
-            await postToStockLedger('JOB', jobNo, itemsForLedger)
-
-            notifyJobCompleted({
-                job_no: jobNo,
-                plate: panel.querySelector('#jobPlateAC input')?.value || '',
-                customer_name: panel.querySelector('#jobCustomerPhone')?.closest('.job-section')?.querySelector('[id$="AC"] input')?.value || '',
-                grand_total: grandTotal
-            }).catch(() => {})
-
-            showToast(`ปิดงานเรียบร้อย (กำไร: ${profit >= 0 ? '' : '-'}฿${Math.abs(profit).toFixed(2)})`, profit >= 0 ? 'success' : 'warning')
-            loadSearchData(mainContainer.querySelector('#panel-search'), mainContainer)
-            mainContainer.querySelector('.tab-btn[data-tab="search"]').click()
-        }
+        if (editingId) printJob(editingId)
     })
+
+    // The old close job button is removed because SA now closes the job from the Kanban Board via the payment modal.
 
     panel.querySelector('#btnCancelJob').addEventListener('click', async () => {
         const { editingId } = getState()
@@ -623,6 +585,105 @@ function renderAddEditTab(panel, mainContainer) {
         if (label) label.textContent = `ยอดชำระ: ฿${sum.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`
     }
     panel.querySelectorAll('.pay-amount').forEach(inp => inp.addEventListener('input', updatePaymentSum))
+
+    // BUG 67 FIX: Warn on unsaved changes when navigating away
+    let formDirty = false
+    const DRAFT_KEY = 'mungkhud_job_draft'
+
+    function markDirty() { formDirty = true }
+    panel.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', markDirty))
+    panel.querySelector('#jobItemsBody')?.addEventListener('change', markDirty)
+
+    // Unload warning
+    const onBeforeUnload = (e) => {
+        const { editingId } = getState()
+        if (formDirty && !editingId) {
+            e.preventDefault()
+            e.returnValue = 'สร้างใบงานค้างอยู่ หากออกจากหน้านี้ข้อมูลจะหาย'
+        }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+
+    // SPA hash-change warning (fires before navigation)
+    const onHashChange = (e) => {
+        const { editingId } = getState()
+        if (formDirty && !editingId) {
+            const ok = confirm('มีข้อมูลที่ยังไม่ได้บันทึก ออกจากหน้านี้หรือไม่?')
+            if (!ok) {
+                e.preventDefault()
+                // Restore hash to current page (job)
+                history.pushState(null, '', '#/job')
+            } else {
+                formDirty = false
+                localStorage.removeItem(DRAFT_KEY)
+            }
+        }
+    }
+    window.addEventListener('popstate', onHashChange)
+
+    // Cleanup on clear/save
+    const origSave = panel.querySelector('#btnSaveJob')
+    origSave?.addEventListener('click', () => {
+        formDirty = false
+        localStorage.removeItem(DRAFT_KEY)
+    }, true)
+    panel.querySelector('#btnClearJob')?.addEventListener('click', () => {
+        formDirty = false
+        localStorage.removeItem(DRAFT_KEY)
+    }, true)
+
+    // Ensure a new intake form has a real job number before the SA presses save.
+    clearJobForm(panel)
+
+    // BUG 90 FIX: Auto-save draft every 90 seconds
+    const autosaveTimer = setInterval(() => {
+        const { editingId } = getState()
+        if (!formDirty || editingId) return  // Only draft for NEW unsaved jobs
+        try {
+            const draft = {
+                plate: plateAutocomplete?.input?.value || '',
+                customer: custAutocomplete?.input?.value || '',
+                phone: panel.querySelector('#jobCustomerPhone')?.value || '',
+                model: panel.querySelector('#jobModel')?.value || '',
+                notes: panel.querySelector('#jobNotes')?.value || '',
+                savedAt: new Date().toISOString()
+            }
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+        } catch { }
+    }, 90_000)
+
+    // Restore draft prompt
+    try {
+        const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null')
+        if (draft && draft.plate) {
+            const savedAt = new Date(draft.savedAt).toLocaleTimeString('th-TH')
+            setTimeout(() => {
+                if (confirm(`พบร่างใบงานที่ยังไม่ได้บันทึก (${draft.plate}, ${savedAt}) — กู้คืนหรือไม่?`)) {
+                    if (plateAutocomplete?.input) plateAutocomplete.input.value = draft.plate
+                    if (custAutocomplete?.input) custAutocomplete.input.value = draft.customer
+                    const phoneEl = panel.querySelector('#jobCustomerPhone')
+                    if (phoneEl) phoneEl.value = draft.phone
+                    const modelEl = panel.querySelector('#jobModel')
+                    if (modelEl) modelEl.value = draft.model
+                    const notesEl = panel.querySelector('#jobNotes')
+                    if (notesEl) notesEl.value = draft.notes
+                } else {
+                    localStorage.removeItem(DRAFT_KEY)
+                }
+            }, 500)
+        }
+    } catch { }
+
+    // Cleanup interval when panel is replaced
+    const observer = new MutationObserver(() => {
+        if (!document.body.contains(panel)) {
+            clearInterval(autosaveTimer)
+            window.removeEventListener('beforeunload', onBeforeUnload)
+            window.removeEventListener('popstate', onHashChange)
+            observer.disconnect()
+        }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
 }
 
 // ── Helper: render mechanic chip pills for "Helper" selection ─────────────

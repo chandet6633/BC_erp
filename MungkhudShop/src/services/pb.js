@@ -1,8 +1,8 @@
 /**
  * MungkhudShop — Data Service (Express API Backend)
  * ═══════════════════════════════════════════════════
- * Drop-in replacement for the original PocketBase-based pb.js.
- * All function signatures are identical — page files need zero changes.
+ * Adapter shim that re-exports all CRUD functions from the shared NocoDB adapter.
+ * Page files import from this module — no direct NocoDB calls.
  *
  * Architecture: Browser → Nginx → Express API → NocoDB
  */
@@ -15,7 +15,8 @@ import {
     updateRecord,
     deleteRecord,
     fetchFirstListItem,
-    getManagementUrl
+    getManagementUrl,
+    uploadAttachment
 } from '@shared/nocodb-adapter.js'
 
 /* ── Initialize adapter on module load (restores saved JWT) ── */
@@ -31,7 +32,8 @@ export {
     updateRecord,
     deleteRecord,
     fetchFirstListItem,
-    getManagementUrl
+    getManagementUrl,
+    uploadAttachment
 }
 
 /**

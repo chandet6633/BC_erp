@@ -11,6 +11,7 @@ import { initChangelog } from './components/changelog.js'
 import { sanitizeFilter } from './utils/sanitize.js'
 import { fetchFullList, getManagementUrl } from './services/pb.js'
 import { setAuthToken } from '@shared/nocodb-adapter.js'
+import { getStockStatus, isLowStock, isStockTrackedProduct } from './utils/stock-rules.js'
 
 /* ── P3: Route → Lazy init function map ── */
 const ROUTES = {
@@ -21,6 +22,7 @@ const ROUTES = {
     'receipt': () => import('./pages/receipt.js').then(m => m.initReceiptPage),
     'credit-note': () => import('./pages/credit-note.js').then(m => m.initCreditNotePage),
     'stock-list': () => import('./pages/stock-list.js').then(m => m.initStockListPage),
+    'service-price-list': () => import('./pages/service-price-list.js').then(m => m.initServicePriceListPage),
     'requisition': () => import('./pages/requisition.js').then(m => m.initRequisitionPage),
     'stock-return': () => import('./pages/stock-return.js').then(m => m.initStockReturnPage),
     'stock-transfer': () => import('./pages/stock-transfer.js').then(m => m.initStockTransferPage),
@@ -45,11 +47,71 @@ const ROUTES = {
     'settings': () => import('./pages/settings.js').then(m => m.initSettingsPage),
     'user-permissions': () => import('./pages/user-permissions.js').then(m => m.initUserPermissionsPage),
     'kanban': () => import('./pages/kanban.js').then(m => m.initKanbanPage),
+    'customer-history': () => import('./pages/customer-history.js').then(m => m.initCustomerHistoryPage),
+    'daily-summary': () => import('./pages/daily-summary.js').then(m => m.initDailySummaryPage),
+    'mechanic-kpi': () => import('./pages/mechanic-kpi.js').then(m => m.initMechanicKpiPage),
 }
 
 
 
 const DEFAULT_ROUTE = 'dashboard'
+
+const ICON_FALLBACKS = {
+    account_balance: '▥', account_balance_wallet: '▤', account_circle: '◎',
+    add: '+', add_circle: '+', add_circle_outline: '+',
+    admin_panel_settings: '⚙', analytics: '▥', arrow_back: '←', arrow_forward: '→', arrow_upward: '↑',
+    assessment: '▥', assignment: '▣', assignment_return: '↩', attach_money: '$', backspace: '⌫',
+    bar_chart: '▥', block: '⊘', branding_watermark: '◇', bug_report: '!', build: '▰',
+    business: '▦', calendar_today: '□', cancel: '×', category: '▦', check_circle: '✓',
+    checklist: '☑', close: '×', cloud_upload: '↑', construction: '!', dark_mode: '◐',
+    dashboard: '▦', delete: '×', description: '▤', directions_car: '▱', download: '↓',
+    edit: '✎', engineering: '⚙', error_outline: '!', folder_special: '▣', help_outline: '?',
+    history: '↺', home: '⌂', hourglass_empty: '⌛', image: '▧', inbox: '▤',
+    info: 'i', inventory: '▣', inventory_2: '▣', link: '↔', list_alt: '☰',
+    local_shipping: '▱', lock: '▣', lock_reset: '↺', login: '→', logout: '←',
+    manage_search: '⌕', menu: '☰', note_alt: '▤', notifications: '!', open_in_new: '↗',
+    output: '↗', paid: '$', payment: '$', payments: '$', people: '◎',
+    percent: '%', person: '○', picture_as_pdf: '▤', pin: '●', playlist_remove: '−',
+    point_of_sale: '$', print: '▤', receipt: '▤', receipt_long: '▤', refresh: '↻',
+    remove_circle: '−', request_quote: '▤', save: '✓', savings: '$', schedule: '◷',
+    search: '⌕', send: '→', settings: '⚙', star: '★', store: '⌂',
+    storefront: '⌂', swap_horiz: '↔', swap_vert: '↕', sync: '↻', table_chart: '▦',
+    timer: '◷', today: '□', trending_down: '↓', trending_up: '↑', tune: '⚙',
+    view_kanban: '▥', visibility: '◉', visibility_off: '◌', warning: '!', warning_amber: '!'
+}
+
+function localizeMaterialIcons(root = document) {
+    const apply = (el) => {
+        const raw = (el.textContent || '').trim()
+        const name = ICON_FALLBACKS[raw] ? raw : (el.dataset.iconName || raw)
+        if (!name || name.length > 40) return
+        const symbol = ICON_FALLBACKS[name] || '•'
+        if (raw === symbol && el.dataset.iconName === name) return
+        el.dataset.iconName = name
+        el.textContent = symbol
+        el.setAttribute('aria-hidden', 'true')
+    }
+
+    if (root.classList?.contains('material-icons-outlined')) apply(root)
+    root.querySelectorAll?.('.material-icons-outlined').forEach(apply)
+}
+
+function initLocalIconFallbacks() {
+    localizeMaterialIcons(document)
+    const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'characterData') {
+                const parent = mutation.target.parentElement
+                if (parent?.classList?.contains('material-icons-outlined')) localizeMaterialIcons(parent)
+                continue
+            }
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === Node.ELEMENT_NODE) localizeMaterialIcons(node)
+            })
+        }
+    })
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true })
+}
 
 /* ── Router ── */
 function getRouteFromHash() {
@@ -75,21 +137,6 @@ async function navigate(route) {
         return
     }
 
-    // --- RBAC check (employee restriction) ---
-    const isEmployee = user.role && ['employee', 'employee_main', 'employee_sup', 'sa'].includes(user.role)
-    if (isEmployee && isEmployeeRestricted(route)) {
-        showAppShell()
-        const content = document.getElementById('pageContent')
-        content.innerHTML = `
-            <div class="empty-state">
-                <span class="material-icons-outlined" style="font-size:48px;color:#ef4444;">lock</span>
-                <h2>ไม่มีสิทธิ์เข้าถึง</h2>
-                <p>บัญชีของคุณ (${getRoleLabel(user.role)}) ไม่มีสิทธิ์เข้าถึงหน้านี้</p>
-                <a href="#/dashboard" class="btn btn-primary" style="margin-top:var(--sp-4);">กลับหน้าหลัก</a>
-            </div>`
-        return
-    }
-
     // --- RBAC check (allowed_menus) ---
     const hashRoute = `#/${route}`
     if (!hasAccess(hashRoute)) {
@@ -112,10 +159,19 @@ async function navigate(route) {
     const content = document.getElementById('pageContent')
     const navItems = document.querySelectorAll('.nav-item')
 
-    // Update active nav
+    // BUG 81 FIX: Active nav matches base route only, not sub-routes/query params
     navItems.forEach(item => {
         item.classList.toggle('active', item.dataset.route === route)
     })
+
+    // BUG 84 FIX: Destroy any existing Chart.js instances before clearing page content
+    // Prevents "Canvas is already in use" errors and memory leaks
+    if (window.Chart) {
+        try {
+            const existingCharts = Object.values(window.Chart.instances || {})
+            existingCharts.forEach(chart => { try { chart.destroy() } catch {} })
+        } catch {}
+    }
 
     // Clear and render with transition
     content.classList.remove('page-enter')
@@ -401,10 +457,18 @@ async function handleSSO() {
             console.warn('SSO: Could not fetch system_roles, using fallback:', e.message)
         }
 
-        // Fallback: privileged roles always get full access
-        const FULL_ACCESS_ROLES = ['admin', 'owner', 'manager', 'sa']
-        if (!allowedMenus && FULL_ACCESS_ROLES.includes(data.role)) {
-            allowedMenus = '*'
+        // Fallback: only truly unrestricted roles get '*' when system_roles is unavailable
+        // BUG 8 FIX: 'sa' removed — SA has a restricted menu set, not full access
+        const FULL_ACCESS_ROLES = ['admin', 'owner', 'manager']
+        const SA_FALLBACK_MENUS = '#/dashboard,#/job,#/kanban,#/stock-list,#/service-price-list,#/requisition,#/stock-return,#/stock-transfer,#/stock-adjust'
+        if (!allowedMenus) {
+            if (FULL_ACCESS_ROLES.includes(data.role)) {
+                allowedMenus = '*'
+            } else if (data.role === 'sa') {
+                allowedMenus = SA_FALLBACK_MENUS
+            } else if (data.role === 'mechanic') {
+                allowedMenus = '#/dashboard,#/kanban,#/job'
+            }
         }
 
         const session = {
@@ -523,6 +587,7 @@ async function boot() {
         initChangelog()
         initNotificationPanel()
         checkLowStock()
+        initBackToTop()   // BUG 98 FIX: Back-to-top button
         setInterval(checkLowStock, 5 * 60 * 1000) // Every 5 minutes
     }
 }
@@ -532,16 +597,32 @@ let _lowStockItems = []
 
 async function checkLowStock() {
     try {
-        const products = await fetchFullList('products', { requestKey: 'lowstock_check' })
-        const ledgers = await fetchFullList('stock_ledgers', { requestKey: 'lowstock_ledgers' })
-        const stockMap = {}
-        for (const l of ledgers) {
-            stockMap[l.product_id] = (stockMap[l.product_id] || 0) + (l.qty || 0)
-        }
+        const products = (await fetchFullList('products', { requestKey: 'lowstock_check' }))
+            .filter(isStockTrackedProduct)
+
+        // P2: Use server-side aggregation — avoids downloading entire ledger table every 5 min
+        let stockMap = {}
+        try {
+            const stockRes = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+            })
+            if (stockRes.ok) {
+                const rawMap = await stockRes.json()
+                for (const pid in rawMap) {
+                    const sm = rawMap[pid]
+                    stockMap[pid] = typeof sm === 'number' ? sm : (sm.qty || 0)
+                }
+            }
+        } catch (e) { console.warn('[LowStock] stock-balances failed:', e) }
+
         _lowStockItems = products.filter(p => {
-            const qty = stockMap[p.code] || stockMap[p.id] || 0
-            return qty <= (p.min_stock || 5)
-        }).map(p => ({ name: p.name, code: p.code, qty: stockMap[p.code] || stockMap[p.id] || 0 }))
+            const qty = stockMap[p.id] || 0
+            return isLowStock(p, qty)
+        }).map(p => {
+            const qty = stockMap[p.id] || 0
+            const status = getStockStatus(p, qty)
+            return { name: p.name, code: p.code, qty, minQty: status.minQty, maxQty: status.maxQty }
+        })
 
         // Update notification badge
         const badge = document.getElementById('notifBadge')
@@ -610,7 +691,7 @@ function initNotificationPanel() {
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--color-border,#f1f5f9);">
                     <div>
                         <div style="font-weight:500;font-size:0.85rem;">${p.name}</div>
-                        <div style="font-size:0.75rem;color:var(--color-text-muted);">${p.code}</div>
+                        <div style="font-size:0.75rem;color:var(--color-text-muted);">${p.code} | Min ${p.minQty}${p.maxQty ? ` / Max ${p.maxQty}` : ''}</div>
                     </div>
                     <span style="color:${p.qty <= 0 ? '#ef4444' : '#f59e0b'};font-weight:700;font-size:0.85rem;">
                         ${p.qty <= 0 ? 'หมด' : `เหลือ ${p.qty}`}
@@ -639,80 +720,137 @@ function initNotificationPanel() {
 
 
 
-/* ── Branch Switcher (queries shared database directly) ── */
+/* ── Branch Switcher ── */
 async function initBranchSwitcher() {
     const select = document.getElementById('branchSelect')
+    const label  = document.getElementById('branchLabel')
     if (!select) return
 
     const user = getCurrentUser()
-    const isEmployee = user && ['employee', 'employee_main', 'employee_sup', 'sa'].includes(user.role)
+    if (!user) return
+
+    // Roles that are LOCKED to their assigned branch — show label, no dropdown
+    const LOCKED_ROLES = ['sa', 'manager', 'mechanic', 'employee', 'employee_main', 'employee_sup']
+    const isLocked = LOCKED_ROLES.includes(user.role)
 
     try {
-        // Get unique branches from shared users table (same database now)
-        const allUsers = await fetchFullList('users', {
-            fields: 'branch',
-            requestKey: 'branch_list'
-        })
+        // Load branch list from DB
+        const allBranches = await fetchFullList('branches', { requestKey: 'branch_list' })
 
-        // Extract unique non-empty branch values (skip 'all' — ทุกสาขา covers that)
-        const SKIP_BRANCHES = ['all', 'main', '']
-        const branchSet = new Map()
-        allUsers.forEach(u => {
-            const b = (u.branch || '').trim()
-            if (b && !SKIP_BRANCHES.includes(b.toLowerCase())) {
-                branchSet.set(b, b)
+        const SKIP_CODES = ['all', '']
+        const branchMap = new Map() // code → display name
+        allBranches.forEach(b => {
+            const code = (b.code || b.name || '').trim()
+            if (code && !SKIP_CODES.includes(code.toLowerCase())) {
+                branchMap.set(code, b.name || code)
             }
         })
 
-        select.innerHTML = ''
+        if (isLocked) {
+            // ── LOCKED: show static label, hide select ──────────────────────
+            select.style.display = 'none'
+            if (label) label.style.display = ''
 
-        // Admin/owner/manager can see all branches
-        if (!isEmployee) {
-            const allOpt = document.createElement('option')
-            allOpt.value = ''
-            allOpt.textContent = 'ทุกสาขา'
-            select.appendChild(allOpt)
-        }
+            const branchCode = user.branch_id || ''
+            const branchName = branchMap.get(branchCode) || branchCode || 'สาขาของคุณ'
+            if (label) label.textContent = branchName
 
-        // Sort branches and add options
-        const sortedBranches = [...branchSet.values()].sort()
-        sortedBranches.forEach(branch => {
-            // Employee only sees their assigned branch
-            if (isEmployee && user.branch_id && branch !== user.branch_id) return
-            const opt = document.createElement('option')
-            opt.value = branch
-            opt.textContent = branch
-            select.appendChild(opt)
-        })
+            // Always enforce the branch filter
+            setBranch(branchCode)
 
-        // If employee is locked to a branch, disable the switcher
-        if (isEmployee && user.branch_id) {
-            select.value = user.branch_id
-            select.disabled = true
-            setBranch(user.branch_id)
         } else {
-            // Restore saved branch for admin/owner
+            // ── ADMIN / OWNER: switchable dropdown ──────────────────────────
+            select.style.display = ''
+            if (label) label.style.display = 'none'
+
+            select.innerHTML = ''
+            const sortedCodes = [...branchMap.keys()].sort()
+            sortedCodes.forEach(code => {
+                const opt = document.createElement('option')
+                opt.value = code
+                opt.textContent = branchMap.get(code)
+                select.appendChild(opt)
+            })
+
+            // Fallback if no branches defined
+            if (select.options.length === 0) {
+                const opt = document.createElement('option')
+                opt.value = 'main'
+                opt.textContent = 'สาขาหลัก'
+                select.appendChild(opt)
+            }
+
+            // Restore saved branch — fall back to first option
             const saved = getBranch()
-            if (saved) select.value = saved
+            if (saved && select.querySelector(`option[value="${saved}"]`)) {
+                select.value = saved
+            } else {
+                select.value = select.options[0]?.value || ''
+                setBranch(select.value)
+            }
+
+            select.addEventListener('change', () => {
+                setBranch(select.value)
+                navigate(getRouteFromHash()) // Refresh page with new branch scope
+            })
         }
 
-        // If no branches exist, show a default
-        if (select.options.length === 0) {
-            const opt = document.createElement('option')
-            opt.value = ''
-            opt.textContent = 'สาขาหลัก'
-            select.appendChild(opt)
-        }
-
-        select.addEventListener('change', () => {
-            setBranch(select.value)
-            navigate(getRouteFromHash()) // Refresh with new branch
-        })
     } catch (e) {
         console.warn('Could not load branches:', e)
-        // Fallback: show default
-        select.innerHTML = '<option value="">สาขาหลัก</option>'
+        // Graceful fallback
+        if (isLocked) {
+            select.style.display = 'none'
+            if (label) {
+                label.style.display = ''
+                label.textContent = user.branch_id || 'สาขาของคุณ'
+            }
+            setBranch(user.branch_id || '')
+        } else {
+            select.innerHTML = '<option value="main">สาขาหลัก</option>'
+        }
     }
+}
+
+/* ── Back To Top Button (#98) ── */
+function initBackToTop() {
+    // Create button if not exists
+    let btn = document.getElementById('backToTopBtn')
+    if (!btn) {
+        btn = document.createElement('button')
+        btn.id = 'backToTopBtn'
+        btn.title = 'กลับไปด้านบน'
+        btn.innerHTML = '<span class="material-icons-outlined">arrow_upward</span>'
+        btn.style.cssText = `
+            position:fixed; bottom:80px; right:20px;
+            width:44px; height:44px; border-radius:50%;
+            background:var(--color-primary,#2563eb); color:#fff;
+            border:none; cursor:pointer; z-index:9000;
+            display:none; align-items:center; justify-content:center;
+            box-shadow:0 4px 12px rgba(0,0,0,.2);
+            transition:opacity 0.25s, transform 0.25s;
+            opacity:0;
+        `
+        document.body.appendChild(btn)
+    }
+
+    const pageContent = document.getElementById('pageContent')
+    if (!pageContent) return
+
+    // Show/hide on scroll
+    pageContent.addEventListener('scroll', () => {
+        if (pageContent.scrollTop > 300) {
+            btn.style.display = 'flex'
+            setTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'translateY(0)' }, 10)
+        } else {
+            btn.style.opacity = '0'
+            btn.style.transform = 'translateY(8px)'
+            setTimeout(() => { if (pageContent.scrollTop <= 300) btn.style.display = 'none' }, 260)
+        }
+    }, { passive: true })
+
+    btn.addEventListener('click', () => {
+        pageContent.scrollTo({ top: 0, behavior: 'smooth' })
+    })
 }
 
 document.addEventListener('DOMContentLoaded', boot)

@@ -241,6 +241,7 @@ CREATE TABLE IF NOT EXISTS customers (
     tax_id TEXT,
     credit_days NUMERIC DEFAULT 0,
     "group" TEXT,
+    branch_id TEXT,
     created TIMESTAMPTZ DEFAULT now(),
     updated TIMESTAMPTZ DEFAULT now()
 );
@@ -259,6 +260,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     chassis_number TEXT,
     engine_type TEXT,
     size TEXT,
+    branch_id TEXT,
     created TIMESTAMPTZ DEFAULT now(),
     updated TIMESTAMPTZ DEFAULT now()
 );
@@ -297,7 +299,9 @@ CREATE TABLE IF NOT EXISTS products (
     factory_code TEXT,
     brand_id TEXT,
     group_id TEXT,
-    min_stock NUMERIC DEFAULT 5,
+    min_stock NUMERIC DEFAULT 0,
+    min_qty NUMERIC DEFAULT 0,
+    max_qty NUMERIC,
     location TEXT,
     is_track_stock BOOLEAN DEFAULT true,
     created TIMESTAMPTZ DEFAULT now(),

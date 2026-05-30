@@ -76,7 +76,7 @@
             showStatus('Initiating backup process. Fetching data...');
             btnBackup.disabled = true;
             try {
-                const collections = ['users', 'branches', 'hr_attendance', 'hr_leaves', 'bc_records', 'audit_logs'];
+                const collections = ['users', 'branches', 'jobs', 'job_items', 'documents', 'document_items', 'hr_attendance', 'hr_leaves', 'audit_logs'];
                 const backupData = {};
 
                 for (const col of collections) {

@@ -18,29 +18,43 @@ const BRANCH_KEY = 'mungkhud_branch'
    SESSION MANAGEMENT
    ═══════════════════════════════════════════════════ */
 
-/** Get current logged-in user from localStorage */
+/** Get current logged-in user from localStorage, with expiry check */
 export function getCurrentUser() {
     try {
-        const raw = localStorage.getItem(AUTH_KEY)
-        return raw ? JSON.parse(raw) : null
+        const raw = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY)
+        if (!raw) return null
+        const session = JSON.parse(raw)
+        // BUG 50 FIX: Validate session expiry (7-day token lifetime)
+        if (session._expiresAt && Date.now() > session._expiresAt) {
+            localStorage.removeItem(AUTH_KEY)
+            localStorage.removeItem(TOKEN_KEY)
+            sessionStorage.removeItem(AUTH_KEY)
+            sessionStorage.removeItem(TOKEN_KEY)
+            return null
+        }
+        return session
     } catch { return null }
 }
 
-/** Save user session + JWT */
+/** Save user session + JWT with expiry timestamp */
 export function setCurrentUser(user, token) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+    // BUG 50 FIX: Attach expiry timestamp matching the 7-day JWT lifetime
+    const sessionWithExpiry = { ...user, _expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }
+    localStorage.setItem(AUTH_KEY, JSON.stringify(sessionWithExpiry))
     if (token) localStorage.setItem(TOKEN_KEY, token)
 }
 
-/** Get stored JWT token */
+/** Get stored JWT token — checks localStorage then sessionStorage */
 export function getStoredToken() {
-    return localStorage.getItem(TOKEN_KEY) || ''
+    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || ''
 }
 
 /** Clear user session */
 export function logout() {
     localStorage.removeItem(AUTH_KEY)
     localStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem(AUTH_KEY)
+    sessionStorage.removeItem(TOKEN_KEY)
     clearAuthToken()
     window.location.hash = '#/login'
     window.location.reload()
@@ -100,8 +114,15 @@ export async function loginByUsername(username, password, remember = true) {
         if (remember) {
             setCurrentUser(session, token)
         } else {
-            // Session only — store in sessionStorage fallback
-            setCurrentUser(session, token)
+            // BUG 9 FIX: Non-persistent session — store in sessionStorage only, not localStorage
+            // The user's data disappears when the browser tab is closed
+            try {
+                sessionStorage.setItem(AUTH_KEY, JSON.stringify(session))
+                sessionStorage.setItem(TOKEN_KEY, token)
+            } catch {
+                // Fallback to localStorage if sessionStorage unavailable (e.g., private mode)
+                setCurrentUser(session, token)
+            }
         }
 
         // Set branch for scoped roles
@@ -145,16 +166,26 @@ export async function loginByPin(pin, roleGroup) {
 async function buildSession(user) {
     // Fetch role permissions
     let allowedMenus = '*'
+    let rolePermissions = '{}'
     try {
         const roles = await fetchFullList('system_roles', {
             filter: `name='${sanitizeFilter(user.role)}'`,
             requestKey: null
         })
-        if (roles.length > 0) allowedMenus = roles[0].allowed_menus
-    } catch {
-        if (['mechanic', 'sa'].includes(user.role)) {
-            allowedMenus = '#/dashboard,#/kanban,#/job'
+        if (roles.length > 0) {
+            allowedMenus = roles[0].allowed_menus
+            if (roles[0].permissions) {
+                rolePermissions = typeof roles[0].permissions === 'string' 
+                    ? roles[0].permissions 
+                    : JSON.stringify(roles[0].permissions)
+            }
         }
+    } catch {
+        // BUG 7 FIX: Proper per-role fallback menus when system_roles is unavailable
+        const SA_MENUS = '#/dashboard,#/job,#/kanban,#/stock-list,#/service-price-list,#/requisition,#/stock-return,#/stock-transfer,#/stock-adjust'
+        if (user.role === 'sa') allowedMenus = SA_MENUS
+        else if (user.role === 'mechanic') allowedMenus = '#/dashboard,#/kanban,#/job'
+        else if (['manager', 'owner', 'admin'].includes(user.role)) allowedMenus = '*'
     }
 
     return {
@@ -164,7 +195,7 @@ async function buildSession(user) {
         role: user.role,
         allowed_menus: allowedMenus,
         branch_id: user.branch || '',
-        permissions: '{}',
+        permissions: rolePermissions,
         sso_source: 'api_jwt'
     }
 }
@@ -179,6 +210,9 @@ export function hasAccess(hash) {
     if (!user) return false
     if (user.allowed_menus === '*') return true
     const menus = (user.allowed_menus || '').split(',').map(m => m.trim())
+    if (hash === '#/service-price-list' && (menus.includes('#/stock-list') || menus.includes('#/master-product'))) {
+        return true
+    }
     return menus.includes(hash)
 }
 

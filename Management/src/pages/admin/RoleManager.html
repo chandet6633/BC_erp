@@ -104,10 +104,12 @@
 
         function renderRoles() {
             const container = document.getElementById('role-cards');
-            container.innerHTML = ROLES.map(role => `
+            container.innerHTML = ROLES.map(role => {
+                const safeRole = window.escHtml(role);
+                return `
                 <div class="role-card">
-                    <h3><span class="material-icons-outlined" style="color:var(--primary-600);font-size:1.3rem">badge</span> ${role === 'sa' ? 'Service Advisor' : role}</h3>
-                    <p class="subtitle">สิทธิ์สำหรับกลุ่มผู้ใช้: ${role}</p>
+                    <h3><span class="material-icons-outlined" style="color:var(--primary-600);font-size:1.3rem">badge</span> ${role === 'sa' ? 'Service Advisor' : safeRole}</h3>
+                    <p class="subtitle">สิทธิ์สำหรับกลุ่มผู้ใช้: ${safeRole}</p>
                     
                     <div class="tool-list">
                         ${TOOLS.map(tool => `
@@ -115,17 +117,18 @@
                                 <div class="checkbox-wrapper">
                                     <input type="checkbox" 
                                            ${rolePermissions[role].includes(tool.id) ? 'checked' : ''} 
-                                           onchange="togglePermission('${role}', '${tool.id}', this.checked)">
+                                           onchange="togglePermission('${safeRole.replace(/'/g, "\\'")}', '${window.escHtml(tool.id)}', this.checked)">
                                 </div>
                                 <div class="tool-info">
-                                    <div class="tool-title">${tool.title}</div>
-                                    <div class="tool-desc">${tool.description || tool.group || 'Utility Tool'}</div>
+                                    <div class="tool-title">${window.escHtml(tool.title)}</div>
+                                    <div class="tool-desc">${window.escHtml(tool.description || tool.group || 'Utility Tool')}</div>
                                 </div>
                             </label>
                         `).join('')}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         window.togglePermission = (role, toolId, isChecked) => {

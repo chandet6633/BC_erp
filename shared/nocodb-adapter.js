@@ -11,6 +11,7 @@
  */
 
 import { translateFilter } from './filter-translator.js'
+import { compressImage } from './image-compressor.js'
 
 /* ── Configuration ── */
 
@@ -20,6 +21,8 @@ const AUTH_BASE = '/api/auth'
 
 // JWT token — set after login
 let JWT_TOKEN = ''
+const PRIMARY_TOKEN_KEY = 'mungkhud_jwt'
+const LEGACY_TOKEN_KEY = 'bcauto_jwt'
 
 /* ══════════════════════════════════════════
    INITIALIZATION
@@ -38,10 +41,14 @@ export async function initAdapter(config = {}) {
         JWT_TOKEN = config.token
     }
 
-    // Restore saved JWT from localStorage
+    // Restore saved JWT from localStorage first, then sessionStorage fallback
     if (!JWT_TOKEN) {
         try {
-            const stored = localStorage.getItem('bcauto_jwt')
+            const stored =
+                localStorage.getItem(PRIMARY_TOKEN_KEY) ||
+                sessionStorage.getItem(PRIMARY_TOKEN_KEY) ||
+                localStorage.getItem(LEGACY_TOKEN_KEY) ||
+                sessionStorage.getItem(LEGACY_TOKEN_KEY)
             if (stored) JWT_TOKEN = stored
         } catch { /* SSR safety */ }
     }
@@ -52,7 +59,10 @@ export async function initAdapter(config = {}) {
  */
 export function setAuthToken(token) {
     JWT_TOKEN = token
-    try { localStorage.setItem('bcauto_jwt', token) } catch { }
+    try {
+        localStorage.setItem(PRIMARY_TOKEN_KEY, token)
+        localStorage.setItem(LEGACY_TOKEN_KEY, token)
+    } catch { }
 }
 
 /**
@@ -60,13 +70,28 @@ export function setAuthToken(token) {
  */
 export function clearAuthToken() {
     JWT_TOKEN = ''
-    try { localStorage.removeItem('bcauto_jwt') } catch { }
+    try {
+        localStorage.removeItem(PRIMARY_TOKEN_KEY)
+        localStorage.removeItem(LEGACY_TOKEN_KEY)
+        sessionStorage.removeItem(PRIMARY_TOKEN_KEY)
+        sessionStorage.removeItem(LEGACY_TOKEN_KEY)
+    } catch { }
 }
 
 /**
  * Get the current JWT token.
  */
 export function getAuthToken() {
+    if (!JWT_TOKEN) {
+        try {
+            JWT_TOKEN =
+                localStorage.getItem(PRIMARY_TOKEN_KEY) ||
+                sessionStorage.getItem(PRIMARY_TOKEN_KEY) ||
+                localStorage.getItem(LEGACY_TOKEN_KEY) ||
+                sessionStorage.getItem(LEGACY_TOKEN_KEY) ||
+                ''
+        } catch { /* SSR safety */ }
+    }
     return JWT_TOKEN
 }
 
@@ -74,14 +99,35 @@ export function getAuthToken() {
    LOW-LEVEL FETCH
    ══════════════════════════════════════════ */
 
-function _fetch(url, options = {}) {
+async function _fetch(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
         // Send JWT as Authorization: Bearer header
         ...(JWT_TOKEN ? { 'Authorization': `Bearer ${JWT_TOKEN}` } : {}),
         ...(options.headers || {})
     }
-    return fetch(url, { ...options, headers })
+    const res = await fetch(url, { ...options, headers })
+
+    // Global 401 interceptor: stale/invalid token → clear session & redirect to login
+    // NOTE: NO reload() here — that would cause a request storm hitting the rate limiter
+    if (res.status === 401 && !url.includes('/api/auth/') && !window._authRedirecting) {
+        window._authRedirecting = true
+        clearAuthToken()
+        try {
+            localStorage.removeItem(PRIMARY_TOKEN_KEY)
+            localStorage.removeItem(LEGACY_TOKEN_KEY)
+            localStorage.removeItem('mungkhud_auth')
+            sessionStorage.removeItem(PRIMARY_TOKEN_KEY)
+            sessionStorage.removeItem(LEGACY_TOKEN_KEY)
+            sessionStorage.removeItem('mungkhud_auth')
+        } catch { }
+        if (typeof window !== 'undefined') {
+            // Navigate without reload — the router will redirect to login
+            window.location.href = window.location.origin + '/#/login'
+        }
+    }
+
+    return res
 }
 
 /* ══════════════════════════════════════════
@@ -208,6 +254,50 @@ export async function fetchFirstListItem(collection, filter) {
     const result = await fetchList(collection, 1, 1, { filter })
     if (result.items.length > 0) return result.items[0]
     throw new Error(`No record found in ${collection} matching filter`)
+}
+
+/**
+ * Upload a file as an attachment.
+ * Calls the backend Express API /api/upload proxy.
+ * @param {File} file - The file object from <input type="file">
+ * @returns {Promise<Array>} NocoDB attachment object array
+ */
+export async function uploadAttachment(file) {
+    let uploadFile = file
+    if (file?.type?.startsWith('image/') && file.size > 1024 * 1024) {
+        try {
+            const compressed = await compressImage(file, {
+                maxWidth: 1600,
+                maxHeight: 1600,
+                quality: 0.78,
+                outputType: 'image/jpeg'
+            })
+            const baseName = String(file.name || 'upload').replace(/\.[^.]+$/, '')
+            uploadFile = new File([compressed.blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+        } catch (err) {
+            console.warn('[Upload] Image compression failed; uploading original file:', err.message)
+        }
+    }
+
+    const formData = new FormData()
+    formData.append('file', uploadFile) // NocoDB expects 'file' for single upload or 'files' for multi. We use 'file' usually.
+
+    const headers = {}
+    if (JWT_TOKEN) headers['Authorization'] = `Bearer ${JWT_TOKEN}`
+
+    // Do NOT set Content-Type to application/json or multipart/form-data.
+    // fetch will automatically set it to multipart/form-data with the correct boundary when body is FormData.
+    const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        headers
+    })
+
+    if (!res.ok) {
+        const errBody = await res.text()
+        throw new Error(`Upload failed: ${errBody}`)
+    }
+    return res.json()
 }
 
 /* ══════════════════════════════════════════

@@ -1,1 +1,0 @@
-import{c as t}from"./document-factory-B51oxqq2.js";import"./index-9Z-6SckO.js";import"./inventory-BROWFZn2.js";const i=t({title:"ปรับสต็อก (SA)",icon:"tune",prefix:"SA",collection:"stock_adjustments"});export{i as initStockAdjustPage};

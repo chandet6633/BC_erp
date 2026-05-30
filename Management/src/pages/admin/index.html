@@ -208,19 +208,19 @@
             } catch (e) { document.getElementById('kBranches').textContent = '—'; }
 
             try {
-                const records = await pb.collection('bc_records').getFullList();
                 const now = new Date();
-                const monthStr = now.toISOString().slice(0, 7); // "2026-05"
-                const thisMonth = records.filter(r => (r.date || r.created_at || r.CreatedAt || '').startsWith(monthStr));
-                document.getElementById('kRecords').textContent = thisMonth.length;
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+                const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+                const records = await pb.collection('jobs').getFullList({
+                    filter: `created >= '${monthStart} 00:00:00' && created <= '${monthEnd} 23:59:59'`
+                });
+                document.getElementById('kRecords').textContent = records.length;
             } catch (e) { document.getElementById('kRecords').textContent = '—'; }
 
             try {
-                const logs = await pb.collection('audit_logs').getFullList();
-                const backupLogs = logs.filter(l => l.action === 'db_backup');
-                if (backupLogs.length > 0) {
-                    backupLogs.sort((a,b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
-                    const lastDate = new Date(backupLogs[0].timestamp || backupLogs[0].created_at);
+                const logs = await pb.collection('audit_logs').getFullList({ filter: `action='db_backup'`, sort: '-timestamp' });
+                if (logs.length > 0) {
+                    const lastDate = new Date(logs[0].timestamp || logs[0].created_at);
                     document.getElementById('kBackup').textContent = lastDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
                 } else {
                     document.getElementById('kBackup').textContent = 'ยังไม่เคย';

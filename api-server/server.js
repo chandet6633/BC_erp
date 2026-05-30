@@ -18,6 +18,8 @@ import { init as initNocoDB } from './lib/nocodb.js'
 import authRoutes from './routes/auth.js'
 import dataRoutes from './routes/data.js'
 import uploadRoutes from './routes/upload.js'
+import notifyRoutes from './routes/notify.js'
+import devRoutes from './routes/dev.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -50,6 +52,11 @@ app.use('/api/', apiLimiter)
 app.use('/api/auth', authRoutes)
 app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/notify', notifyRoutes)
+if (process.env.ENABLE_DEV_ROUTES === 'true') {
+    app.use('/api/dev', devRoutes)
+    console.warn('[Server] Dev routes enabled')
+}
 
 // ─── 404 fallback ───
 app.use('/api/*', (req, res) => {
@@ -68,6 +75,7 @@ async function start() {
     console.log('  BC AutoXperience — API Server')
     console.log('═══════════════════════════════════════')
     console.log(`  NocoDB:     ${process.env.NOCODB_URL || 'http://bctest-nocodb:8080'}`)
+    console.log(`  Noco Base:  ${process.env.NOCODB_BASE_TITLE || 'BC_ERP'}`)
     console.log(`  Port:       ${PORT}`)
     console.log(`  JWT Expiry: 24h`)
     console.log('')

@@ -1,30 +1,31 @@
 /**
- * Kanban Board — Drag-and-drop job status management.
- * Columns: รับงาน (open) → กำลังทำ (in_progress) → รอตรวจ (pending_review) → เสร็จ (closed)
+ * Kanban Board — Locked job status management.
+ * Columns: รับรถ/รอจัดช่าง (pending) → กำลังซ่อม (in_progress) → รอเก็บเงิน (qc_done) → เสร็จสิ้น (completed)
+ * Workflow is now strictly role-gated. Drag-and-drop is disabled.
  */
-import { fetchFullList, updateRecord } from '../services/pb.js'
+import { fetchFullList, createRecord, updateRecord, deleteRecord, uploadAttachment } from '../services/pb.js'
 import { postToStockLedger } from '../services/inventory.js'
-import { notifyJobCompleted } from '../services/telegram.js'
+import { notifyJobCompleted, notifyPaymentCollected } from '../services/telegram.js'
 import { getBranchFilter, getBranch, getCurrentUser } from '../services/auth.js'
 import { formatCurrency, showToast } from '../components/ui.js'
 import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
+import { isStockTrackedProduct } from '../utils/stock-rules.js'
+import { getMechanics } from './job-state.js'
 import '../assets/css/kanban.css'
 
 const COLUMNS = [
-    { id: 'open', label: 'รับงาน', color: '#3b82f6', icon: 'inbox' },
-    { id: 'in_progress', label: 'กำลังทำ', color: '#f59e0b', icon: 'build' },
-    { id: 'pending_review', label: 'รอตรวจ', color: '#8b5cf6', icon: 'fact_check' },
-    { id: 'closed', label: 'เสร็จ', color: '#22c55e', icon: 'check_circle' },
+    { id: 'pending', label: 'รับรถ/รอจัดช่าง', color: '#3b82f6', icon: 'inbox' },
+    { id: 'in_progress', label: 'กำลังซ่อม', color: '#f59e0b', icon: 'build' },
+    { id: 'qc_done', label: 'รอเก็บเงิน', color: '#8b5cf6', icon: 'fact_check' },
+    { id: 'completed', label: 'เสร็จสิ้น', color: '#22c55e', icon: 'check_circle' },
 ]
-
-let draggedCard = null
 
 export function initKanbanPage(container) {
     container.innerHTML = `
         <div class="page-header">
             <div class="page-title">
                 <span class="material-icons-outlined">view_kanban</span>
-                <h1>Kanban Board</h1>
+                <h1>สถานะงาน (Kanban Board)</h1>
             </div>
             <div class="toolbar-actions">
                 <button class="btn btn-sm btn-outline" id="btnRefreshKanban">
@@ -49,30 +50,328 @@ export function initKanbanPage(container) {
                 </div>
             `).join('')}
         </div>
+
+        <!-- Payment Modal -->
+        <div id="paymentModalOverlay" class="modal-overlay">
+            <div id="paymentModal" class="modal" style="width: 100%; max-width: 450px;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><span class="material-icons-outlined">payments</span> รับชำระเงินและปิดงาน</h2>
+                        <button class="btn-close" id="btnPaymentClose" style="background:none;border:none;cursor:pointer;"><span class="material-icons-outlined">close</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background: var(--color-surface); padding: var(--sp-3); border-radius: var(--radius-sm); margin-bottom: var(--sp-4); border: 1px solid var(--color-border);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                <span class="text-muted">เลขใบงาน:</span>
+                                <strong id="payJobNo">-</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                                <span class="text-muted">ลูกค้า:</span>
+                                <strong id="payCustomer">-</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size: 1.1rem;">
+                                <span>ยอดต้องชำระ:</span>
+                                <strong class="text-primary" id="payAmount">฿0.00</strong>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ช่องทางรับชำระ <span class="text-danger">*</span></label>
+                            <div id="payMethodsContainer">
+                                <div class="pay-row" style="display:flex; gap:8px; margin-bottom:8px;">
+                                    <select class="form-control pay-method-sel" style="flex:1;">
+                                        <option value="cash">เงินสด</option>
+                                        <option value="transfer">โอนเงิน / QR</option>
+                                        <option value="card">บัตรเครดิต</option>
+                                    </select>
+                                    <input type="number" class="form-control pay-amount-inp" placeholder="จำนวนเงิน" style="flex:1;" min="0">
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline" id="btnAddPayRow" style="margin-top:4px;">
+                                <span class="material-icons-outlined" style="font-size:16px;">add</span> เพิ่มช่องทางชำระ
+                            </button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">หลักฐานการชำระเงิน (สลิป)</label>
+                            <input type="file" id="paySlipInput" accept="image/*" class="form-control">
+                            <div id="payUploading" style="display:none; color:var(--color-primary); font-size:0.8rem; margin-top:4px;">กำลังอัพโหลด...</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" id="btnPaymentCancel">ยกเลิก</button>
+                        <button class="btn btn-primary" id="btnPaymentSubmit">ยืนยันรับเงินและปิดงาน</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     `
 
-    // Init drag listeners on columns
-    COLUMNS.forEach(col => {
-        const body = container.querySelector(`#col-${col.id}`)
-        body.addEventListener('dragover', handleDragOver)
-        body.addEventListener('dragenter', handleDragEnter)
-        body.addEventListener('dragleave', handleDragLeave)
-        body.addEventListener('drop', handleDrop)
+    container.querySelector('#btnRefreshKanban').addEventListener('click', () => loadKanbanData(container))
+    
+    // Payment Modal Setup
+    const paymentModalOverlay = container.querySelector('#paymentModalOverlay')
+    const closePayment = () => { 
+        paymentModalOverlay.classList.remove('show');
+        currentPayJob = null;
+        container.querySelector('#paySlipInput').value = '';
+    }
+    container.querySelector('#btnPaymentClose').addEventListener('click', closePayment)
+    container.querySelector('#btnPaymentCancel').addEventListener('click', closePayment)
+    container.querySelector('#btnPaymentSubmit').addEventListener('click', () => handlePaymentSubmit(container))
+    
+    container.querySelector('#btnAddPayRow')?.addEventListener('click', () => {
+        const c = container.querySelector('#payMethodsContainer')
+        const row = document.createElement('div')
+        row.className = 'pay-row'
+        row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;'
+        row.innerHTML = `
+            <select class="form-control pay-method-sel" style="flex:1;">
+                <option value="cash">เงินสด</option>
+                <option value="transfer">โอนเงิน / QR</option>
+                <option value="card">บัตรเครดิต</option>
+            </select>
+            <input type="number" class="form-control pay-amount-inp" placeholder="จำนวนเงิน" style="flex:1;" min="0">
+            <button class="btn btn-sm btn-danger btn-rm-pay"><span class="material-icons-outlined" style="font-size:16px;">close</span></button>
+        `
+        c.appendChild(row)
+        row.querySelector('.btn-rm-pay').addEventListener('click', () => row.remove())
     })
 
-    container.querySelector('#btnRefreshKanban').addEventListener('click', () => loadKanbanData(container))
+    // Listen for custom event
+    document.addEventListener('open-payment-modal', (e) => {
+        currentPayJob = e.detail.job
+        container.querySelector('#payJobNo').textContent = currentPayJob.job_no || '-'
+        container.querySelector('#payCustomer').textContent = currentPayJob.customer_name || '-'
+        container.querySelector('#payAmount').textContent = formatCurrency(currentPayJob.grand_total || 0)
+        
+        // Reset inputs
+        const pCont = container.querySelector('#payMethodsContainer')
+        if (pCont) {
+            pCont.innerHTML = `
+                <div class="pay-row" style="display:flex; gap:8px; margin-bottom:8px;">
+                    <select class="form-control pay-method-sel" style="flex:1;">
+                        <option value="cash">เงินสด</option>
+                        <option value="transfer">โอนเงิน / QR</option>
+                        <option value="card">บัตรเครดิต</option>
+                    </select>
+                    <input type="number" class="form-control pay-amount-inp" placeholder="จำนวนเงิน" style="flex:1;" min="0" value="${currentPayJob.grand_total || 0}">
+                </div>
+            `
+        }
+        
+        container.querySelector('#paySlipInput').value = ''
+        container.querySelector('#payUploading').style.display = 'none'
+        
+        paymentModalOverlay.classList.add('show')
+    })
+
     loadKanbanData(container)
 }
+
+let currentPayJob = null;
+let isProcessingPayment = false;
+
+async function handlePaymentSubmit(container) {
+    if (!currentPayJob) return
+    if (currentPayJob.status === 'completed' || currentPayJob.payment_status === 'paid') {
+        showToast('ใบงานนี้ถูกชำระเงินและปิดไปแล้ว', 'warning')
+        return
+    }
+    if (isProcessingPayment) return
+    isProcessingPayment = true
+
+    const fileInput = container.querySelector('#paySlipInput')
+    const submitBtn = container.querySelector('#btnPaymentSubmit')
+    const uploadLbl = container.querySelector('#payUploading')
+
+    submitBtn.disabled = true
+    if (fileInput.files.length > 0) uploadLbl.style.display = 'block'
+
+    try {
+        let slipUrl = null
+        if (fileInput.files.length > 0) {
+            slipUrl = await uploadAttachment(fileInput.files[0])
+        }
+
+        // BUG 6 FIX: Serialize Split Payments
+        const payRows = container.querySelectorAll('.pay-row')
+        const splits = []
+        let paySum = 0
+        payRows.forEach(row => {
+            const m = row.querySelector('.pay-method-sel').value
+            const a = parseFloat(row.querySelector('.pay-amount-inp').value) || 0
+            if (a > 0) {
+                splits.push({ method: m, amount: a })
+                paySum += a
+            }
+        })
+        
+        // If no split provided, default to the first method with full grand_total
+        if (splits.length === 0) {
+            // BUG 83 FIX: Validate that at least one payment row has a positive amount
+            const grandTotal = currentPayJob.grand_total || 0
+            if (grandTotal <= 0) {
+                showToast('ยอดชำระต้องมากกว่า 0', 'error')
+                submitBtn.disabled = false
+                isProcessingPayment = false
+                return
+            }
+            const fallbackMethod = container.querySelector('.pay-method-sel').value
+            splits.push({ method: fallbackMethod, amount: grandTotal })
+            paySum = grandTotal
+        }
+
+        const requiredTotal = Number(currentPayJob.grand_total || 0)
+        const paymentDiff = Math.round((paySum - requiredTotal) * 100) / 100
+        if (requiredTotal <= 0) {
+            showToast('ยอดชำระต้องมากกว่า 0', 'error')
+            return
+        }
+        if (paymentDiff < 0) {
+            showToast(`ยอดรับชำระยังขาด ${formatCurrency(Math.abs(paymentDiff))}`, 'error')
+            return
+        }
+        if (paymentDiff > 0) {
+            showToast(`ยอดรับชำระเกิน ${formatCurrency(paymentDiff)} กรุณาตรวจสอบ`, 'error')
+            return
+        }
+
+        const now = new Date()
+        const jobId = currentPayJob.id
+        const updateData = {
+            status: 'completed',
+            payment_status: 'paid',
+            payment_type: JSON.stringify(splits), // Store as JSON array
+            end_date: now.toISOString(),
+            work_ended_at: now.toISOString()
+        }
+        if (slipUrl) updateData.payment_slip = slipUrl
+
+        const jItems = await fetchFullList('job_items', { filter: `job_id='${sanitizeFilter(jobId)}'` })
+
+        // BUG 47 FIX: Only fetch needed products to prevent Frontend OOM on massive catalogs
+        const pIds = [...new Set(jItems.filter(ji => ji.type !== 'adhoc' && ji.product_id).map(ji => ji.product_id))]
+        let products = []
+        if (pIds.length > 0) {
+            // If more than 50 products, we should chunk, but a single job rarely has >50 items
+            const idFilter = pIds.map(id => `id='${sanitizeFilter(id)}'`).join('||')
+            products = await fetchFullList('products', { filter: `(${idFilter})`, requestKey: null })
+        }
+
+        const pMap = {}
+        products.forEach(p => { pMap[p.id] = p })
+
+        let totalCost = 0
+        const itemsForLedger = []
+        for (const ji of jItems) {
+            // BUG 2 FIX: Calculate ad-hoc item costs properly instead of defaulting to 0
+            let cost = 0
+            if (ji.type === 'adhoc') {
+                // BUG 44 FIX: Prevent malicious ad-hoc cost inflation
+                cost = parseFloat(ji.cost) || 0
+                if (cost < 0) cost = 0
+                const itemPrice = parseFloat(ji.unit_price || ji.price || 0)
+                if (cost > itemPrice) cost = itemPrice // Cost cannot exceed selling price for ad-hoc to prevent negative profit fraud
+            } else {
+                const prod = pMap[ji.product_id]
+                cost = parseFloat(ji.cost) || (prod ? (parseFloat(prod.cost) || 0) : 0)
+            }
+
+            totalCost += cost * (ji.qty || 0)
+
+            // Only post non-adhoc items to stock ledger
+            const trackStock = ji.type !== 'adhoc' && ji.product_id && (!pMap[ji.product_id] || isStockTrackedProduct(pMap[ji.product_id]))
+            if (trackStock && ji.qty) {
+                itemsForLedger.push({ product_id: ji.product_id, qty: ji.qty, unit_price: ji.unit_price || 0 })
+            }
+        }
+
+        const grandTotal = currentPayJob.grand_total || 0
+        const profit = grandTotal - totalCost
+        const jobNo = currentPayJob.job_no || jobId
+
+        updateData.total_cost = Math.round(totalCost * 100) / 100
+        updateData.profit = Math.round(profit * 100) / 100
+
+        // BUG 7 & 8 FIX: Atomic Try-Catch for Job, Financial Ledger, and Stock Ledger
+        let createdLedgers = []
+        try {
+            // First update job
+            await updateRecord('jobs', jobId, updateData)
+
+            const grandTotal = currentPayJob.grand_total || 0
+            if (grandTotal > 0 && splits.length > 0) {
+                const nowStr = new Date().toISOString()
+                
+                // Create multiple ledgers for split payments
+                for (const split of splits) {
+                    const ledgerRecord = await createRecord('financial_ledger', {
+                        date: nowStr.slice(0, 10),
+                        amount: split.amount,
+                        category: 'รายรับจากใบงาน',
+                        notes: `ชำระเงินใบงาน ${currentPayJob.job_no || jobId} (${split.method})`,
+                        receipt_url: slipUrl || '',
+                        branch_id: currentPayJob.branch_id || '',
+                        payment_type: split.method, // Resolved Bug 8: Using split.method directly
+                        excluded: false,
+                        verified: false,
+                        entry_type: 'revenue',
+                        is_confidential: false,
+                        reference_doc: currentPayJob.job_no || jobId
+                    })
+                    createdLedgers.push(ledgerRecord)
+                }
+            }
+
+            await postToStockLedger('JOB', jobNo, itemsForLedger, currentPayJob.branch_id || getBranch() || null)
+        } catch (dbErr) {
+            console.error('[Kanban] Payment transaction failed:', dbErr.message)
+            // Rollback ledgers if job update succeeded but ledgers failed, or vice versa (best effort)
+            for (const l of createdLedgers) {
+                await deleteRecord('financial_ledger', l.id).catch(() => {})
+            }
+            // Try to revert job status if it was updated
+            await updateRecord('jobs', jobId, { status: currentPayJob.status, payment_status: currentPayJob.payment_status }).catch(() => {})
+            
+            showToast('เกิดข้อผิดพลาดในการบันทึกบัญชี: ' + dbErr.message, 'error')
+            submitBtn.innerHTML = 'ยืนยันรับเงินและปิดงาน'
+            submitBtn.disabled = false
+            return
+        }
+        
+        showToast('รับชำระเงินและปิดงานเรียบร้อย', 'success')
+        container.querySelector('#paymentModalOverlay').classList.remove('show')
+        fileInput.value = ''
+        
+        // Notify — capture job data BEFORE clearing currentPayJob
+        const updatedJob = { ...currentPayJob, ...updateData }
+        notifyPaymentCollected(updatedJob, updatedJob.branch_id).catch(() => {})
+        notifyJobCompleted(updatedJob, updatedJob.branch_id).catch(() => {})
+        currentPayJob = null
+
+        loadKanbanData(container)
+    } catch (e) {
+        console.error('Payment submit failed:', e)
+        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error')
+    } finally {
+        isProcessingPayment = false
+        submitBtn.disabled = false
+        uploadLbl.style.display = 'none'
+    }
+}
+
+// Map mechanic ID to name
+let mechanicCache = {}
 
 function createJobCard(job) {
     const card = document.createElement('div')
     card.className = 'kanban-card'
-    card.draggable = true
     card.dataset.jobId = job.id
     card.dataset.status = job.status
 
     // Time elapsed since start_date
-    const startDate = new Date(job.start_date || job.updated || Date.now())
+    const startDate = new Date(job.start_date || job.UpdatedAt || Date.now())
     const elapsed = getElapsedLabel(startDate)
 
     // Priority badge
@@ -93,13 +392,20 @@ function createJobCard(job) {
         <div class="kanban-card-body">
             <div class="kanban-customer">
                 <span class="material-icons-outlined" style="font-size:14px;">person</span>
-                ${escapeHtml(job.customer_name) || 'ลูกค้าทั่วไป'}
+                ${job.cust_code ? `<span style="font-family:monospace;font-size:0.85rem;font-weight:600;">[${escapeHtml(job.cust_code)}]</span>` : (escapeHtml(job.customer_name) ? `<span style="font-size:0.8rem;">${escapeHtml(job.customer_name).slice(0,12)}…</span>` : 'ลูกค้าทั่วไป')}
             </div>
             <div class="kanban-plate">
                 <span class="material-icons-outlined" style="font-size:14px;">directions_car</span>
                 ${escapeHtml(job.plate) || '-'}
             </div>
             ${job.grand_total ? `<div class="kanban-amount">${formatCurrency(job.grand_total)}</div>` : ''}
+            
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+                ${job.payment_status ? `<span class="kanban-payment-badge ${job.payment_status}">${job.payment_status === 'paid' ? 'จ่ายแล้ว' : (job.payment_status === 'partial' ? 'มัดจำ' : 'ค้างชำระ')}</span>` : ''}
+                ${job.lead_mechanic_id ? `<span class="kanban-mechanic-badge"><span class="material-icons-outlined" style="font-size:12px;">engineering</span> ${escapeHtml(mechanicCache[job.lead_mechanic_id] || job.lead_mechanic_id)}</span>` : ''}
+                ${job.status === 'in_progress' ? `<span class="kanban-timer-badge"><span class="material-icons-outlined" style="font-size:12px;">timer</span> กำลังทำ</span>` : ''}
+                ${job.work_duration_minutes ? `<span class="kanban-timer-badge" style="background:#e0f2fe;color:#0284c7;"><span class="material-icons-outlined" style="font-size:12px;">schedule</span> ${job.work_duration_minutes} นาที</span>` : ''}
+            </div>
         </div>
         ${showBranch ? `
         <div class="kanban-branch-badge">
@@ -108,219 +414,56 @@ function createJobCard(job) {
         </div>` : ''}
         <div class="kanban-card-footer">
             <span class="kanban-elapsed">${elapsed}</span>
-            <a href="#/job?id=${job.id}" class="kanban-detail-link" title="ดูรายละเอียด">
-                <span class="material-icons-outlined" style="font-size:14px;">open_in_new</span>
-            </a>
+            <div class="kanban-actions">
+                ${renderActionButtons(job)}
+            </div>
         </div>
     `
 
-    // Drag events (desktop)
-    card.addEventListener('dragstart', (e) => {
-        draggedCard = card
-        card.classList.add('dragging')
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', job.id)
-    })
-
-    card.addEventListener('dragend', () => {
-        card.classList.remove('dragging')
-        draggedCard = null
-        document.querySelectorAll('.kanban-column-body').forEach(el => el.classList.remove('drag-over'))
-    })
-
-    // Touch drag-and-drop (mobile)
-    let touchTimer = null
-    let touchDragging = false
-    let touchClone = null
-    let startX = 0, startY = 0
-
-    card.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX
-        startY = e.touches[0].clientY
-        touchTimer = setTimeout(() => {
-            touchDragging = true
-            draggedCard = card
-            card.classList.add('dragging')
-
-            // Create floating clone
-            touchClone = card.cloneNode(true)
-            touchClone.style.cssText = `position:fixed;z-index:999;width:${card.offsetWidth}px;pointer-events:none;opacity:0.85;transform:rotate(2deg);box-shadow:0 8px 24px rgba(0,0,0,0.2);`
-            document.body.appendChild(touchClone)
-
-            // Vibrate feedback
-            if (navigator.vibrate) navigator.vibrate(30)
-        }, 300)
-    }, { passive: true })
-
-    card.addEventListener('touchmove', (e) => {
-        // Cancel long-press if finger moves too much before drag starts
-        if (!touchDragging && touchTimer) {
-            const dx = Math.abs(e.touches[0].clientX - startX)
-            const dy = Math.abs(e.touches[0].clientY - startY)
-            if (dx > 10 || dy > 10) {
-                clearTimeout(touchTimer)
-                touchTimer = null
-            }
-            return
-        }
-
-        if (!touchDragging) return
-        e.preventDefault()
-
-        const touch = e.touches[0]
-        if (touchClone) {
-            touchClone.style.left = (touch.clientX - 60) + 'px'
-            touchClone.style.top = (touch.clientY - 30) + 'px'
-        }
-
-        // Highlight drop target
-        document.querySelectorAll('.kanban-column-body').forEach(col => {
-            const rect = col.getBoundingClientRect()
-            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-                col.classList.add('drag-over')
-            } else {
-                col.classList.remove('drag-over')
-            }
+    // Action button listeners
+    const payBtn = card.querySelector('.btn-kanban-action.pay')
+    if (payBtn) {
+        payBtn.addEventListener('click', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            // Dispatch event to open payment modal (Phase 2)
+            document.dispatchEvent(new CustomEvent('open-payment-modal', { detail: { job } }))
         })
-    }, { passive: false })
+    }
 
-    card.addEventListener('touchend', (e) => {
-        clearTimeout(touchTimer)
-        touchTimer = null
-
-        if (touchClone) {
-            touchClone.remove()
-            touchClone = null
-        }
-
-        if (!touchDragging) return
-        touchDragging = false
-        card.classList.remove('dragging')
-
-        // Find drop target
-        const touch = e.changedTouches[0]
-        const dropTarget = document.querySelectorAll('.kanban-column-body')
-        let targetCol = null
-
-        dropTarget.forEach(col => {
-            col.classList.remove('drag-over')
-            const rect = col.getBoundingClientRect()
-            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
-                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-                targetCol = col
-            }
+    const editBtn = card.querySelector('.kanban-detail-link')
+    if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+            // Handled by generic href="#/job?id=..."
         })
-
-        if (targetCol && draggedCard) {
-            // Simulate drop
-            const fakeEvent = { preventDefault: () => {}, currentTarget: targetCol }
-            handleDrop(fakeEvent)
-        }
-        draggedCard = null
-    })
+    }
 
     return card
 }
 
-function handleDragOver(e) {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-}
-
-function handleDragEnter(e) {
-    e.preventDefault()
-    e.currentTarget.classList.add('drag-over')
-}
-
-function handleDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over')
-}
-
-async function handleDrop(e) {
-    e.preventDefault()
-    const column = e.currentTarget
-    column.classList.remove('drag-over')
-
-    if (!draggedCard) return
-
-    const jobId = draggedCard.dataset.jobId
-    const newStatus = column.dataset.status
-    const oldStatus = draggedCard.dataset.status
-
-    if (newStatus === oldStatus) return
-
-    // Optimistic: move card visually first
-    column.appendChild(draggedCard)
-    draggedCard.dataset.status = newStatus
-
-    // Update counts
-    updateColumnCounts()
-
-    // Persist to PocketBase
-    try {
-        const updateData = { status: newStatus }
-        if (newStatus === 'closed') {
-            updateData.end_date = new Date().toISOString()
-
-            // FIX #3 + #8: Calculate COGS, profit, and deduct stock on close
-            try {
-                const jItems = await fetchFullList('job_items', { filter: `job_id='${sanitizeFilter(jobId)}'` })
-                const products = await fetchFullList('products', { requestKey: null })
-                const pMap = {}
-                products.forEach(p => { pMap[p.id] = p })
-
-                let totalCost = 0
-                const itemsForLedger = []
-                for (const ji of jItems) {
-                    const prod = pMap[ji.product_id]
-                    const cost = prod ? (prod.cost || 0) : 0
-                    totalCost += cost * (ji.qty || 0)
-                    if (ji.product_id && ji.qty) {
-                        itemsForLedger.push({ product_id: ji.product_id, qty: ji.qty, unit_price: ji.unit_price || 0 })
-                    }
-                }
-
-                // Get job grand_total for profit calc
-                const jobData = await fetchFullList('jobs', { filter: `id='${sanitizeFilter(jobId)}'`, requestKey: null })
-                const grandTotal = jobData.length > 0 ? (jobData[0].grand_total || 0) : 0
-                const profit = grandTotal - totalCost
-
-                updateData.total_cost = Math.round(totalCost * 100) / 100
-                updateData.profit = Math.round(profit * 100) / 100
-
-                // Post to stock ledger (deduct items)
-                const jobNo = jobData.length > 0 ? jobData[0].job_no : jobId
-                await postToStockLedger('JOB', jobNo, itemsForLedger)
-
-                // A2: Telegram notification (fire-and-forget)
-                notifyJobCompleted({
-                    job_no: jobNo,
-                    plate: jobData[0]?.plate || '',
-                    customer_name: jobData[0]?.customer_name || '',
-                    grand_total: grandTotal
-                }).catch(() => {})
-            } catch (costErr) {
-                console.warn('[Kanban] Could not calculate cost/stock:', costErr.message)
-            }
-        }
-        await updateRecord('jobs', jobId, updateData)
-        showToast(`\u0e2d\u0e31\u0e1e\u0e40\u0e14\u0e17\u0e2a\u0e16\u0e32\u0e19\u0e30\u0e43\u0e1a\u0e07\u0e32\u0e19\u0e40\u0e1b\u0e47\u0e19 "${getStatusLabel(newStatus)}" \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08`, 'success')
-    } catch (err) {
-        console.error('Failed to update job status:', err)
-        showToast('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2d\u0e31\u0e1e\u0e40\u0e14\u0e17\u0e2a\u0e16\u0e32\u0e19\u0e30\u0e44\u0e14\u0e49', 'error')
-        // Rollback: move card back
-        const oldCol = document.querySelector(`#col-${oldStatus}`)
-        if (oldCol) {
-            oldCol.appendChild(draggedCard)
-            draggedCard.dataset.status = oldStatus
-            updateColumnCounts()
-        }
+function renderActionButtons(job) {
+    let buttons = ''
+    
+    // SA Payment Button
+    if (job.status === 'qc_done') {
+        buttons += `
+            <button class="btn-kanban-action pay">
+                <span class="material-icons-outlined" style="font-size:14px;">payments</span> เก็บเงิน
+            </button>
+        `
     }
+    
+    // Edit/View Button
+    buttons += `
+        <a href="#/job?id=${job.id}" class="kanban-detail-link" title="ดูรายละเอียด">
+            <span class="material-icons-outlined" style="font-size:18px;">open_in_new</span>
+        </a>
+    `
+    return buttons
 }
 
 function getStatusLabel(status) {
-    const labels = { open: 'รับงาน', in_progress: 'กำลังทำ', pending_review: 'รอตรวจ', closed: 'เสร็จ' }
+    const labels = { pending: 'รับรถ', in_progress: 'กำลังซ่อม', qc_done: 'รอเก็บเงิน', completed: 'เสร็จสิ้น' }
     return labels[status] || status
 }
 
@@ -347,14 +490,33 @@ function updateColumnCounts() {
 
 async function loadKanbanData(container) {
     try {
+        // Prepare mechanics cache
+        const mechs = await getMechanics()
+        mechs.forEach(m => { mechanicCache[m.id] = m.name || m.email })
+
         const branchFilter = getBranchFilter()
-        // Don't load cancelled jobs
-        let filter = `status!='cancelled'`
+        // We do client-side filtering for auto-archive to avoid NocoDB DateTime like (~) operator errors
+        let filter = `(status!='cancelled')`
         if (branchFilter) filter += ` && ${branchFilter}`
 
-        const jobs = await fetchFullList('jobs', { 
+        const allJobs = await fetchFullList('jobs', { 
             filter,
             sort: '-start_date'
+        })
+
+        // Auto-archive: hide closed jobs older than today
+        const todayStr = new Date().toISOString().split('T')[0]
+        const jobs = allJobs.filter(j => {
+            // Map legacy statuses
+            let s = j.status
+            if (s === 'open') s = 'pending'
+            if (s === 'pending_review') s = 'qc_done'
+            if (s === 'closed') s = 'completed'
+            j.status = s
+
+            if (j.status !== 'completed') return true
+            if (!j.end_date) return false
+            return j.end_date.startsWith(todayStr)
         })
 
         // Clear columns
@@ -365,9 +527,8 @@ async function loadKanbanData(container) {
 
         // Place jobs in columns
         jobs.forEach(job => {
-            // Map existing statuses to kanban columns
-            let status = job.status || 'open'
-            if (!COLUMNS.find(c => c.id === status)) status = 'open'
+            let status = job.status || 'pending'
+            if (!COLUMNS.find(c => c.id === status)) status = 'pending'
 
             const colBody = container.querySelector(`#col-${status}`)
             if (colBody) {
@@ -387,6 +548,17 @@ async function loadKanbanData(container) {
 
     } catch (e) {
         console.error('Kanban load error:', e)
-        showToast('ไม่สามารถโหลดข้อมูล Kanban ได้', 'error')
+        const errMsg = e?.message?.includes('403') 
+            ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล (403 Forbidden)'
+            : 'ไม่สามารถโหลดข้อมูล Kanban ได้: ' + (e?.message || 'ไม่ทราบสาเหตุ')
+        showToast(errMsg, 'error')
+        
+        // Show error state in all columns
+        COLUMNS.forEach(col => {
+            const body = container.querySelector(`#col-${col.id}`)
+            if (body && body.children.length === 0) {
+                body.innerHTML = '<div class="kanban-empty" style="color:var(--color-danger);"><span class="material-icons-outlined" style="font-size:24px;display:block;margin-bottom:4px;">error_outline</span>โหลดไม่สำเร็จ</div>'
+            }
+        })
     }
 }

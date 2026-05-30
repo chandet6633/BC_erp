@@ -113,9 +113,10 @@
         async function loadHR() {
             window.showLoading?.();
             try {
+                const past14Days = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) + ' 00:00:00';
                 const [users, attendance, leaves] = await Promise.all([
                     window.pb.collection('users').getFullList(),
-                    window.pb.collection('hr_attendance').getFullList(),
+                    window.pb.collection('hr_attendance').getFullList({ filter: `timestamp >= '${past14Days}'` }),
                     window.pb.collection('hr_leaves').getFullList()
                 ]);
 

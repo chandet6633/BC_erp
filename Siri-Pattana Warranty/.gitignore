@@ -1,8 +1,0 @@
-node_modules/
-.env
-.env.*
-!.env.example
-!.env.production.example
-data/*.json
-.reference/
-.video-tools/

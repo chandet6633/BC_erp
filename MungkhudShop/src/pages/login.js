@@ -9,25 +9,33 @@ import { loginByUsername, loginByPin } from '../services/auth.js'
 import { changePassword } from '@shared/nocodb-adapter.js'
 import { showToast } from '../components/ui.js'
 
-// Brute-force protection
+// BUG 34 FIX: Brute-force protection persisted in sessionStorage (survives page refresh)
 const MAX_ATTEMPTS = 5
 const LOCKOUT_DURATION = 60_000
 const LOCKOUT_WINDOW = 300_000
-let failedAttempts = []
-let lockedUntil = 0
+const LOCKOUT_KEY = 'mungkhud_lockout'
+const ATTEMPTS_KEY = 'mungkhud_attempts'
 
 function isLockedOut() {
-    if (Date.now() < lockedUntil) return true
-    failedAttempts = failedAttempts.filter(t => Date.now() - t < LOCKOUT_WINDOW)
+    const lockUntil = parseInt(sessionStorage.getItem(LOCKOUT_KEY) || '0', 10)
+    if (Date.now() < lockUntil) return true
+    // Prune old attempts outside window
+    const attempts = getAttempts().filter(t => Date.now() - t < LOCKOUT_WINDOW)
+    sessionStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts))
     return false
 }
 
+function getAttempts() {
+    try { return JSON.parse(sessionStorage.getItem(ATTEMPTS_KEY) || '[]') } catch { return [] }
+}
+
 function recordFailedAttempt() {
-    failedAttempts.push(Date.now())
-    failedAttempts = failedAttempts.filter(t => Date.now() - t < LOCKOUT_WINDOW)
-    if (failedAttempts.length >= MAX_ATTEMPTS) {
-        lockedUntil = Date.now() + LOCKOUT_DURATION
-        failedAttempts = []
+    let attempts = getAttempts().filter(t => Date.now() - t < LOCKOUT_WINDOW)
+    attempts.push(Date.now())
+    sessionStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts))
+    if (attempts.length >= MAX_ATTEMPTS) {
+        sessionStorage.setItem(LOCKOUT_KEY, String(Date.now() + LOCKOUT_DURATION))
+        sessionStorage.setItem(ATTEMPTS_KEY, '[]')
         return true
     }
     return false
@@ -39,8 +47,7 @@ let pinBuffer = ''
 
 const ROLE_OPTIONS = [
     { id: 'manager', label: 'ผู้จัดการ / เจ้าของ', icon: 'supervisor_account', color: '#C8A048' },
-    { id: 'mechanic', label: 'ช่าง', icon: 'engineering', color: '#16a34a' },
-    { id: 'admin', label: 'Admin', icon: 'admin_panel_settings', color: '#64748b' }
+    { id: 'sa',      label: 'SA (ผู้ดูแลสต็อก)',    icon: 'inventory_2',        color: '#2563eb' }
 ]
 
 export function initLoginPage(container) {
@@ -264,10 +271,19 @@ export function initLoginPage(container) {
         btn.addEventListener('click', () => selectRole(container, btn.dataset.role))
     })
     container.querySelectorAll('.pin-key[data-key]').forEach(btn => {
-        btn.addEventListener('click', () => pressKey(container, btn.dataset.key))
+        btn.addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(40)
+            pressKey(container, btn.dataset.key)
+        })
     })
-    container.querySelector('#pinBackBtn')?.addEventListener('click', () => clearPin(container))
-    container.querySelector('#pinOkBtn')?.addEventListener('click', () => submitPinLogin(container))
+    container.querySelector('#pinBackBtn')?.addEventListener('click', () => {
+        if (navigator.vibrate) navigator.vibrate(40)
+        clearPin(container)
+    })
+    container.querySelector('#pinOkBtn')?.addEventListener('click', () => {
+        if (navigator.vibrate) navigator.vibrate(40)
+        submitPinLogin(container)
+    })
     container.querySelector('#pinBackToRoles')?.addEventListener('click', () => {
         container.querySelector('#roleSelection').style.display = ''
         container.querySelector('#pinEntry').style.display = 'none'
@@ -349,7 +365,7 @@ async function submitLogin(container) {
         if (nowLocked) {
             errorEl.textContent = 'ลองผิดพลาดมากเกินไป — ระบบถูกล็อค 1 นาที'
         } else {
-            const remaining = MAX_ATTEMPTS - failedAttempts.length
+            const remaining = MAX_ATTEMPTS - getAttempts().length
             errorEl.textContent = `${e.message} (เหลืออีก ${remaining} ครั้ง)`
         }
         errorEl.style.display = 'block'
@@ -481,7 +497,7 @@ async function submitPinLogin(container) {
         if (nowLocked) {
             errorEl.textContent = 'ระบบถูกล็อค 1 นาที'
         } else {
-            const remaining = MAX_ATTEMPTS - failedAttempts.length
+            const remaining = MAX_ATTEMPTS - getAttempts().length
             errorEl.textContent = `PIN ไม่ถูกต้อง (เหลืออีก ${remaining} ครั้ง)`
         }
         errorEl.style.display = 'block'

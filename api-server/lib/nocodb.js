@@ -14,6 +14,7 @@
 
 const NOCODB_URL = process.env.NOCODB_URL || 'http://bctest-nocodb:8080'
 const NOCODB_TOKEN = process.env.NOCODB_TOKEN || ''
+const NOCODB_BASE_TITLE = process.env.NOCODB_BASE_TITLE || 'BC_ERP'
 
 // Table name → NocoDB table ID cache
 let tableIdMap = {}
@@ -29,7 +30,7 @@ function enqueueWrite(fn) {
 /**
  * Raw fetch to NocoDB with xc-token, includes retry logic for SQLITE_BUSY
  */
-async function nocoFetch(path, opts = {}, retries = 5, backoff = 100) {
+async function nocoFetch(path, opts = {}, retries = 15, backoff = 100) {
     try {
         const res = await fetch(`${NOCODB_URL}${path}`, {
             ...opts,
@@ -73,8 +74,8 @@ export async function init() {
         const wsId = ws.list[0].id
 
         const bases = await nocoFetch(`/api/v2/meta/workspaces/${wsId}/bases`)
-        const target = bases.list.find(b => b.title === 'BC_ERP') || bases.list[0]
-        if (!target) throw new Error('No bases found')
+        const target = bases.list.find(b => b.title === NOCODB_BASE_TITLE)
+        if (!target) throw new Error(`NocoDB base "${NOCODB_BASE_TITLE}" not found`)
         baseId = target.id
 
         const tables = await nocoFetch(`/api/v2/meta/bases/${baseId}/tables`)
@@ -82,17 +83,30 @@ export async function init() {
         for (const t of (tables.list || [])) {
             tableIdMap[t.title.toLowerCase()] = t.id
         }
-        console.log(`✅ NocoDB: ${Object.keys(tableIdMap).length} tables cached`)
+        console.log(`✅ NocoDB: ${target.title} / ${Object.keys(tableIdMap).length} tables cached`)
     } catch (err) {
         console.error('❌ NocoDB init failed:', err.message)
         throw err
     }
 }
 
+/**
+ * BUG 36 FIX: Table name aliases.
+ * The frontend and Express middleware use 'users' (legacy/PocketBase name).
+ * The actual NocoDB table may be named 'app_users'.
+ * This map transparently resolves the mismatch without touching frontend code.
+ */
+const TABLE_ALIASES = {
+    'system_settings': 'app_settings',
+}
+
 function resolveTable(name) {
-    const id = tableIdMap[name.toLowerCase()]
-    if (!id) throw Object.assign(new Error(`Table "${name}" not found`), { status: 404 })
-    return id
+    const resolved = TABLE_ALIASES[name.toLowerCase()] || name.toLowerCase();
+    const id = tableIdMap[resolved]
+    // Fallback: try original name if alias not found
+    const fallbackId = id || tableIdMap[name.toLowerCase()]
+    if (!fallbackId) throw Object.assign(new Error(`Table "${name}" not found`), { status: 404 })
+    return fallbackId
 }
 
 /**
@@ -185,7 +199,13 @@ export async function listRecords(table, { where, sort, fields, limit = 25, offs
     params.set('limit', String(fetchLimit))
     if (!dateFilters.length) params.set('offset', String(offset))
     if (cleanWhere) params.set('where', cleanWhere)
-    if (sort) params.set('sort', sort)
+    if (sort) {
+        // NocoDB v2 uses PascalCase for system columns
+        let cleanSort = sort.replace(/(^|,)(-?)id($|,)/ig, '$1$2Id$3')
+                            .replace(/(^|,)(-?)created($|,)/ig, '$1$2CreatedAt$3')
+                            .replace(/(^|,)(-?)updated($|,)/ig, '$1$2UpdatedAt$3')
+        params.set('sort', cleanSort)
+    }
     if (fields) params.set('fields', fields)
 
     const data = await nocoFetch(`/api/v2/tables/${tableId}/records?${params}`)

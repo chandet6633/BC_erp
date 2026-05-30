@@ -35,22 +35,34 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Content-Type must be multipart/form-data' })
         }
 
-        // Collect the raw body chunks
-        const chunks = []
-        for await (const chunk of req) {
-            chunks.push(chunk)
+        // BUG 16 FIX: Enforce 10MB Upload Limit
+        const contentLength = parseInt(req.headers['content-length'] || '0', 10)
+        if (contentLength > 10 * 1024 * 1024) {
+            return res.status(413).json({ error: 'ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 10MB)' })
         }
-        const body = Buffer.concat(chunks)
 
-        // Forward to NocoDB storage upload
+        // BUG 62 FIX: Prevent Arbitrary File Uploads (RCE/XSS) by validating Content-Type strictly
+        // NocoDB storage doesn't sanitize extensions. We must block dangerous MIME types.
+        if (
+            contentType.includes('text/html') || 
+            contentType.includes('application/x-httpd-php') ||
+            contentType.includes('application/javascript') ||
+            contentType.includes('application/x-sh') ||
+            contentType.includes('application/x-msdownload')
+        ) {
+            return res.status(415).json({ error: 'ประเภทไฟล์ไม่ได้รับอนุญาตให้ทำการอัปโหลดเพื่อความปลอดภัย' })
+        }
+
+        // BUG 16 FIX: Stream body directly to NocoDB without buffering in Node RAM (prevents OOM)
         const nocoRes = await fetch(`${NOCODB_URL}/api/v2/storage/upload`, {
             method: 'POST',
             headers: {
                 'xc-token': NOCODB_TOKEN,
                 'Content-Type': contentType,
-                'Content-Length': String(body.length)
+                'Content-Length': String(contentLength)
             },
-            body
+            body: req,
+            duplex: 'half' // Required for Node 18+ native fetch with stream bodies
         })
 
         if (!nocoRes.ok) {

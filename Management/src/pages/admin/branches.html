@@ -81,6 +81,31 @@
                     <div style="font-size:0.65rem;color:var(--surface-400);margin-top:4px">* ใช้สำหรับตรวจสอบว่าพนักงานลงเวลาจากตำแหน่งที่ถูกต้อง (รัศมี 500m)</div>
                 </div>
 
+                <div style="border-top:1px solid var(--surface-200);padding-top:14px;margin-top:14px">
+                    <div style="font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        <span class="material-icons-outlined" style="font-size:18px;color:#3b82f6;">send</span>
+                        Telegram Groups
+                    </div>
+                    <div class="form-group">
+                        <label>📋 Jobs Group Chat ID</label>
+                        <input type="text" id="bTgJobs" class="input" placeholder="-100xxxxxxxxx" />
+                        <div style="font-size:0.75rem;color:var(--surface-400);margin-top:3px;">
+                            แจ้งเตือน: มอบหมายงาน, QC เสร็จ, เก็บเงิน
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>👥 HR Group Chat ID</label>
+                        <input type="text" id="bTgHR" class="input" placeholder="-100xxxxxxxxx" />
+                        <div style="font-size:0.75rem;color:var(--surface-400);margin-top:3px;">
+                            แจ้งเตือน: ลาหยุด, สรุป HR รายวัน
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>🔢 Queue Group Chat ID <span style="font-size:0.7rem;color:var(--surface-300);">(สำรองสำหรับระบบคิว)</span></label>
+                        <input type="text" id="bTgQueue" class="input" placeholder="-100xxxxxxxxx" />
+                    </div>
+                </div>
+
                 <input type="hidden" id="bEditId" value="" />
                 <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
                     <button type="button" class="btn btn-outline btn-sm" id="cancelBtn">ยกเลิก</button>
@@ -140,10 +165,10 @@
                     }).length;
 
                     return `<tr>
-                        <td style="font-weight:600">${branchName}</td>
-                        <td style="color:var(--surface-500);font-size:var(--text-sm)">${branchLocation}</td>
-                        <td>${branchPhone}</td>
-                        <td>${hasGps ? `<span style="font-family:monospace;font-size:0.7rem;color:var(--success-600)" title="${lat}, ${lng}"><span class="material-icons-outlined" style="font-size:0.9rem;vertical-align:text-bottom">location_on</span> ตั้งแล้ว</span>` : '<span style="color:var(--surface-400);font-size:var(--text-xs)">ยังไม่ตั้ง</span>'}</td>
+                        <td style="font-weight:600">${window.escHtml(branchName)}</td>
+                        <td style="color:var(--surface-500);font-size:var(--text-sm)">${window.escHtml(branchLocation)}</td>
+                        <td>${window.escHtml(branchPhone)}</td>
+                        <td>${hasGps ? `<span style="font-family:monospace;font-size:0.7rem;color:var(--success-600)" title="${window.escHtml(lat)}, ${window.escHtml(lng)}"><span class="material-icons-outlined" style="font-size:0.9rem;vertical-align:text-bottom">location_on</span> ตั้งแล้ว</span>` : '<span style="color:var(--surface-400);font-size:var(--text-xs)">ยังไม่ตั้ง</span>'}</td>
                         <td><span class="emp-count"><span class="material-icons-outlined" style="font-size:14px">person</span> ${empCount}</span></td>
                         <td><span style="color:${isActive?'var(--success-600)':'var(--danger)'};font-weight:600;font-size:var(--text-xs)">${isActive?'เปิดใช้':'ปิด'}</span></td>
                         <td style="text-align:center">
@@ -182,6 +207,9 @@
             const phoneVal = document.getElementById('bPhone').value.trim();
             const latVal = document.getElementById('bLat').value.trim();
             const lngVal = document.getElementById('bLng').value.trim();
+            const tgJobsVal = document.getElementById('bTgJobs').value.trim();
+            const tgHRVal = document.getElementById('bTgHR').value.trim();
+            const tgQueueVal = document.getElementById('bTgQueue').value.trim();
             
             // Match NocoDB schema precisely to avoid 400 Bad Request
             const data = {
@@ -190,6 +218,9 @@
                 phone: phoneVal,
                 latitude: latVal,
                 longitude: lngVal,
+                tg_chat_jobs: tgJobsVal,
+                tg_chat_hr: tgHRVal,
+                tg_chat_queue: tgQueueVal,
                 is_active: true
             };
             
@@ -223,6 +254,9 @@
                 document.getElementById('bPhone').value = f(b, 'phone') || f(b, 'tel') || '';
                 document.getElementById('bLat').value = f(b, 'latitude') || f(b, 'lat') || '';
                 document.getElementById('bLng').value = f(b, 'longitude') || f(b, 'lng') || '';
+                document.getElementById('bTgJobs').value = f(b, 'tg_chat_jobs') || '';
+                document.getElementById('bTgHR').value = f(b, 'tg_chat_hr') || '';
+                document.getElementById('bTgQueue').value = f(b, 'tg_chat_queue') || '';
                 modal.classList.add('active');
             } catch (e) { alert('Error: ' + e.message); }
         };

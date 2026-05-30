@@ -11,10 +11,8 @@ Check the Antigravity knowledge base for these KIs:
 - **`bcauto-webapp-architecture`** — Full system architecture, services, schema, CSS system
 - **`bcauto-service-patterns`** — Copy-paste recipes for common tasks
 
-### 2. Read the Project READMEs
-- [`webapp/README.md`](./README.md) — System overview, stack, ports, quick start
-- [`webapp/api-server/README.md`](./api-server/README.md) — API routes, middleware, NocoDB client
-- [`webapp/Management/README.md`](./Management/README.md) — Frontend services, components, pages
+### 2. Read the Project README
+- [`webapp/README.md`](./README.md) — system overview, stack, ports, API routes, frontend services, and page map
 
 ### 3. Understand the Architecture
 ```
@@ -32,13 +30,13 @@ Browser → Nginx (/api/*) → Express API (JWT) → NocoDB (xc-token)
 
 | What Changed | Update This |
 |-------------|-------------|
-| New page or tool | `Management/README.md` (pages list), `registry.js`, `vite.config.js` |
-| New shared service | `Management/README.md` (services section) |
-| New API route | `api-server/README.md` (routes table) |
-| New NocoDB table or column | `Management/README.md` (schema section) |
-| New CSS class or component | `Management/README.md` (CSS section) |
-| New middleware or auth change | `api-server/README.md` |
-| Architecture change | `webapp/README.md` |
+| New page or tool | `README.md` (Management pages), `registry.js`, `vite.config.js` |
+| New shared service | `README.md` (Data and Auth / app sections) |
+| New API route | `README.md` (API Server routes table) |
+| New NocoDB table or column | `README.md` (Database section) |
+| New CSS class or component | `README.md` (Management CSS section) |
+| New middleware or auth change | `README.md` (API Server section) |
+| Architecture change | `README.md` |
 | New reusable pattern | Knowledge Item: `bcauto-service-patterns` |
 | Breaking change to existing service | Knowledge Item: `bcauto-webapp-architecture` |
 

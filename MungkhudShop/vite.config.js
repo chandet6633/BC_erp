@@ -16,7 +16,7 @@ export default defineConfig({
                 index: resolve(__dirname, 'src/index.html'),
             },
         },
-        outDir: resolve(__dirname, 'pb_public'),
+        outDir: resolve(__dirname, 'dist'),
         emptyOutDir: true,
     },
     server: {

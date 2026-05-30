@@ -4,13 +4,18 @@
  */
 const TOKEN = process.env.NOCODB_TOKEN;
 const BASE = process.env.NOCODB_URL;
+const BASE_TITLE = process.env.NOCODB_BASE_TITLE || 'BC_ERP';
 
 async function run() {
     // Find base
     const ws = await (await fetch(`${BASE}/api/v2/meta/workspaces`, { headers: { 'xc-token': TOKEN } })).json();
     const wsId = ws.list[0].id;
     const bases = await (await fetch(`${BASE}/api/v2/meta/workspaces/${wsId}/bases`, { headers: { 'xc-token': TOKEN } })).json();
-    const baseId = (bases.list.find(b => b.title === 'BC_ERP') || bases.list[0]).id;
+    const targetBase = bases.list.find(b => b.title === BASE_TITLE);
+    if (!targetBase) {
+        throw new Error(`Base "${BASE_TITLE}" not found`);
+    }
+    const baseId = targetBase.id;
 
     // Check if table already exists
     const tables = await (await fetch(`${BASE}/api/v2/meta/bases/${baseId}/tables`, { headers: { 'xc-token': TOKEN } })).json();
@@ -33,6 +38,9 @@ async function run() {
                 { title: 'notes', uidt: 'SingleLineText' },
                 { title: 'payment_type', uidt: 'SingleLineText' },
                 { title: 'branch_id', uidt: 'SingleLineText' },
+                { title: 'receipt_url', uidt: 'LongText' },
+                { title: 'reference_doc', uidt: 'SingleLineText' },
+                { title: 'excluded', uidt: 'Checkbox' },
                 { title: 'verified', uidt: 'Checkbox' },
                 { title: 'verified_by', uidt: 'SingleLineText' },
                 { title: 'verified_at', uidt: 'DateTime' },

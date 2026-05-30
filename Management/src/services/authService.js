@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { pb } from './pocketbase.js';
+import { getAuthToken } from '@shared/nocodb-adapter.js';
 
 /**
  * AuthService handles authentication, user identity, and role-based permissions.
@@ -32,7 +33,7 @@ export const AuthService = {
                     email: model.email,
                     name: sessionStorage.getItem('bcauto_user_name') || model.display_name || model.name || 'Admin',
                     role: sessionStorage.getItem('bcauto_role') || model.role || 'sa',
-                    branch: model.branch || null
+                    branch: model.branch || model.branch_id || null
                 };
             }
         }
@@ -125,7 +126,7 @@ export const AuthService = {
                 sessionStorage.setItem('bcauto_role', employee.role || 'sa');
                 sessionStorage.setItem('bcauto_user_name', employee.name);
                 sessionStorage.setItem('bcauto_user_id', employee.id);
-                localStorage.setItem('bcauto_branch', employee.branch);
+                localStorage.setItem('bcauto_branch', employee.branch || employee.branch_id || '');
                 window['AuditService']?.log('login_employee', `Employee logged in via PIN: ${employee.name}`, 'auth');
                 return { success: true, employee };
             }
@@ -193,7 +194,7 @@ export const AuthService = {
                 // For Admins/Owners, respect the branch they explicitly selected via UI
                 b = uiBranch;
             } else {
-                b = pb.authStore.model.branch || uiBranch || 'all';
+                b = pb.authStore.model.branch || pb.authStore.model.branch_id || uiBranch || 'all';
             }
         }
 
@@ -266,7 +267,12 @@ export const AuthService = {
             role: user.role,
             branch_id: user.branch || 'main',
             issued_at: Date.now(),
-            jwt: localStorage.getItem('bcauto_jwt') || sessionStorage.getItem('bcauto_jwt') || ''
+            jwt: getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || localStorage.getItem('mungkhud_jwt')
+                || sessionStorage.getItem('mungkhud_jwt')
+                || ''
         };
 
         try {

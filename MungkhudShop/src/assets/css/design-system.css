@@ -83,15 +83,33 @@
     --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Font stacks */
-    --font-heading: 'Cormorant', 'Noto Serif Thai', serif;
-    --font-sans: 'Montserrat', 'Noto Sans Thai', sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-heading: 'Cormorant', Georgia, 'Times New Roman', serif;
+    --font-sans: 'Noto Sans Thai', 'Segoe UI', Tahoma, Arial, sans-serif;
+    --font-mono: Consolas, 'Courier New', monospace;
 
     /* Z-index layers */
     --z-sidebar: 100;
     --z-topnav: 90;
     --z-modal: 200;
     --z-toast: 300;
+}
+
+.material-icons-outlined {
+    font-family: 'Material Icons Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    user-select: none;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
 }
 
 /* ── Dark Mode ── */
@@ -357,4 +375,4 @@ h3 {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
+}

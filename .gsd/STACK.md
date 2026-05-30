@@ -80,8 +80,8 @@
 ## Build Pipeline
 
 ```
-Management/src/  ──→  npm run build  ──→  Management/pb_public/
-MungkhudShop/src/ ──→  npm run build  ──→  MungkhudShop/pb_public/
+Management/src/  ──→  npm run build  ──→  Management/dist/
+MungkhudShop/src/ ──→  npm run build  ──→  MungkhudShop/dist/
                                               ↓
                                     Docker volume mount
                                               ↓

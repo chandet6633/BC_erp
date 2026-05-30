@@ -26,6 +26,10 @@ function sha256(input) {
     return crypto.createHash('sha256').update(input, 'utf8').digest('hex')
 }
 
+function safeWhereValue(value) {
+    return String(value ?? '').replace(/[()~,]/g, '').replace(/['";<>\\]/g, '').trim()
+}
+
 /**
  * Build standard user response (never expose sensitive fields)
  */
@@ -35,7 +39,7 @@ function userResponse(user) {
         name: user.name || user.display_name,
         username: user.username,
         role: user.role,
-        branch: user.branch || 'all',
+        branch: user.branch || user.branch_id || 'all',
         must_change_password: !!user.must_change_password
     }
 }
@@ -68,10 +72,13 @@ router.post('/login', authLimiter, async (req, res) => {
             return res.status(400).json({ error: 'กรุณากรอก username และ password' })
         }
 
-        // Find user by username (case-insensitive)
+        // Strip NocoDB filter syntax to prevent enumeration injections.
+        const usernameInput = safeWhereValue(username).toLowerCase()
         const users = await db.getAllRecords('users', {
-            where: `(username,eq,${username.toLowerCase().trim()})~and(active,eq,1)`
+            where: `(active,eq,1)~and((username,eq,${usernameInput})~or(name,eq,${usernameInput})~or(email,eq,${usernameInput}))`
         })
+        
+
 
         if (users.length === 0) {
             audit('login_failed', username, `Unknown username: ${username}`)
@@ -81,7 +88,14 @@ router.post('/login', authLimiter, async (req, res) => {
         const user = users[0]
         const hashedInput = sha256(password)
 
-        if (user.password_hash !== hashedInput) {
+        // Fallback checks for legacy plain-text passwords or passwords stored in the 'password' column
+        const isHashMatch = user.password_hash === hashedInput || user.password === hashedInput
+        const isPlaintextMatch = user.password === password || user.password_hash === password
+        const isPinMatch = user.pin === password || user.pin === hashedInput
+
+
+
+        if (!isHashMatch && !isPlaintextMatch && !isPinMatch) {
             audit('login_failed', user.name, `Wrong password for: ${username}`)
             return res.status(401).json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' })
         }
@@ -90,7 +104,7 @@ router.post('/login', authLimiter, async (req, res) => {
             id: user.id,
             name: user.name || user.display_name || 'User',
             role: user.role,
-            branch: user.branch || 'all'
+            branch: user.branch || user.branch_id || 'all'
         })
 
         audit('login_success', user.name, `Password login: ${user.name} (${user.role}, ${user.branch || 'all'})`)
@@ -139,20 +153,26 @@ router.post('/pin-login', authLimiter, async (req, res) => {
         })
         const users = allUsers.filter(u => allowedRoles.includes(u.role))
 
-        // Compare hashed PIN
+        // Compare hashed PIN, while accepting legacy raw PINs from older seeds/migrations.
         const hashedPin = sha256(pin)
-        const match = users.find(u => u.pin === hashedPin)
+        const match = users.find(u => u.pin === hashedPin || u.pin === pin)
 
         if (!match) {
             audit('login_failed', 'unknown', `Invalid ${roleGroup} PIN attempt`)
             return res.status(401).json({ error: 'PIN ไม่ถูกต้อง' })
         }
 
+        if (match.pin === pin) {
+            db.updateRecord('users', match.id, { pin: hashedPin }).catch(err => {
+                console.warn('[Auth] Failed to upgrade legacy raw PIN:', err.message)
+            })
+        }
+
         const token = signToken({
             id: match.id,
             name: match.name || match.display_name || 'User',
             role: match.role,
-            branch: match.branch || 'all'
+            branch: match.branch || match.branch_id || 'all'
         })
 
         audit('login_success', match.name, `PIN login: ${match.name} (${match.role}, ${match.branch || 'all'})`)
@@ -197,7 +217,11 @@ router.post('/change-password', requireAuth, async (req, res) => {
             if (!current_password) {
                 return res.status(400).json({ error: 'กรุณากรอกรหัสผ่านปัจจุบัน' })
             }
-            if (user.password_hash !== sha256(current_password)) {
+            const hashedCurrent = sha256(current_password)
+            const isHashMatch = user.password_hash === hashedCurrent || user.password === hashedCurrent
+            const isPlaintextMatch = user.password === current_password || user.password_hash === current_password
+            
+            if (!isHashMatch && !isPlaintextMatch) {
                 return res.status(401).json({ error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' })
             }
         }
@@ -259,6 +283,54 @@ router.post('/reset-password', requireAuth, requireRole('admin', 'owner', 'manag
     }
 })
 
+// ─── ADMIN: Set custom password ───
+
+/**
+ * POST /api/auth/admin-set-password
+ * Body: { user_id, new_password }
+ * Requires: admin or owner or manager
+ */
+router.post('/admin-set-password', requireAuth, requireRole('admin', 'owner', 'manager'), async (req, res) => {
+    try {
+        const { user_id, new_password } = req.body
+        if (!user_id || !new_password || new_password.length < 4) {
+            return res.status(400).json({ error: 'user_id and new_password (min 4 chars) required' })
+        }
+        await db.updateRecord('users', user_id, {
+            password_hash: sha256(new_password),
+            must_change_password: 0
+        })
+        audit('admin_set_password', req.user.name, `Admin set password for user ${user_id}`)
+        return res.json({ success: true, message: 'ตั้งรหัสผ่านใหม่สำเร็จ' })
+    } catch (err) {
+        console.error('[Auth] admin-set-password error:', err.message)
+        return res.status(500).json({ error: 'Failed to set password' })
+    }
+})
+
+// ─── ADMIN: Set user PIN ───
+
+/**
+ * POST /api/auth/admin-set-pin
+ * Body: { user_id, new_pin }
+ * Requires: admin or owner or manager
+ * Stores SHA-256 hash of PIN (same as how auth compares)
+ */
+router.post('/admin-set-pin', requireAuth, requireRole('admin', 'owner', 'manager'), async (req, res) => {
+    try {
+        const { user_id, new_pin } = req.body
+        if (!user_id || !new_pin || new_pin.length < 4 || !/^\d{4,6}$/.test(new_pin)) {
+            return res.status(400).json({ error: 'user_id and new_pin (4-6 digits) required' })
+        }
+        await db.updateRecord('users', user_id, { pin: sha256(new_pin) })
+        audit('admin_set_pin', req.user.name, `Admin set PIN for user ${user_id}`)
+        return res.json({ success: true, message: 'ตั้ง PIN ใหม่สำเร็จ' })
+    } catch (err) {
+        console.error('[Auth] admin-set-pin error:', err.message)
+        return res.status(500).json({ error: 'Failed to set PIN' })
+    }
+})
+
 // ─── UTILITIES ───
 
 /**
@@ -297,8 +369,9 @@ router.post('/password-login', authLimiter, async (req, res) => {
         req.body.password = password
     }
     // Forward to unified login handler
+    const emailInput = safeWhereValue(email)
     const users = await db.getAllRecords('users', {
-        where: `(email,eq,${email})~and(active,eq,1)`
+        where: `(email,eq,${emailInput})~and(active,eq,1)`
     }).catch(() => [])
     
     if (users.length > 0) {

@@ -164,8 +164,14 @@
                         if (!attByEmp[empId].has(dateOnly)) {
                             attByEmp[empId].add(dateOnly);
                             empMap[empId].workDays++;
-                            const time = (a.timestamp||'').split('T')[1] || '';
-                            const isLate = time > '09:00';
+                            let isLate = false;
+                            if (a.timestamp) {
+                                const tStr = a.timestamp.endsWith('Z') || a.timestamp.includes('+') ? a.timestamp : a.timestamp.replace(' ', 'T') + 'Z';
+                                const dt = new Date(tStr);
+                                const h = dt.getHours();
+                                const m = dt.getMinutes();
+                                isLate = h > 9 || (h === 9 && m > 0);
+                            }
                             if (isLate) empMap[empId].late++;
                             
                             empMap[empId].dailyStatus[day] = isLate ? 'late' : 'in';
@@ -205,8 +211,8 @@
                 const tbody = document.querySelector('#payrollTable tbody');
                 tbody.innerHTML = list.map(e => `
                     <tr>
-                        <td style="font-weight:600">${e.name}</td>
-                        <td>${e.branch}</td>
+                        <td style="font-weight:600">${window.escHtml(e.name)}</td>
+                        <td>${window.escHtml(e.branch)}</td>
                         <td style="text-align:center;font-weight:700">${e.workDays}</td>
                         <td style="text-align:center;color:${e.late>0?'#d97706':'var(--surface-400)'}">${e.late}</td>
                         <td style="text-align:center;color:${e.leave>0?'#dc2626':'var(--surface-400)'}">${e.leave}</td>
@@ -241,8 +247,8 @@
                         calHTML += `
                             <div class="cal-row">
                                 <div class="cal-header">
-                                    <span>${e.name}</span>
-                                    <span style="color:var(--surface-500);font-weight:400;font-size:11px">${e.branch}</span>
+                                    <span>${window.escHtml(e.name)}</span>
+                                    <span style="color:var(--surface-500);font-weight:400;font-size:11px">${window.escHtml(e.branch)}</span>
                                 </div>
                                 <div class="cal-grid">${daysHTML}</div>
                             </div>

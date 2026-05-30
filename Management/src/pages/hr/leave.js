@@ -63,8 +63,9 @@ async function loadRoster() {
             onDeptChange(deptSel.value, 'nameSelect');
             
             const nameSel = document.getElementById('nameSelect');
-            if (employeeRoster.some(e => e.name === currentUser.name)) {
-                nameSel.value = currentUser.name;
+            const match = employeeRoster.find(e => e.name === currentUser.name || e.id === currentUser.id);
+            if (match) {
+                nameSel.value = match.id;
                 nameSel.disabled = true;
                 namesLoaded = true;
                 updateButtons();
@@ -98,8 +99,14 @@ function onDeptChange(deptValue, nameSelectId) {
         updateButtons();
         return;
     }
-    const names = employeeRoster.filter(e => e.branch_id === deptValue).map(e => e.name).sort();
-    populateSelect(nameSel, names, '– เลือกชื่อ –');
+    const emps = employeeRoster.filter(e => e.branch_id === deptValue).sort((a,b) => a.name.localeCompare(b.name));
+    nameSel.innerHTML = `<option value="">– เลือกชื่อ –</option>`;
+    emps.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id; 
+        opt.textContent = e.name;
+        nameSel.appendChild(opt);
+    });
     nameSel.disabled = false;
     namesLoaded = true;
     updateButtons();
@@ -144,10 +151,13 @@ document.getElementById('btnSubmit').addEventListener('click', async () => {
     updateButtons();
     
     try {
-        // Assume employee_id is name for now
+        // BUG 7 FIX: Map selected ID back to employee name for display, but save the actual unique ID
+        const selectedId = document.getElementById('nameSelect').value;
+        const emp = employeeRoster.find(e => e.id === selectedId);
+        
         await window.pb.collection('hr_leaves').create({
-            employee_id: name,
-            name: name,
+            employee_id: selectedId,
+            name: emp ? emp.name : selectedId,
             start_date: start,
             end_date: end,
             reason: reason,

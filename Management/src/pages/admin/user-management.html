@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     <!-- Design System -->
     <link rel="stylesheet" href="../../assets/css/design-system.css" />
     <link rel="stylesheet" href="../../assets/css/page-header.css" />
@@ -320,13 +321,164 @@
             display: block;
             color: var(--danger);
         }
+
+        /* Main admin theme alignment */
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        body.user-management-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 30%, #dbeafe 60%, #eff6ff 100%);
+            color: var(--surface-900);
+        }
+
+        .user-management-shell {
+            max-width: 1120px;
+            padding: var(--space-8) var(--space-5);
+            margin: 0 auto;
+        }
+
+        .page-header {
+            padding-top: var(--space-5);
+            margin-bottom: var(--space-5);
+        }
+
+        .page-header .page-title {
+            gap: var(--space-3);
+        }
+
+        .page-title-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-lg);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: var(--primary-600);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
+        }
+
+        .user-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.18) !important;
+            border-radius: var(--radius-xl);
+            box-shadow: 0 20px 40px -24px rgba(15, 23, 42, 0.28);
+            overflow: hidden;
+        }
+
+        .user-table th {
+            background: rgba(248, 250, 252, 0.92);
+            padding: var(--space-4);
+            color: var(--surface-600);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .user-table td {
+            padding: var(--space-4);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(255, 255, 255, 0.62);
+        }
+
+        .user-table tr:hover td {
+            background: rgba(248, 250, 252, 0.94);
+        }
+
+        .user-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .stat-cards {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            box-shadow: 0 14px 30px -24px rgba(15, 23, 42, 0.42);
+        }
+
+        .stat-card .label,
+        .branch-badge,
+        .role-badge {
+            font-weight: 700;
+        }
+
+        .role-badge,
+        .branch-badge {
+            padding: 4px 10px;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 30px;
+            padding: 0;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.72);
+            border-color: rgba(148, 163, 184, 0.25);
+            color: var(--surface-600);
+            font-size: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn .material-icons-outlined {
+            font-size: 16px;
+        }
+
+        .action-btn::before {
+            content: 'tune';
+            font-family: 'Material Icons Outlined';
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .action-btn[onclick^="editUser"]::before { content: 'edit'; }
+        .action-btn[onclick^="resetPin"]::before { content: 'key'; }
+        .action-btn[onclick^="resetPassword"]::before { content: 'lock_reset'; }
+        .action-btn[onclick^="toggleActive"]::before { content: 'block'; }
+        .action-btn[onclick^="deleteUser"]::before { content: 'delete'; }
+
+        .action-btn:hover {
+            background: #fff;
+            border-color: rgba(59, 130, 246, 0.35);
+            color: var(--primary-600);
+            transform: translateY(-1px);
+        }
+
+        .status-dot {
+            margin-right: 8px;
+        }
+
+        .reg-modal {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 32px 64px -20px rgba(15, 23, 42, 0.32);
+        }
+
+        @media (max-width: 760px) {
+            .user-management-shell {
+                padding: var(--space-5) var(--space-3);
+            }
+
+            .stat-cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
     </style>
-    \n
-    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
 </head>
 
-<body class="page-bg">
-    <div class="container" style="max-width: 1000px; padding: 20px;">
+<body class="page-bg user-management-page">
+    <div class="container user-management-shell">
         <div class="page-header">
             <div>
                 <h1 class="page-title">👥 จัดการผู้ใช้งาน</h1>
@@ -359,7 +511,7 @@
         </div>
 
         <!-- User Table -->
-        <div class="card p-0" style="overflow: hidden; border: 1px solid var(--surface-200);">
+        <div class="card p-0 user-card">
             <div style="overflow-x: auto;">
                 <table class="user-table">
                     <thead>
@@ -502,6 +654,9 @@
         import { AuthService } from '../../services/authService.js';
         import { AuditService } from '../../services/auditService.js';
 
+        document.querySelector('.page-title').innerHTML = '<span class="page-title-icon"><span class="material-icons-outlined">manage_accounts</span></span> จัดการผู้ใช้งาน';
+        document.getElementById('addUserBtn').innerHTML = '<span class="material-icons-outlined" style="font-size:18px;">person_add</span> ลงทะเบียนผู้ใช้ใหม่';
+
         // Security Gate
         if (!AuthService.hasRole(['admin', 'manager', 'owner'])) {
             AuthService.requireRole(['admin', 'manager', 'owner']);
@@ -542,7 +697,7 @@
                 document.getElementById('statTotal').textContent = users.length;
                 document.getElementById('statActive').textContent = users.filter(u => u.active !== false).length;
                 document.getElementById('statAdmin').textContent = users.filter(u => ['admin', 'owner'].includes(u.role)).length;
-                document.getElementById('statEmployee').textContent = users.filter(u => u.role === 'sa' || u.role === 'mechanic').length;
+                document.getElementById('statEmployee').textContent = users.filter(u => ['sa', 'mechanic', 'manager'].includes(u.role)).length;
 
                 userBody.innerHTML = '';
                 if (users.length === 0) {
@@ -563,22 +718,22 @@
                             ${isActive ? 'ใช้งาน' : 'ปิด'}
                         </td>
                         <td style="font-weight: 600;">
-                            ${user.name || user.display_name || '-'}
+                            ${window.escHtml(user.name || user.display_name || '-')}
                             ${isSelf ? '<span style="font-size:0.7rem;color:var(--primary-500);display:block;">คุณ</span>' : ''}
                         </td>
-                        <td style="color: var(--surface-500); font-size: var(--text-sm);">${user.email || '-'}</td>
-                        <td><span class="role-badge ${roleClass}">${user.role || 'sa'}</span></td>
-                        <td><span class="branch-badge">${branchLabel}</span></td>
+                        <td style="color: var(--surface-500); font-size: var(--text-sm);">${window.escHtml(user.email || '-')}</td>
+                        <td><span class="role-badge ${roleClass}">${window.escHtml(user.role || 'sa')}</span></td>
+                        <td><span class="branch-badge">${window.escHtml(branchLabel)}</span></td>
                         <td style="font-family: monospace; color: var(--surface-400);">${user.pin ? '••••' + user.pin.slice(-2) : '-'}</td>
                         <td style="text-align: center;">
                             <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
                                 <button class="action-btn" onclick="editUser('${user.id}')" title="แก้ไข">✏️</button>
-                                <button class="action-btn warning" onclick="resetPin('${user.id}', '${user.name || ''}')" title="รีเซ็ต PIN">🔑</button>
-                                <button class="action-btn warning" onclick="resetPassword('${user.id}', '${user.name || ''}')" title="รีเซ็ตรหัสผ่าน">🔒</button>
+                                <button class="action-btn warning" onclick="resetPin('${user.id}', '${(user.name || '').replace(/'/g, "\\'")}')" title="รีเซ็ต PIN">🔑</button>
+                                <button class="action-btn warning" onclick="resetPassword('${user.id}', '${(user.name || '').replace(/'/g, "\\'")}')" title="รีเซ็ตรหัสผ่าน">🔒</button>
                                 <button class="action-btn ${isActive ? 'danger' : ''}" onclick="toggleActive('${user.id}', ${isActive})" title="${isActive ? 'ปิดการใช้งาน' : 'เปิดการใช้งาน'}">
                                     ${isActive ? '🚫' : '✅'}
                                 </button>
-                                ${!isSelf ? `<button class="action-btn danger" onclick="deleteUser('${user.id}', '${(user.name || '').replace("'", "\\'")}')" title="ลบ">🗑️</button>` : ''}
+                                ${!isSelf ? `<button class="action-btn danger" onclick="deleteUser('${user.id}', '${(user.name || '').replace(/'/g, "\\'")}')" title="ลบ">🗑️</button>` : ''}
                             </div>
                         </td>
                     `;

@@ -321,7 +321,9 @@ async function saveEdit() {
     try {
         const expense = allExpenses.find(e => e.id === editingId);
         let existingAtts = [];
-        try { existingAtts = JSON.parse(expense?.attachments || '[]'); } catch {}
+        try { existingAtts = JSON.parse(expense?.attachments || '[]'); } catch {
+            existingAtts = [];
+        }
 
         // Upload new files if any
         const editFileInput = document.getElementById('editFiles');

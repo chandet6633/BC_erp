@@ -37,7 +37,9 @@ class AppShell {
             if (typeof service.init === 'function') {
                 try {
                     await service.init();
-                } catch (e) { }
+                } catch {
+                    // ConfigService is optional during early boot; keep shell rendering.
+                }
             }
         }
 

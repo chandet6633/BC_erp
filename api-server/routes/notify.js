@@ -1,7 +1,14 @@
 import express from 'express'
 import { getAllRecords } from '../lib/nocodb.js'
+import { requireAuth } from '../middleware/jwt.js'
 
 const router = express.Router()
+
+router.use(requireAuth)
+
+function safeWhereValue(value) {
+    return String(value ?? '').replace(/[()~,]/g, '').replace(/['";<>\\]/g, '').trim()
+}
 
 // Cache for settings
 let settingsCache = null
@@ -26,7 +33,7 @@ async function getTelegramConfig() {
 async function getBranchChatId(branchCode, channel = 'jobs') {
     if (!branchCode) return null
     try {
-        const branches = await getAllRecords('branches', { where: `(code,eq,${branchCode})` })
+        const branches = await getAllRecords('branches', { where: `(code,eq,${safeWhereValue(branchCode)})` })
         if (branches.length > 0) {
             const b = branches[0]
             if (channel === 'jobs' && b.tg_chat_jobs) return b.tg_chat_jobs
@@ -170,7 +177,10 @@ router.post('/low-stock', async (req, res) => {
         const { products, branchCode } = req.body
         if (!products || products.length === 0) return res.json({ success: true, message: 'No products' })
 
-        const items = products.slice(0, 10).map(p => `  • ${p.name} (คงเหลือ: ${p.qty})`).join('\n')
+        const items = products.slice(0, 10).map(p => {
+            const threshold = p.minQty != null ? ` / Min: ${p.minQty}` : ''
+            return `  • ${p.name} (คงเหลือ: ${p.qty}${threshold})`
+        }).join('\n')
         const message = `🚨 <b>แจ้งเตือนสินค้าใกล้หมด</b>\n\n`
             + `พบ ${products.length} รายการที่ต่ำกว่าขั้นต่ำ:\n`
             + `${items}\n`

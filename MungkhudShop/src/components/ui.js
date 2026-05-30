@@ -3,6 +3,20 @@
  * Reusable UI helper functions.
  */
 
+// BUG 25 FIX: HTML Sanitizer to prevent XSS
+export function escapeHTML(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
 /**
  * Create a tabbed interface inside a container.
  * @param {HTMLElement} container
@@ -41,28 +55,32 @@ export function createTabs(container, tabs, onTabChange) {
 export function renderDataGrid({ columns, items, onRowClick }) {
     if (!items || items.length === 0) {
         return `
-            <div class="data-grid">
-                <table><thead><tr>${columns.map(c => `<th>${c.label}</th>`).join('')}</tr></thead></table>
-                <div class="grid-empty">
-                    <span class="material-icons-outlined">inbox</span>
-                    <p>ไม่มีข้อมูล</p>
+            <div class="table-responsive" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+                <div class="data-grid">
+                    <table><thead><tr>${columns.map(c => `<th>${c.label}</th>`).join('')}</tr></thead></table>
+                    <div class="grid-empty">
+                        <span class="material-icons-outlined">inbox</span>
+                        <p>ไม่มีข้อมูล</p>
+                    </div>
                 </div>
             </div>`
     }
     const rows = items.map((item, idx) => {
         const cells = columns.map(c => {
-            const val = c.render ? c.render(item, idx) : (item[c.key] ?? '')
+            const val = c.render ? c.render(item, idx) : escapeHTML(item[c.key] ?? '')
             return `<td>${val}</td>`
         }).join('')
         return `<tr data-id="${item.id || idx}" style="cursor:pointer">${cells}</tr>`
     }).join('')
 
     return `
-        <div class="data-grid">
-            <table>
-                <thead><tr>${columns.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>
-                <tbody>${rows}</tbody>
-            </table>
+        <div class="table-responsive" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+            <div class="data-grid">
+                <table>
+                    <thead><tr>${columns.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
         </div>`
 }
 
@@ -161,14 +179,15 @@ function injectAutocompleteStyles() {
         .ac-wrapper { position: relative; width: 100%; }
         .ac-wrapper input { width: 100%; }
         .ac-list {
-            position: absolute; top: 100%; left: 0; right: 0;
-            max-height: 240px; overflow-y: auto;
+            position: fixed;
+            max-height: 220px; overflow-y: auto;
             background: var(--color-surface-alt, #fff);
             border: 1px solid var(--color-border, #e2e8f0);
             border-radius: var(--radius-sm, 6px);
             box-shadow: var(--shadow-md);
-            z-index: 150;
+            z-index: var(--z-modal, 200);
             display: none;
+            min-width: 200px;
         }
         .ac-list.open { display: block; }
         .ac-item {
@@ -259,6 +278,23 @@ export function createAutocomplete(opts) {
                 </div>
             `).join('')
         }
+        
+        // BUG 77 FIX: Use viewport-relative positioning so dropdown escapes
+        // overflow:hidden parents (e.g. modals on mobile)
+        const rect = input.getBoundingClientRect()
+        const spaceBelow = window.innerHeight - rect.bottom
+        if (spaceBelow > 200 || spaceBelow > window.innerHeight / 2) {
+            // Show below input
+            list.style.top = `${rect.bottom + window.scrollY}px`
+            list.style.bottom = ''
+        } else {
+            // Flip upward if not enough space below
+            list.style.bottom = `${window.innerHeight - rect.top + window.scrollY}px`
+            list.style.top = ''
+        }
+        list.style.left = `${rect.left + window.scrollX}px`
+        list.style.width = `${rect.width}px`
+        
         list.classList.add('open')
 
         // Click handler

@@ -53,7 +53,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/notify', notifyRoutes)
-if (process.env.ENABLE_DEV_ROUTES === 'true') {
+if (process.env.ENABLE_DEV_ROUTES === 'true' || process.env.NOCODB_BASE_TITLE === 'BC_ERP_testing') {
     app.use('/api/dev', devRoutes)
     console.warn('[Server] Dev routes enabled')
 }

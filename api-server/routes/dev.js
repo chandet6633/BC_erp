@@ -29,6 +29,14 @@ router.post('/clear-data', async (req, res) => {
             return res.json({ message: 'Transaction data cleared successfully' })
         }
 
+        if (action === 'jobs') {
+            const data = await getAllRecords('jobs', {})
+            for (const r of data) {
+                await deleteRecord('jobs', r.id)
+            }
+            return res.json({ message: 'All job cards cleared successfully' })
+        }
+
         if (action === 'master_data') {
             const tables = ['customers', 'vehicles', 'products']
             for (const t of tables) {

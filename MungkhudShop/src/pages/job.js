@@ -67,9 +67,12 @@ function renderSearchTab(panel, mainContainer) {
                         <label class="form-label">ทะเบียนรถ / ลูกค้า</label>
                         <input type="text" class="form-control" id="searchKeyword" placeholder="พิมพ์เพื่อค้นหา...">
                     </div>
-                    <div class="form-group" style="justify-content:flex-end;">
+                    <div class="form-group" style="justify-content:flex-end; flex-direction:row; gap:var(--sp-2); align-items:flex-end;">
                         <button class="btn btn-primary" id="btnSearchJob">
                             <span class="material-icons-outlined">search</span> ค้นหา
+                        </button>
+                        <button class="btn btn-danger" id="btnClearAllJobs">
+                            <span class="material-icons-outlined">delete_sweep</span> ล้างใบงานทั้งหมด
                         </button>
                     </div>
                 </div>
@@ -78,6 +81,30 @@ function renderSearchTab(panel, mainContainer) {
         <div id="jobSearchResults" style="margin-top:var(--sp-4);"></div>
     `
     panel.querySelector('#btnSearchJob').addEventListener('click', () => loadSearchData(panel, mainContainer))
+    panel.querySelector('#btnClearAllJobs').addEventListener('click', async () => {
+        if (await showConfirm('ยืนยันการลบใบงานทั้งหมด?', 'ต้องการลบใบงานทั้งหมดในระบบใช่หรือไม่? (การกระทำนี้จะลบข้อมูลออกจากระบบอย่างถาวร)')) {
+            try {
+                const token = localStorage.getItem('mungkhud_jwt')
+                const res = await fetch('/api/dev/clear-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action: 'jobs' })
+                })
+                const data = await res.json()
+                if (!res.ok) {
+                    throw new Error(data.error || 'Request failed')
+                }
+                showToast(data.message || 'ลบใบงานทั้งหมดเรียบร้อยแล้ว', 'success')
+                loadSearchData(panel, mainContainer)
+            } catch (e) {
+                console.error(e)
+                showToast('Error: ' + e.message, 'error')
+            }
+        }
+    })
     // BUG 63 FIX: Debounce live search to avoid re-rendering on every keystroke
     const debouncedFilter = window.debounce ? window.debounce(() => filterLocalSearch(panel, mainContainer), 350) : () => filterLocalSearch(panel, mainContainer)
     panel.querySelector('#searchKeyword').addEventListener('input', debouncedFilter)

@@ -21,18 +21,38 @@ router.post('/clear-data', async (req, res) => {
         if (action === 'transactions') {
             const tables = ['jobs', 'document_items', 'documents', 'stock_ledgers', 'payments']
             for (const t of tables) {
-                const data = await getAllRecords(t, {})
-                for (const r of data) {
-                    await deleteRecord(t, r.id)
+                try {
+                    const data = await getAllRecords(t, {})
+                    for (const r of data) {
+                        try {
+                            await deleteRecord(t, r.id)
+                        } catch (err) {
+                            if (err.status !== 404 && !err.message.includes('not found')) {
+                                throw err
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[Dev] Cleared table ${t} partial warning:`, err.message)
                 }
             }
             return res.json({ message: 'Transaction data cleared successfully' })
         }
 
         if (action === 'jobs') {
-            const data = await getAllRecords('jobs', {})
-            for (const r of data) {
-                await deleteRecord('jobs', r.id)
+            try {
+                const data = await getAllRecords('jobs', {})
+                for (const r of data) {
+                    try {
+                        await deleteRecord('jobs', r.id)
+                    } catch (err) {
+                        if (err.status !== 404 && !err.message.includes('not found')) {
+                            throw err
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn(`[Dev] Cleared jobs partial warning:`, err.message)
             }
             return res.json({ message: 'All job cards cleared successfully' })
         }
@@ -40,9 +60,19 @@ router.post('/clear-data', async (req, res) => {
         if (action === 'master_data') {
             const tables = ['customers', 'vehicles', 'products']
             for (const t of tables) {
-                const data = await getAllRecords(t, {})
-                for (const r of data) {
-                    await deleteRecord(t, r.id)
+                try {
+                    const data = await getAllRecords(t, {})
+                    for (const r of data) {
+                        try {
+                            await deleteRecord(t, r.id)
+                        } catch (err) {
+                            if (err.status !== 404 && !err.message.includes('not found')) {
+                                throw err
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[Dev] Cleared master table ${t} partial warning:`, err.message)
                 }
             }
             return res.json({ message: 'Master data reset successfully' })
@@ -51,16 +81,25 @@ router.post('/clear-data', async (req, res) => {
         if (action === 'users_roles') {
             const tables = ['users', 'system_roles']
             for (const t of tables) {
-                const data = await getAllRecords(t, {})
-                // Filter out 'admin' to prevent lockout
-                const toDelete = data.filter(r => {
-                    if (t === 'users' && r.username === 'admin') return false;
-                    if (t === 'system_roles' && r.name === 'admin') return false;
-                    return true;
-                })
-                
-                for (const r of toDelete) {
-                    await deleteRecord(t, r.id)
+                try {
+                    const data = await getAllRecords(t, {})
+                    const toDelete = data.filter(r => {
+                        if (t === 'users' && r.username === 'admin') return false;
+                        if (t === 'system_roles' && r.name === 'admin') return false;
+                        return true;
+                    })
+                    
+                    for (const r of toDelete) {
+                        try {
+                            await deleteRecord(t, r.id)
+                        } catch (err) {
+                            if (err.status !== 404 && !err.message.includes('not found')) {
+                                throw err
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[Dev] Cleared users/roles table ${t} partial warning:`, err.message)
                 }
             }
             return res.json({ message: 'Users and Roles reset successfully (Admin preserved)' })

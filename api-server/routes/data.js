@@ -1222,6 +1222,18 @@ router.patch('/:table/:id', async (req, res) => {
                     return res.status(403).json({ error: 'ไม่สามารถแก้ไขเอกสารที่ยืนยันหรือยกเลิกแล้วได้' });
                 }
             }
+            if (table.toLowerCase() === 'document_items') {
+                const itemToCheck = await db.getRecord('document_items', id);
+                if (itemToCheck?.document_id) {
+                    const parentDoc = await db.getRecord('documents', itemToCheck.document_id).catch(() => null);
+                    if (parentDoc && ['confirmed', 'paid', 'voided'].includes(parentDoc.status)) {
+                        return res.status(403).json({
+                            error: 'ไม่สามารถแก้ไขรายการของเอกสารที่ยืนยันแล้ว',
+                            documentStatus: parentDoc.status
+                        });
+                    }
+                }
+            }
         }
 
         if (isProtectedTable(table)) {
@@ -1420,6 +1432,16 @@ router.delete('/:table/:id', async (req, res) => {
         if (table.toLowerCase() === 'jobs' && record) {
             if (record.status === 'completed' || record.payment_status === 'paid') {
                 return res.status(403).json({ error: 'ไม่สามารถลบใบงานที่ชำระเงินหรือเสร็จสิ้นแล้วได้ (กระทบกระแสเงินสด)' });
+            }
+        }
+
+        // INTEGRITY: Block delete on sealed documents
+        if (table.toLowerCase() === 'documents' && record) {
+            if (['confirmed', 'paid', 'voided'].includes(record.status)) {
+                return res.status(403).json({
+                    error: 'ไม่สามารถลบเอกสารที่ยืนยัน/ชำระเงิน/ยกเลิกแล้ว กรุณาออกใบลดหนี้หรือใช้ฟังก์ชัน Void',
+                    status: record.status
+                });
             }
         }
 

@@ -113,6 +113,34 @@ export function validateCreate(table, body) {
         }
     }
 
+    // INTEGRITY: stock_ledger must always reference a document
+    if (tableLower === 'stock_ledgers') {
+        if (!body.reference_doc || String(body.reference_doc).trim() === '') {
+            errors.push('Stock ledger entries must reference a document (reference_doc is required)');
+        }
+        const validTypes = ['IN', 'OUT', 'ADJ'];
+        if (body.transaction_type && !validTypes.includes(String(body.transaction_type).toUpperCase())) {
+            errors.push(`transaction_type must be one of: ${validTypes.join(', ')}`);
+        }
+    }
+
+    // INTEGRITY: Enum validations
+    const VALID_DOC_TYPES = ['RR','RQ','RE','TF','SA','QT','IV','RC','CN','PI','PCN','PAY','WT','JOB']
+    if (tableLower === 'documents' && body.doc_type) {
+        const dt = String(body.doc_type).toUpperCase()
+        if (!VALID_DOC_TYPES.includes(dt)) {
+            errors.push(`doc_type "${body.doc_type}" is not valid. Must be one of: ${VALID_DOC_TYPES.join(', ')}`)
+        }
+    }
+
+    const VALID_PRODUCT_TYPES = ['part', 'accessory', 'fluid', 'service', 'labor', 'labour', 'other']
+    if (tableLower === 'products' && body.type !== undefined) {
+        const pt = String(body.type).toLowerCase()
+        if (!VALID_PRODUCT_TYPES.includes(pt)) {
+            errors.push(`product type "${body.type}" is not valid. Must be one of: ${VALID_PRODUCT_TYPES.join(', ')}`)
+        }
+    }
+
     return errors
 }
 

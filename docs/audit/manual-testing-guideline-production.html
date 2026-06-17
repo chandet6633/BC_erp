@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -277,7 +277,38 @@
     </section>
 
     <section>
-      <h2>10. Sign-Off</h2>
+      <h2>10. Data Integrity & Hardening Verification (Wave 1-5)</h2>
+      <p>Confirm the server-side integrity rules and admin recovery tools work correctly under negative test scenarios.</p>
+      <div class="grid checklist">
+        <div class="box">
+          <h3>Backend Document Locks</h3>
+          <label><input type="checkbox" /> Blocked DELETE: Attempting to delete a confirmed/paid/voided document (via API client or DevTools) returns <code>403 Forbidden</code>.</label>
+          <label><input type="checkbox" /> Blocked PATCH: Attempting to modify document fields on confirmed/paid/voided documents returns <code>403 Forbidden</code>.</label>
+          <label><input type="checkbox" /> Blocked Item PATCH: Attempting to modify <code>document_items</code> belonging to a confirmed parent document returns <code>403 Forbidden</code>.</label>
+        </div>
+        <div class="box">
+          <h3>Enforcements & Validations</h3>
+          <label><input type="checkbox" /> Stock Ledger Guards: Attempting to POST directly to <code>stock_ledgers</code> without a valid <code>reference_doc</code> returns <code>400 Bad Request</code>.</label>
+          <label><input type="checkbox" /> Unique Product Code: Attempting to create a product with an existing code returns <code>400 Bad Request</code>.</label>
+          <label><input type="checkbox" /> Enum Validation: Invalid <code>doc_type</code> (e.g., NOT in RR, RQ, RE, TF, SA, QT, IV, RC) or invalid <code>product_type</code> returns <code>400 Bad Request</code>.</label>
+        </div>
+        <div class="box">
+          <h3>Document Lifecycle Endpoints</h3>
+          <label><input type="checkbox" /> Confirm Document: Confirming a document via <code>POST /api/data/custom/confirm-document/:id</code> updates the status to <code>confirmed</code> and posts stock ledger records.</label>
+          <label><input type="checkbox" /> Void Document: Voiding a document via <code>POST /api/data/custom/void-document/:id</code> updates the status to <code>voided</code> and deletes stock ledger records.</label>
+          <label><input type="checkbox" /> Idempotent Confirm: Double-confirming a document is safe (does not double-post stock ledgers).</label>
+        </div>
+        <div class="box">
+          <h3>Admin Integrity Check Page</h3>
+          <label><input type="checkbox" /> Access the Integrity Check Tool in the Management Portal (under Admin menu).</label>
+          <label><input type="checkbox" /> Running "Check Stock Integrity" scans and reports any mismatches between document items and stock ledger quantities.</label>
+          <label><input type="checkbox" /> Using the repair button resolves discrepancies by re-posting missing or deleted stock ledger records.</label>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>11. Sign-Off</h2>
       <table>
         <tbody>
           <tr><th>Tester</th><td></td></tr>

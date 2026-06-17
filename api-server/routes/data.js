@@ -1155,6 +1155,19 @@ router.post('/:table', async (req, res) => {
             }
         }
 
+        // INTEGRITY: Unique product code
+        if (table.toLowerCase() === 'products' && payload.code) {
+            const existing = await db.getAllRecords('products', {
+                where: `(code,eq,${safeWhereValue(payload.code)})`
+            })
+            if (existing.length > 0) {
+                return res.status(400).json({
+                    error: `รหัสสินค้า "${payload.code}" มีอยู่แล้วในระบบ`,
+                    conflicting_id: existing[0].id
+                })
+            }
+        }
+
         if (table.toLowerCase() === 'documents') {
             if (payload.branch_id) payload.branch_id = await normalizeBranchId(payload.branch_id)
             if (payload.destination_branch_id) payload.destination_branch_id = await normalizeBranchId(payload.destination_branch_id)
@@ -1162,6 +1175,7 @@ router.post('/:table', async (req, res) => {
         }
 
         const record = await db.createRecord(table, payload)
+        const fullRecord = await db.getRecord(table, record.id).catch(() => record)
 
         // Audit log (skip audit_logs to prevent loops)
         if (table.toLowerCase() !== 'audit_logs') {
@@ -1176,7 +1190,7 @@ router.post('/:table', async (req, res) => {
             } catch { /* best-effort */ }
         }
 
-        res.status(201).json(record)
+        res.status(201).json(fullRecord)
     } catch (err) {
         console.error(`[Data] Create ${req.params.table}:`, err.message)
         res.status(err.status || 500).json({ error: err.message })

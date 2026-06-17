@@ -1,0 +1,294 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BC Auto ERP Manual Testing Guideline</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9e2ec;
+      --panel: #ffffff;
+      --soft: #f5f7fb;
+      --brand: #1f4f7a;
+      --accent: #b8871f;
+      --ok: #16794c;
+      --warn: #a15c00;
+      --bad: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--soft);
+      line-height: 1.45;
+    }
+    header {
+      background: #102033;
+      color: #fff;
+      padding: 28px 32px;
+      border-bottom: 4px solid var(--accent);
+    }
+    header h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }
+    header p { margin: 0; color: #cbd5e1; max-width: 980px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    h2 { margin: 0 0 14px; font-size: 21px; color: var(--brand); }
+    h3 { margin: 18px 0 8px; font-size: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .box { background: #f8fafc; border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+    .box strong { display: block; margin-bottom: 4px; color: var(--ink); }
+    ul, ol { margin: 8px 0 0 22px; padding: 0; }
+    li { margin: 5px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 9px 10px; vertical-align: top; }
+    th { background: #eef4fb; text-align: left; color: #243b53; }
+    code { background: #eef2f6; border: 1px solid #dde5ee; border-radius: 4px; padding: 1px 5px; }
+    .status { font-weight: 700; }
+    .pass { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .fail { color: var(--bad); }
+    .checklist label { display: block; padding: 6px 0; }
+    .checklist input { margin-right: 8px; transform: translateY(1px); }
+    .note { border-left: 4px solid var(--accent); background: #fff8e8; padding: 10px 12px; margin-top: 12px; }
+    @media (max-width: 800px) {
+      header { padding: 22px 18px; }
+      main { padding: 14px; }
+      .grid, .meta { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+      th, td { padding: 7px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BC Auto ERP Manual Testing Guideline</h1>
+    <p>Use this checklist after automated tests pass. Test each role and business flow with real shop behavior before production release.</p>
+    <div class="meta">
+      <div class="box"><strong>MungkhudShop</strong><code>http://localhost:9091</code></div>
+      <div class="box"><strong>Management</strong><code>http://localhost:9092</code></div>
+      <div class="box"><strong>API Health</strong><code>http://localhost:9093/api/health</code></div>
+      <div class="box"><strong>Target</strong><span class="status pass">Production readiness</span></div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. Entry Criteria</h2>
+      <div class="checklist grid">
+        <div class="box">
+          <label><input type="checkbox" /> Docker containers are running: API, MungkhudShop, Management.</label>
+          <label><input type="checkbox" /> API health returns <code>200 OK</code>.</label>
+          <label><input type="checkbox" /> Latest Playwright suite passes.</label>
+          <label><input type="checkbox" /> Test database is selected, not production.</label>
+        </div>
+        <div class="box">
+          <label><input type="checkbox" /> Test users are available: Admin, Manager, SA, Mechanic.</label>
+          <label><input type="checkbox" /> Test master data exists: customers, vehicles, products, services.</label>
+          <label><input type="checkbox" /> Browser cache was refreshed after latest deployment.</label>
+          <label><input type="checkbox" /> Tester records screenshots for failed cases.</label>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Role And Permission Testing</h2>
+      <table>
+        <thead><tr><th>Role</th><th>Must Be Able To Do</th><th>Must Be Blocked From</th><th>Pass Criteria</th></tr></thead>
+        <tbody>
+          <tr><td>Admin</td><td>Open dashboards, finance KPIs, HR, settings, users, branches, all master data.</td><td>Nothing expected except invalid data actions.</td><td>All admin menus load and save where applicable.</td></tr>
+          <tr><td>Manager</td><td>View dashboards, jobs, HR operations, branch operations, reports.</td><td>Admin-only dangerous settings if configured.</td><td>Manager sees operational data without finance leakage issues.</td></tr>
+          <tr><td>SA</td><td>Create customer, vehicle, job, quotation, invoice, receipt; view Kanban and stock list.</td><td>Revenue KPIs, system settings, user management, unauthorized finance pages.</td><td>SA workflow works and finance/admin access is denied by direct URL too.</td></tr>
+          <tr><td>Mechanic</td><td>View assigned jobs, update allowed job status, inspect Kanban/mechanic page.</td><td>Finance, settings, master data editing, customer creation.</td><td>Mechanic can work on jobs but cannot see sensitive business data.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. Master Data Metadata Checks</h2>
+      <p>Confirm master data is complete enough for real operation and that backend metadata is created on writes.</p>
+      <div class="grid checklist">
+        <div class="box">
+          <h3>Customer</h3>
+          <label><input type="checkbox" /> Create customer with name, phone, tax ID, address, credit limit, credit days.</label>
+          <label><input type="checkbox" /> Search customer by name and phone.</label>
+          <label><input type="checkbox" /> Duplicate phone is handled clearly.</label>
+          <label><input type="checkbox" /> Backend stores <code>created_by</code>, <code>updated_by</code>, <code>source</code>, <code>is_active</code>.</label>
+        </div>
+        <div class="box">
+          <h3>Vehicle</h3>
+          <label><input type="checkbox" /> Create vehicle with plate, province, brand, model, year, color, mileage.</label>
+          <label><input type="checkbox" /> Link vehicle to correct customer.</label>
+          <label><input type="checkbox" /> Search by plate number.</label>
+          <label><input type="checkbox" /> Existing vehicle updates mileage without duplicate plate.</label>
+        </div>
+        <div class="box">
+          <h3>Product / Service</h3>
+          <label><input type="checkbox" /> Create stock item with code, name, group, brand, unit, price, cost, min stock.</label>
+          <label><input type="checkbox" /> Create service item with stock tracking off.</label>
+          <label><input type="checkbox" /> Product search works in job and document item selection.</label>
+          <label><input type="checkbox" /> Cost is protected from SA/mechanic response where expected.</label>
+        </div>
+        <div class="box">
+          <h3>Lookups</h3>
+          <label><input type="checkbox" /> Payment methods are controlled values.</label>
+          <label><input type="checkbox" /> Job/document statuses use expected values only.</label>
+          <label><input type="checkbox" /> Product type, customer group, and stock transaction types are consistent.</label>
+          <label><input type="checkbox" /> Inactive lookup values do not appear in normal workflow.</label>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>4. Full Business Flow</h2>
+      <ol>
+        <li>Login as SA.</li>
+        <li>Create or select customer.</li>
+        <li>Create or select vehicle.</li>
+        <li>Create a new job with mileage, notes, repair details, and no end date.</li>
+        <li>Add stock parts and service labor items.</li>
+        <li>Save job and confirm it appears on Kanban.</li>
+        <li>Login as Mechanic and update the job status through allowed workflow.</li>
+        <li>Login as Admin or Manager and complete QC.</li>
+        <li>Create invoice from the job.</li>
+        <li>Record payment and receipt.</li>
+        <li>Verify dashboard totals, customer history, stock ledger, and finance report.</li>
+      </ol>
+      <div class="note">Pass only if each role can complete their part without using admin credentials as a workaround.</div>
+    </section>
+
+    <section>
+      <h2>5. Inventory And Purchasing</h2>
+      <table>
+        <thead><tr><th>Feature</th><th>Manual Test</th><th>Expected Result</th></tr></thead>
+        <tbody>
+          <tr><td>Stock List</td><td>Open stock list and search test product.</td><td>Quantity, min stock, cost/price, and low-stock state render correctly.</td></tr>
+          <tr><td>Goods Receipt</td><td>Create receipt for stock-tracked product.</td><td>Stock ledger adds positive quantity and average cost updates if applicable.</td></tr>
+          <tr><td>Requisition</td><td>Create requisition for parts.</td><td>Stock ledger deducts quantity after confirmation.</td></tr>
+          <tr><td>Stock Adjust</td><td>Adjust up and down with reason.</td><td>Reason is required and ledger reflects adjustment.</td></tr>
+          <tr><td>Stock Transfer</td><td>Transfer between branches.</td><td>Source branch decreases, destination branch increases.</td></tr>
+          <tr><td>Service Item</td><td>Add service/labor to job.</td><td>No stock quantity changes for service items.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>6. Finance And Documents</h2>
+      <div class="grid checklist">
+        <div class="box">
+          <label><input type="checkbox" /> Quotation can be created, edited, printed, and converted if supported.</label>
+          <label><input type="checkbox" /> Invoice totals match job totals.</label>
+          <label><input type="checkbox" /> Receipt records payment method and amount.</label>
+          <label><input type="checkbox" /> Credit note/refund flow does not create negative invoice exploit.</label>
+        </div>
+        <div class="box">
+          <label><input type="checkbox" /> VAT customer-pays mode calculates correctly.</label>
+          <label><input type="checkbox" /> VAT shop-absorbs mode calculates correctly.</label>
+          <label><input type="checkbox" /> Discount cannot become negative.</label>
+          <label><input type="checkbox" /> SA/mechanic cannot see finance KPIs by menu or direct URL.</label>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>7. Error, Edge Case, And Security Tests</h2>
+      <table>
+        <thead><tr><th>Area</th><th>Try This</th><th>Expected Result</th></tr></thead>
+        <tbody>
+          <tr><td>Required fields</td><td>Save customer/job/product with missing critical fields.</td><td>Clear validation or safe failure. No broken empty records.</td></tr>
+          <tr><td>Invalid values</td><td>Negative price, negative discount, invalid phone, long notes.</td><td>Backend blocks dangerous values and UI shows useful message.</td></tr>
+          <tr><td>Direct URL</td><td>Open admin/settings routes as SA or mechanic.</td><td>Access denied or redirected.</td></tr>
+          <tr><td>Session</td><td>Logout, refresh protected page, expire local storage manually.</td><td>Protected data is not visible without valid session.</td></tr>
+          <tr><td>Branch</td><td>Use non-admin user to access another branch record by direct ID.</td><td>Blocked by backend branch isolation.</td></tr>
+          <tr><td>Metadata</td><td>Create and update a record through UI, then inspect API response/readback.</td><td><code>created_by</code>, <code>updated_by</code>, <code>source</code>, and <code>metadata_json</code> behave correctly.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>8. Production Readiness Checklist</h2>
+      <div class="checklist grid">
+        <div class="box">
+          <label><input type="checkbox" /> Docker restart keeps app working.</label>
+          <label><input type="checkbox" /> Browser cache/service worker refresh tested.</label>
+          <label><input type="checkbox" /> Backup and restore tested.</label>
+          <label><input type="checkbox" /> Error logs reviewed after test run.</label>
+          <label><input type="checkbox" /> NocoDB token is not exposed to browser.</label>
+        </div>
+        <div class="box">
+          <label><input type="checkbox" /> Mobile/tablet layout checked for shop staff.</label>
+          <label><input type="checkbox" /> Thai and English mixed text displays correctly.</label>
+          <label><input type="checkbox" /> Print/PDF layout checked for invoice and receipt.</label>
+          <label><input type="checkbox" /> Performance checked with realistic data volume.</label>
+          <label><input type="checkbox" /> Final e2e run passes after manual fixes.</label>
+        </div>
+      </div>
+    </section>
+
+
+    <section>
+      <h2>9. Recent Update: Vehicle, Product, Job Flow, Technician</h2>
+      <p>Added after the June 16, 2026 update. Use this section for the next manual retest before signing off.</p>
+      <div class="grid checklist">
+        <div class="box">
+          <h3>Vehicle Master</h3>
+          <label><input type="checkbox" /> Province is entered through an input with Thai province suggestions/dropdown to prevent misspelling.</label>
+          <label><input type="checkbox" /> Customer owner field is searchable and selectable from a dropdown/autocomplete list.</label>
+          <label><input type="checkbox" /> Creating a vehicle with optional empty numeric fields does not trigger NocoDB 400 invalid data type errors.</label>
+          <label><input type="checkbox" /> Existing vehicle owner display resolves to customer code/name in the grid.</label>
+        </div>
+        <div class="box">
+          <h3>Product / Service Master</h3>
+          <label><input type="checkbox" /> New product/service code is generated automatically from product group, brand, and service/product name.</label>
+          <label><input type="checkbox" /> Brand can be created directly from the product form without leaving the page.</label>
+          <label><input type="checkbox" /> Product group/type can be created directly from the product form without leaving the page.</label>
+          <label><input type="checkbox" /> Unit dropdown includes <code>?????</code>.</label>
+          <label><input type="checkbox" /> Service type automatically disables stock tracking.</label>
+          <label><input type="checkbox" /> Creating a product/service with optional empty numeric fields does not trigger NocoDB 400 invalid data type errors.</label>
+        </div>
+        <div class="box">
+          <h3>Full Business Flow</h3>
+          <label><input type="checkbox" /> License plate accepts only <code>text/number up to 3</code> + hyphen + <code>number up to 4</code>, for example <code>3??-1515</code>.</label>
+          <label><input type="checkbox" /> Invalid plate format shows a clear validation message and does not save.</label>
+          <label><input type="checkbox" /> If vehicle/customer is not found, SA can select an existing customer or create a new customer through the normal save flow.</label>
+          <label><input type="checkbox" /> Payment controls are merged under <code>??????????????????</code> below service/product items.</label>
+          <label><input type="checkbox" /> There is no separate redundant <code>???????????</code> box above service/product items.</label>
+          <label><input type="checkbox" /> <code>??????????????</code> no longer appears on the job form.</label>
+        </div>
+        <div class="box">
+          <h3>Technician / Role</h3>
+          <label><input type="checkbox" /> Mechanic fallback access in MungkhudShop is limited to the dedicated mechanic page route.</label>
+          <label><input type="checkbox" /> Mechanic cannot see unrelated MungkhudShop pages/tabs by menu or direct hash route.</label>
+          <label><input type="checkbox" /> Manager can still view technician/QC progress through manager/admin pages where configured.</label>
+          <label><input type="checkbox" /> Login role label shows <code>SA (???????????????????)</code>.</label>
+        </div>
+      </div>
+      <div class="note">Technician migration plan: move approval/QC work from Management into MungkhudShop dedicated technician pages, keep technician UI isolated, and expose real-time accepted-work/QC status to manager dashboards.</div>
+    </section>
+
+    <section>
+      <h2>10. Sign-Off</h2>
+      <table>
+        <tbody>
+          <tr><th>Tester</th><td></td></tr>
+          <tr><th>Date</th><td></td></tr>
+          <tr><th>Build / Commit</th><td></td></tr>
+          <tr><th>Environment</th><td>Testing / Staging / Production</td></tr>
+          <tr><th>Open Issues</th><td></td></tr>
+          <tr><th>Release Decision</th><td>Go / No-Go</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

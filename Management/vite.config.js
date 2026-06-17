@@ -24,6 +24,7 @@ export default defineConfig({
                 admin_branches: 'src/pages/admin/branches.html',
                 admin_settings: 'src/pages/admin/settings.html',
                 admin_datacheck: 'src/pages/admin/data-check.html',
+                admin_integrity: 'src/pages/admin/integrity-check.html',
                 hr_index: 'src/pages/hr/index.html',
                 hr_dashboard: 'src/pages/hr/hrdashboard.html',
                 hr_checkin: 'src/pages/hr/checkin.html',

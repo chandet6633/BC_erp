@@ -59,7 +59,8 @@ async function seed() {
     // 1. Seed Branches
     const branches = [
         { code: 'main', name: 'BC Auto Main', address: 'Bangkok', phone: '021111111', is_active: true },
-        { code: 'suphanburi', name: 'สุพรรณบุรี', address: 'Suphanburi', phone: '035111111', is_active: true }
+        { code: 'suphanburi', name: 'สุพรรณบุรี', address: 'Suphanburi', phone: '035111111', is_active: true },
+        { code: 'samchuk', name: 'สามชุก', address: 'Samchuk', phone: '035222222', is_active: true }
     ];
 
     console.log('Seeding branches...');
@@ -80,7 +81,10 @@ async function seed() {
         { username: 'owner', display_name: 'Owner', name: 'Owner', role: 'owner', branch: 'all', active: 1, email: 'owner@bcauto.work', password_hash: sha256('owner123'), password: sha256('owner123') },
         { username: 'manager', display_name: 'Manager', name: 'Manager', role: 'manager', branch: 'main', active: 1, email: 'mgr@bcauto.work', password_hash: sha256('mgr123'), password: sha256('mgr123'), pin: sha256('1111') },
         { username: 'sa_main', display_name: 'SA Main', name: 'SA Main', role: 'sa', branch: 'main', active: 1, email: 'sa@bcauto.work', password_hash: sha256('sa123'), password: sha256('sa123'), pin: sha256('2222') },
-        { username: 'mechanic', display_name: 'Mechanic', name: 'Mechanic', role: 'mechanic', branch: 'main', active: 1, email: 'mech@bcauto.work', password_hash: sha256('mech123'), password: sha256('mech123'), pin: sha256('3333') }
+        { username: 'mechanic', display_name: 'Mechanic', name: 'Mechanic', role: 'mechanic', branch: 'main', active: 1, email: 'mech@bcauto.work', password_hash: sha256('mech123'), password: sha256('mech123'), pin: sha256('3333') },
+        { username: 'manager1', display_name: 'Manager', name: 'Manager', role: 'manager', branch: 'all', active: 1, email: 'mgr1@bcauto.work', password_hash: sha256('owner123'), password: sha256('owner123'), pin: sha256('1111') },
+        { username: 'somchai', display_name: 'Somchai', name: 'Somchai', role: 'mechanic', branch: 'samchuk', active: 1, email: 'somchai@bcauto.work', password_hash: sha256('somchai123'), password: sha256('somchai123'), pin: sha256('3333') },
+        { username: 'sa1', display_name: 'Service Advisor', name: 'Service Advisor', role: 'sa', branch: 'samchuk', active: 1, email: 'sa1@bcauto.work', password_hash: sha256('sa123'), password: sha256('sa123'), pin: sha256('2222') }
     ];
 
     console.log('Seeding users...');

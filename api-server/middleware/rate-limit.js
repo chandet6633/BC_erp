@@ -11,7 +11,11 @@ import rateLimit from 'express-rate-limit'
  * 100/min was too low and caused 429 storms. 500/min is still
  * protective against abuse while allowing normal usage.
  */
-export const apiLimiter = rateLimit({
+const isTestEnv = process.env.NOCODB_BASE_TITLE === 'BC_ERP_testing' || 
+                  process.env.NODE_ENV === 'test' || 
+                  process.env.DISABLE_RATE_LIMIT === 'true';
+
+const standardApiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 500,
     standardHeaders: true,
@@ -19,14 +23,21 @@ export const apiLimiter = rateLimit({
     message: { error: 'Too many requests — please try again later' }
 })
 
-/**
- * Auth rate limit: 5 login attempts/minute per IP.
- * Prevents PIN brute-forcing.
- */
-export const authLimiter = rateLimit({
+const standardAuthLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 5,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many login attempts — please wait 1 minute' }
 })
+
+export const apiLimiter = (req, res, next) => {
+    if (isTestEnv) return next();
+    return standardApiLimiter(req, res, next);
+}
+
+export const authLimiter = (req, res, next) => {
+    if (isTestEnv) return next();
+    return standardAuthLimiter(req, res, next);
+}
+

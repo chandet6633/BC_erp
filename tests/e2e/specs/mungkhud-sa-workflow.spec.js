@@ -11,7 +11,7 @@ test.describe('MungkhudShop Service Advisor practice flow', () => {
 
   test('SA can intake a real job and see it on Kanban', async ({ page }) => {
     const suffix = Date.now().toString().slice(-6);
-    const plate = `SA-${suffix}`;
+    const plate = `3\u0e01\u0e04-${suffix.slice(-4)}`;
     const customer = `SA Practice ${suffix}`;
 
     await gotoMungkhudRoute(page, 'job', '.tabs');

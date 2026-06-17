@@ -101,7 +101,7 @@ export const TOOLS = [
         id: 'mechanic_dashboard',
         title: 'หน้างานช่าง',
         description: 'ดูงานที่ได้รับมอบหมาย ส่ง QC และดูผลงาน',
-        path: '/pages/mechanic/index.html',
+        path: '__mungkhudshop_mechanic__',
         icon: '<span class="material-icons-outlined">engineering</span>',
         roles: ['mechanic', 'sa', 'owner', 'manager', 'admin'],
         group: 'operations'
@@ -134,6 +134,15 @@ export const TOOLS = [
         description: 'จัดการผู้ใช้ สิทธิ์ และระบบ',
         path: '/pages/admin/index.html',
         icon: '<span class="material-icons-outlined">settings</span>',
+        roles: ['admin'],
+        group: 'admin'
+    },
+    {
+        id: 'integrity_check',
+        title: 'ตรวจสอบความสมบูรณ์ข้อมูล',
+        description: 'ตรวจสอบ Stock, เอกสาร และรายการที่มีปัญหา',
+        path: '/pages/admin/integrity-check.html',
+        icon: '<span class="material-icons-outlined">fact_check</span>',
         roles: ['admin'],
         group: 'admin'
     }

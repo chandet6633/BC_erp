@@ -290,20 +290,20 @@ window.handleToolClick = (tool) => {
     let url = tool.path || tool.url;
 
     // Resolve MungkhudShop URL from config or auto-detect port
-    if (url === '__mungkhudshop__') {
+    if (url === '__mungkhudshop__' || url === '__mungkhudshop_mechanic__') {
         const configured = ConfigService.getSetting('mungkhudshop_url');
         if (configured) {
-            url = configured.replace(/\/$/, '') + '/#/dashboard';
+            url = configured.replace(/\/$/, '') + (tool.path === '__mungkhudshop_mechanic__' ? '/#/mechanic-kpi' : '/#/dashboard');
         } else {
             // Auto-detect: Management 9092 → MungkhudShop 9091, Management 8092 → 8091
             const currentPort = window.location.port || '8092';
             const shopPort = currentPort === '9092' ? '9091' : '8091';
-            url = `${window.location.protocol}//${window.location.hostname}:${shopPort}/#/dashboard`;
+            url = `${window.location.protocol}//${window.location.hostname}:${shopPort}${tool.path === '__mungkhudshop_mechanic__' ? '/#/mechanic-kpi' : '/#/dashboard'}`;
         }
     }
 
     // SSO Injection: If the tool is external or explicitly MungkhudShop
-    const isExternal = url.startsWith('http') || tool.id === 'mungkhudshop' || tool.id === 'bctool_external';
+    const isExternal = url.startsWith('http') || tool.id === 'mungkhudshop' || tool.id === 'mechanic_dashboard' || tool.id === 'bctool_external';
 
     if (isExternal && typeof AuthService.getSSOToken === 'function') {
         const token = AuthService.getSSOToken();

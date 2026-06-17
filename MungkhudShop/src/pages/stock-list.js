@@ -1,7 +1,7 @@
 /**
  * Stock List page — inventory overview with filters.
  */
-import { formatCurrency, renderDataGrid } from '../components/ui.js'
+import { formatCurrency, renderDataGrid, showToast } from '../components/ui.js'
 import { fetchFullList } from '../services/pb.js'
 import { getBranch } from '../services/auth.js'
 import { getStockStatus, isStockTrackedProduct } from '../utils/stock-rules.js'

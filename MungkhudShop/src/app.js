@@ -466,8 +466,8 @@ async function handleSSO() {
                 allowedMenus = '*'
             } else if (data.role === 'sa') {
                 allowedMenus = SA_FALLBACK_MENUS
-            } else if (data.role === 'mechanic') {
-                allowedMenus = '#/dashboard,#/kanban,#/job'
+            } else if (['mechanic', 'technician'].includes(data.role)) {
+                allowedMenus = '#/mechanic-kpi'
             }
         }
 
@@ -730,7 +730,7 @@ async function initBranchSwitcher() {
     if (!user) return
 
     // Roles that are LOCKED to their assigned branch — show label, no dropdown
-    const LOCKED_ROLES = ['sa', 'manager', 'mechanic', 'employee', 'employee_main', 'employee_sup']
+    const LOCKED_ROLES = ['sa', 'manager', 'mechanic', 'technician', 'employee', 'employee_main', 'employee_sup']
     const isLocked = LOCKED_ROLES.includes(user.role)
 
     try {
@@ -854,3 +854,4 @@ function initBackToTop() {
 }
 
 document.addEventListener('DOMContentLoaded', boot)
+

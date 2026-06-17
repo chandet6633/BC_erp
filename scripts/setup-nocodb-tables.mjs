@@ -283,6 +283,57 @@ const TABLES = [
     ]},
 ]
 
+const STANDARD_METADATA_COLUMNS = [
+    { title: 'created_by', uidt: 'SingleLineText' },
+    { title: 'updated_by', uidt: 'SingleLineText' },
+    { title: 'source', uidt: 'SingleLineText' },
+    { title: 'is_active', uidt: 'Checkbox' },
+    { title: 'deleted_at', uidt: 'DateTime' },
+    { title: 'metadata_json', uidt: 'LongText' },
+]
+
+const METADATA_TABLES = new Set([
+    'users',
+    'app_users',
+    'system_settings',
+    'system_roles',
+    'branches',
+    'companies',
+    'customers',
+    'vehicles',
+    'product_brands',
+    'product_groups',
+    'products',
+    'vendors',
+    'lookups',
+    'jobs',
+    'job_items',
+    'documents',
+    'document_items',
+    'stock_ledgers',
+    'settings',
+    'app_settings',
+    'favorite_products',
+    'job_evaluations',
+    'job_payments',
+    'hr_employees',
+    'hr_attendance',
+    'hr_leaves',
+    'financial_entries',
+    'financial_ledger',
+    'daily_summaries',
+])
+
+for (const table of TABLES) {
+    if (!METADATA_TABLES.has(table.title)) continue
+    const existing = new Set(table.columns.map(col => col.title.toLowerCase()))
+    for (const column of STANDARD_METADATA_COLUMNS) {
+        if (!existing.has(column.title.toLowerCase())) {
+            table.columns.push(column)
+        }
+    }
+}
+
 async function createTables(baseId) {
     const existing = await api(`/api/v2/meta/bases/${baseId}/tables`)
     const existingNames = new Set((existing.list || []).map(t => t.title.toLowerCase()))

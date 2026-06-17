@@ -292,7 +292,7 @@
 
         <!-- TAB: OVERVIEW -->
         <div id="overview" class="tab-content" style="display:none;">
-            <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi-grid finance-only" id="kpiGrid">
                 <div class="kpi-card kpi-green">
                     <div class="kpi-icon"><span class="material-icons-outlined">payments</span></div>
                     <div class="kpi-label">รายรับรวม</div>
@@ -413,7 +413,7 @@
         <div class="chart-card" style="margin-top:8px;">
             <h3><span class="material-icons-outlined">build</span> ใบงานล่าสุด</h3>
             <div style="overflow-x:auto;">
-                <table class="recent-table" id="recentJobsTable">
+                <table class="recent-table jobs-table" id="recentJobsTable">
                     <thead>
                         <tr><th>เลขใบงาน</th><th>ลูกค้า</th><th>ทะเบียน</th><th style="text-align:right">ยอดรวม</th><th>สถานะ</th><th>วันที่</th></tr>
                     </thead>
@@ -438,6 +438,18 @@
         </div>
 
     </div>
+
+
+    <script>
+        (function () {
+            try {
+                var role = (sessionStorage.getItem('bcauto_role') || '').toLowerCase();
+                if (role === 'sa' || role === 'mechanic') {
+                    document.querySelectorAll('.finance-only, .kpi-card').forEach(function (el) { el.remove(); });
+                }
+            } catch (_) {}
+        })();
+    </script>
 
     <script type="module">
         import '../../services/pocketbase.js';

@@ -3,10 +3,13 @@
  * Admin only page for clearing data and resetting tables for testing purposes.
  */
 import { showToast, showConfirm } from '../components/ui.js'
-import { getStoredToken } from '../services/auth.js'
+import { getStoredToken, getCurrentUser } from '../services/auth.js'
 
 export function initDevToolsPage(container) {
-    container.innerHTML = `
+    const user = getCurrentUser()
+    const isAdminOrOwner = user && ['admin', 'owner'].includes(user.role)
+
+    let html = `
         <div class="page-header">
             <div class="page-title">
                 <span class="material-icons-outlined" style="color:var(--bc-danger);">bug_report</span>
@@ -49,6 +52,23 @@ export function initDevToolsPage(container) {
         </div>
     `
 
+    if (isAdminOrOwner) {
+        html += `
+        <div class="card" style="margin-top:1rem">
+          <div class="card-body">
+            <h3 style="margin-bottom:1rem">🔍 ตรวจสอบความสมบูรณ์ข้อมูล</h3>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button id="btnCheckStock" class="btn btn-outline">ตรวจสอบสต็อก</button>
+              <button id="btnCheckDocs"  class="btn btn-outline">ตรวจสอบเอกสาร</button>
+              <button id="btnRecalcCosts" class="btn btn-warning">คำนวณต้นทุนใหม่</button>
+            </div>
+            <pre id="integrityResults" style="background:#1e1e2e;color:#cdd6f4;padding:1rem;border-radius:.5rem;margin-top:.75rem;font-size:.8rem;white-space:pre-wrap;display:none;"></pre>
+          </div>
+        </div>`
+    }
+
+    container.innerHTML = html
+
     async function callDevApi(action) {
         try {
             const token = getStoredToken()
@@ -90,4 +110,48 @@ export function initDevToolsPage(container) {
             await callDevApi('users_roles')
         }
     })
+
+    if (isAdminOrOwner) {
+        const resultsEl = container.querySelector('#integrityResults')
+        
+        const showResults = (data) => {
+            resultsEl.style.display = 'block'
+            resultsEl.textContent = JSON.stringify(data, null, 2)
+        }
+
+        container.querySelector('#btnCheckStock').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/data/custom/integrity/stock-check', {
+                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                })
+                showResults(await res.json())
+            } catch (e) {
+                showResults({ error: e.message })
+            }
+        })
+
+        container.querySelector('#btnCheckDocs').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/data/custom/integrity/document-check', {
+                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                })
+                showResults(await res.json())
+            } catch (e) {
+                showResults({ error: e.message })
+            }
+        })
+
+        container.querySelector('#btnRecalcCosts').addEventListener('click', async () => {
+            if (!confirm('ต้องการคำนวณราคาต้นทุนเฉลี่ยของสินค้าทั้งหมดใหม่หรือไม่?')) return
+            try {
+                const res = await fetch('/api/data/custom/admin/recalculate-costs', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                })
+                showResults(await res.json())
+            } catch (e) {
+                showResults({ error: e.message })
+            }
+        })
+    }
 }

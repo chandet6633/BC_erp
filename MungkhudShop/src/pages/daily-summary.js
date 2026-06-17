@@ -156,7 +156,7 @@ export function initDailySummaryPage(container) {
 
             // Process today's jobs
             dateJobs.forEach(j => {
-                if (j.status === 'completed') {
+                if (j.status === 'completed' || j.payment_status === 'paid') {
                     closedCount++
                     totalRev += parseFloat(j.grand_total || 0)
                     

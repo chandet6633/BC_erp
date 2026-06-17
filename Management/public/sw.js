@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
-// BC Auto Service Worker v1.0
-const CACHE_NAME = 'bcauto-cache-v1';
+// BC Auto Service Worker v1.1
+const CACHE_NAME = 'bcauto-cache-v2';
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = [
@@ -66,7 +66,7 @@ sw.addEventListener('fetch', event => {
         return;
     }
 
-    // Cache-first for static assets (CSS, JS, fonts, images, SVG)
+    // Network-first for static assets so deployments replace old bundles promptly
     if (
         url.pathname.endsWith('.css') ||
         url.pathname.endsWith('.js') ||

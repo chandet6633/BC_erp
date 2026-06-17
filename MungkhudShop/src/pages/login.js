@@ -45,9 +45,17 @@ function recordFailedAttempt() {
 let currentRole = ''
 let pinBuffer = ''
 
+function getLandingHash(session) {
+    const role = session?.role || session?.user?.role || ''
+    if (['mechanic', 'technician', 'employee'].includes(role)) return '#/mechanic-kpi'
+    const menus = String(session?.allowed_menus || session?.user?.allowed_menus || '').split(',').map(m => m.trim()).filter(Boolean)
+    if (menus.length && menus[0] !== '*') return menus[0]
+    return '#/dashboard'
+}
 const ROLE_OPTIONS = [
     { id: 'manager', label: 'ผู้จัดการ / เจ้าของ', icon: 'supervisor_account', color: '#C8A048' },
-    { id: 'sa',      label: 'SA (ผู้ดูแลสต็อก)',    icon: 'inventory_2',        color: '#2563eb' }
+    { id: 'technician', label: 'Technician (ช่าง)', icon: 'engineering', color: '#059669' },
+    { id: 'sa',      label: 'SA (พนักงานเเนะนำสินค้า)',    icon: 'inventory_2',        color: '#2563eb' }
 ]
 
 export function initLoginPage(container) {
@@ -358,7 +366,7 @@ async function submitLogin(container) {
         }
 
         showToast(`ยินดีต้อนรับ ${session.display_name}`, 'success')
-        window.location.hash = '#/dashboard'
+        window.location.hash = getLandingHash(session)
         window.location.reload()
     } catch (e) {
         const nowLocked = recordFailedAttempt()
@@ -490,7 +498,7 @@ async function submitPinLogin(container) {
             return
         }
         showToast(`ยินดีต้อนรับ ${session.display_name}`, 'success')
-        window.location.hash = '#/dashboard'
+        window.location.hash = getLandingHash(session)
         window.location.reload()
     } else {
         const nowLocked = recordFailedAttempt()
@@ -507,3 +515,7 @@ async function submitPinLogin(container) {
         okBtn.textContent = 'OK'
     }
 }
+
+
+
+

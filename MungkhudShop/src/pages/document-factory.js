@@ -514,7 +514,8 @@ export function createDocumentPage(cfg) {
                     for (const tr of rows) {
                         const rowId = tr.dataset.id || null
                         const prodInput = tr.querySelector('.line-prod')
-                        const product_id = prodInput?.dataset?.selectedId || prodInput?.value || ''
+                        const selectedProductId = prodInput?.dataset?.selectedId || ''
+                        const product_id = selectedProductId
                         const product_name = prodInput?.value || ''
                         const qty = parseFloat(tr.querySelector('.line-qty').value) || 0
                         const unit_price = parseFloat(tr.querySelector('.line-price').value) || 0
@@ -522,6 +523,11 @@ export function createDocumentPage(cfg) {
                         
                         // BUG 2 FIX: Snapshot product cost
                         const cost = parseFloat(tr.dataset.cost || 0)
+
+                        if (product_name && isInventoryDoc && !selectedProductId) {
+                            prodInput?.focus()
+                            throw new Error('กรุณาเลือกสินค้าในรายการจากช่องค้นหา ห้ามพิมพ์ชื่อสินค้าอย่างเดียวสำหรับเอกสารสต็อก')
+                        }
 
                         if (product_id || product_name) {
                             const p = {

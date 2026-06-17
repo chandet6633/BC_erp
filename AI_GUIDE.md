@@ -113,3 +113,42 @@ docker compose -f docker-compose.test.nocodb.yml up -d --build test-api
 | NocoDB client | `api-server/lib/nocodb.js` |
 | Nginx config | `nginx-test-management.conf` |
 | Docker stack | `docker-compose.test.nocodb.yml` |
+
+---
+
+## Document Lifecycle (CRITICAL — Read Before Any Document Work)
+
+Documents follow a strict state machine: draft → confirmed → (paid | voided)
+
+NEVER change document status with a direct PATCH.
+ALWAYS use the dedicated server-side endpoints:
+
+| Action  | Endpoint                                          |
+|---------|---------------------------------------------------|
+| Confirm | POST /api/data/custom/confirm-document/:id        |
+| Void    | POST /api/data/custom/void-document/:id           |
+
+Server-enforced rules (in data.js — do not bypass):
+- PATCH on confirmed/paid/voided documents → 403
+- DELETE on confirmed/paid/voided documents → 403
+- PATCH on document_items of confirmed documents (non-admin) → 403
+- POST to stock_ledgers without reference_doc → 400
+- Invalid doc_type enum → 400
+- Invalid product type enum → 400
+- Duplicate product code → 400
+
+## Stock Balance (CRITICAL — No Client-Side Sums)
+
+ALWAYS read from: GET /api/data/custom/stock-balances?branch_id=BRANCH_CODE
+NEVER: fetch all stock_ledgers and sum them client-side (causes OOM on large datasets)
+Response format: { "productId": { qty: N, total_value: M }, ... }
+
+## Mandatory Checks After Any Change
+
+```bash
+cd api-server && node --check server.js && node --check routes/data.js && node --check middleware/validate.js
+cd Management && npm run build
+cd MungkhudShop && npm run build
+node tests/integration/test_phase5.js
+cd tests/e2e && npx playwright test --reporter=line
+```

@@ -184,7 +184,7 @@ async function buildSession(user) {
         // BUG 7 FIX: Proper per-role fallback menus when system_roles is unavailable
         const SA_MENUS = '#/dashboard,#/job,#/kanban,#/stock-list,#/service-price-list,#/requisition,#/stock-return,#/stock-transfer,#/stock-adjust'
         if (user.role === 'sa') allowedMenus = SA_MENUS
-        else if (user.role === 'mechanic') allowedMenus = '#/dashboard,#/kanban,#/job'
+        else if (['mechanic', 'technician'].includes(user.role)) allowedMenus = '#/mechanic-kpi'
         else if (['manager', 'owner', 'admin'].includes(user.role)) allowedMenus = '*'
     }
 
@@ -239,6 +239,7 @@ export function getRoleLabel(role) {
         owner: 'เจ้าของ',
         manager: 'ผู้จัดการ',
         mechanic: 'ช่าง',
+        technician: 'ช่างเทคนิค',
         sa: 'SA'
     }
     return labels[role] || role
@@ -277,3 +278,5 @@ export function hasPermission(key) {
         return false
     }
 }
+
+

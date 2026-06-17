@@ -50,7 +50,7 @@ class AppShell {
         const isMainPage = path === '/' || path.includes('/pages/main/');
         if (!isMainPage && this.role) {
             const matchedTool = this.registry.find(tool => {
-                if (!tool.path || tool.path.startsWith('http') || tool.path === '__mungkhudshop__') return false;
+                if (!tool.path || tool.path.startsWith('http') || tool.path === '__mungkhudshop__' || tool.path === '__mungkhudshop_mechanic__') return false;
                 return path.includes(tool.path.replace('/index.html', '').replace('.html', ''));
             });
 
@@ -164,16 +164,16 @@ class AppShell {
     resolveToolPath(tool) {
         let href = tool.path;
         // Resolve MungkhudShop placeholder
-        if (href === '__mungkhudshop__') {
+        if (href === '__mungkhudshop__' || href === '__mungkhudshop_mechanic__') {
             const service = window['ConfigService'] || ConfigService;
             const configured = service && typeof service.getSetting === 'function'
                 ? service.getSetting('mungkhudshop_url') : null;
             if (configured) {
-                href = configured.replace(/\/$/, '') + '/#/dashboard';
+                href = configured.replace(/\/$/, '') + (tool.path === '__mungkhudshop_mechanic__' ? '/#/mechanic-kpi' : '/#/dashboard');
             } else {
                 const currentPort = window.location.port || '8092';
                 const shopPort = currentPort === '9092' ? '9091' : '8091';
-                href = `${window.location.protocol}//${window.location.hostname}:${shopPort}/#/dashboard`;
+                href = `${window.location.protocol}//${window.location.hostname}:${shopPort}${tool.path === '__mungkhudshop_mechanic__' ? '/#/mechanic-kpi' : '/#/dashboard'}`;
             }
             return href;
         }
@@ -285,7 +285,7 @@ class AppShell {
             const link = this.createNavItem(tool.title, href, this.getIconForGroup(tool.group));
 
             // MungkhudShop: resolve URL at click-time (ConfigService may not be ready at render-time)
-            if (tool.path === '__mungkhudshop__') {
+            if (tool.path === '__mungkhudshop__' || tool.path === '__mungkhudshop_mechanic__') {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const resolved = this.resolveToolPath(tool);
@@ -294,7 +294,7 @@ class AppShell {
             }
 
             // Mark active
-            if (tool.path !== '__mungkhudshop__' && this.currentPath.includes(tool.path.replace('./pages/', '').replace('/index.html', ''))) {
+            if (tool.path !== '__mungkhudshop__' && tool.path !== '__mungkhudshop_mechanic__' && this.currentPath.includes(tool.path.replace('./pages/', '').replace('/index.html', ''))) {
                 link.classList.add('active');
             }
 
@@ -343,7 +343,7 @@ class AppShell {
             const link = this.createBottomNavItem(tool.title, href, this.getIconForGroup(tool.group));
 
             // MungkhudShop: resolve URL at click-time (ConfigService may not be ready at render-time)
-            if (tool.path === '__mungkhudshop__') {
+            if (tool.path === '__mungkhudshop__' || tool.path === '__mungkhudshop_mechanic__') {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const resolved = this.resolveToolPath(tool);
@@ -351,7 +351,7 @@ class AppShell {
                 });
             }
 
-            if (tool.path !== '__mungkhudshop__' && this.currentPath.includes(tool.path.replace('./pages/', '').replace('/index.html', ''))) {
+            if (tool.path !== '__mungkhudshop__' && tool.path !== '__mungkhudshop_mechanic__' && this.currentPath.includes(tool.path.replace('./pages/', '').replace('/index.html', ''))) {
                 link.classList.add('active');
             }
             inner.appendChild(link);

@@ -141,7 +141,8 @@ router.post('/pin-login', authLimiter, async (req, res) => {
         const roleGroups = {
             manager: ['owner', 'manager'],
             admin: ['admin'],
-            mechanic: ['mechanic', 'employee'],
+            mechanic: ['mechanic', 'employee', 'technician'],
+            technician: ['technician', 'mechanic', 'employee'],
             sa: ['sa']
         }
         const allowedRoles = roleGroups[roleGroup] || [roleGroup]
@@ -385,3 +386,4 @@ router.post('/password-login', authLimiter, async (req, res) => {
 })
 
 export default router
+

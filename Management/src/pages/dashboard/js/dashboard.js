@@ -1,3 +1,20 @@
+function currentUserRole() {
+    try {
+        return (sessionStorage.getItem('bcauto_role') || JSON.parse(localStorage.getItem('bc_user') || '{}').role || '').toLowerCase();
+    } catch (_) {
+        return '';
+    }
+}
+
+function canViewFinance() {
+    return ['admin', 'owner', 'manager'].includes(currentUserRole());
+}
+
+function applyFinanceVisibility() {
+    if (canViewFinance()) return;
+    document.querySelectorAll('.finance-only, .kpi-card').forEach(el => el.remove());
+}
+
 /**
  * Financial Dashboard — BC Auto Xperience
  * ════════════════════════════════════════
@@ -141,7 +158,7 @@ async function fetchAndRender() {
         const results = await Promise.allSettled([
             window.pb.collection('jobs').getFullList({ filter: `created >= '${yearStart}' && created <= '${yearEnd}'` }),
             window.pb.collection('job_items').getFullList({ filter: `created >= '${yearStart}' && created <= '${yearEnd}'` }),
-            window.pb.collection('financial_ledger').getFullList({ filter: `date >= '${yearStart}' && date <= '${yearEnd}'` }),
+            canViewFinance() ? window.pb.collection('financial_ledger').getFullList({ filter: `date >= '${yearStart}' && date <= '${yearEnd}'` }) : Promise.resolve([]),
             window.pb.collection('products').getFullList(),
             window.pb.collection('branches').getFullList()
         ]);
@@ -261,6 +278,7 @@ function filterByTimeframe(items, dateGetter) {
 
 // ── Master Render ──
 function renderAll() {
+    applyFinanceVisibility();
     let periodStr = '';
     if (timeframe === 'daily') periodStr = new Date(selectedDate).toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
     else if (timeframe === 'weekly') periodStr = `สัปดาห์ที่ ${selectedWeek.split('-W')[1]} ปี ${parseInt(selectedWeek.split('-W')[0]) + 543}`;

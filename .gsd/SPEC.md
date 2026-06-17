@@ -1,7 +1,35 @@
 # SPEC.md — MungkhudShop POS Overhaul
 
 > **Status**: `FINALIZED`
-> **Created**: 2026-05-04
+> **Last updated**: 2026-06-17
+
+## Scope Freeze — No New Features Until Hardening Complete
+
+The following are BLOCKED until all hardening waves are verified:
+- New document types
+- New report pages or dashboards
+- New technician or HR features
+- UI redesigns or theme changes
+- New notification channels
+- Third-party integrations
+- New database tables
+
+## Active Scope (Allowed)
+
+Bug fixes and hardening for:
+- login / session / PIN auth
+- customers / vehicles / products (master data only)
+- jobs and job_items
+- documents and document_items (lifecycle only: confirm/void)
+- stock_ledgers (via API endpoints — no direct writes)
+- payments / daily-summary
+- user permissions / branch settings
+- data integrity validation in validate.js
+- test coverage (integration + E2E)
+- admin recovery tools
+- documentation updates
+
+---
 
 ## Vision
 

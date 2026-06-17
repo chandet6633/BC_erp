@@ -1,5 +1,5 @@
 /**
- * Job Page — Shared State Module (ARCH-2)
+ * Job Page - Shared State Module (ARCH-2)
  * v2: Adds mechanicsCache for lead/helper mechanic assignment.
  */
 import { fetchFullList } from '../services/pb.js'
@@ -77,18 +77,61 @@ export async function getMechanics() {
     }
     if (!mechanicsCache) {
         const allUsers = await fetchFullList('users', { requestKey: null })
-        // Include users with role: mechanic, employee, technician
+        const branchAliases = await getBranchAliases()
+        const selectedBranches = normalizeBranchKeys(currentBranch, branchAliases)
+
+        // Include users with role: mechanic, employee, technician.
         mechanicsCache = allUsers.filter(u =>
-            u.is_active !== false &&
-            /mechanic|employee|technician|ช่าง/i.test(u.role || '')
+            isActiveUser(u) &&
+            /mechanic|employee|technician|ช่าง/i.test(u.role || '') &&
+            (!selectedBranches.size || hasMatchingBranch(u, selectedBranches, branchAliases))
         )
-        // Fallback: if no mechanic-role users found, return all active users
+        // Fallback: if no mechanic-role users found, return active users in the branch.
         if (mechanicsCache.length === 0) {
-            mechanicsCache = allUsers.filter(u => u.is_active !== false)
+            mechanicsCache = allUsers.filter(u =>
+                isActiveUser(u) &&
+                (!selectedBranches.size || hasMatchingBranch(u, selectedBranches, branchAliases))
+            )
         }
-    }
-    if (currentBranch) {
-        mechanicsCache = mechanicsCache.filter(u => String(u.branch || u.branch_id || '') === String(currentBranch))
     }
     return mechanicsCache
 }
+
+function isActiveUser(user) {
+    if (user.active !== undefined) return user.active !== false && user.active !== 'false' && user.active !== 0
+    return user.is_active !== false && user.is_active !== 'false' && user.is_active !== 0
+}
+
+async function getBranchAliases() {
+    try {
+        const branches = await fetchFullList('branches', { requestKey: 'branch_aliases' })
+        const aliases = new Map()
+        branches.forEach(branch => {
+            const keys = normalizeBranchKeys([branch.id, branch.code, branch.name, branch.branch_id])
+            keys.forEach(key => aliases.set(key, keys))
+        })
+        return aliases
+    } catch (e) {
+        console.warn('[job-state] Failed to load branch aliases:', e.message)
+        return new Map()
+    }
+}
+
+function hasMatchingBranch(user, selectedBranches, branchAliases) {
+    const userBranches = normalizeBranchKeys([user.branch, user.branch_id, user.branch_code], branchAliases)
+    return [...userBranches].some(key => selectedBranches.has(key))
+}
+
+function normalizeBranchKeys(value, aliases = new Map()) {
+    const values = Array.isArray(value) ? value : [value]
+    const keys = new Set()
+    values.forEach(v => {
+        const key = String(v || '').trim().toLowerCase()
+        if (!key) return
+        keys.add(key)
+        const linked = aliases.get(key)
+        if (linked) linked.forEach(alias => keys.add(alias))
+    })
+    return keys
+}
+

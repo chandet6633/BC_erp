@@ -521,7 +521,9 @@ async function assertJobMechanicsBelongToBranch(payload, targetBranch) {
             throw Object.assign(new Error('Selected mechanic is not a mechanic/employee user'), { status: 400 })
         }
         const userBranch = userBranchOf(user)
-        if (!userBranch || userBranch !== branch) {
+        const normUserBranch = await normalizeBranchId(userBranch)
+        const normBranch = await normalizeBranchId(branch)
+        if (!normUserBranch || normUserBranch !== normBranch) {
             throw Object.assign(new Error('Selected mechanic belongs to another branch'), { status: 403 })
         }
     }
@@ -797,6 +799,199 @@ router.get('/custom/generate-doc-id', async (req, res) => {
         const nextId = `${prefix}-${String(maxInt + 1).padStart(5, '0')}`;
         res.json({ doc_no: nextId });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/data/custom/integrity/stock-check
+ * Checks for negative stock, orphan ledgers, and confirmed docs without ledgers.
+ */
+router.get('/custom/integrity/stock-check', async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin') {
+            return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น (Admin only)' });
+        }
+
+        // 1. Get all stock_ledgers
+        const ledgers = await db.getAllRecords('stock_ledgers', {});
+
+        // 2. Calculate balance per product
+        const stockMap = {};
+        for (const l of ledgers) {
+            const pid = String(l.product_id || '').trim();
+            if (!pid) continue;
+            if (!stockMap[pid]) {
+                stockMap[pid] = { qty: 0, total_value: 0 };
+            }
+            stockMap[pid].qty += Number(l.qty) || 0;
+            stockMap[pid].total_value += Number(l.total_value) || 0;
+        }
+
+        // 3. Find products with negative balance
+        const negativeStock = [];
+        for (const pid of Object.keys(stockMap)) {
+            if (stockMap[pid].qty < 0) {
+                const prod = await db.getRecord('products', pid).catch(() => null);
+                negativeStock.push({
+                    product_id: pid,
+                    code: prod?.code || 'Unknown',
+                    name: prod?.name || 'Unknown',
+                    qty: stockMap[pid].qty,
+                    total_value: stockMap[pid].total_value
+                });
+            }
+        }
+
+        // 4. Find ledger rows whose reference_doc doesn't match any document.doc_no
+        const docs = await db.getAllRecords('documents', {});
+        const docNos = new Set(docs.map(d => String(d.doc_no || '').trim()).filter(Boolean));
+        const orphanLedgers = [];
+        for (const l of ledgers) {
+            const ref = String(l.reference_doc || '').trim();
+            if (!ref || !docNos.has(ref)) {
+                orphanLedgers.push({
+                    id: l.id,
+                    transaction_no: l.transaction_no,
+                    transaction_type: l.transaction_type,
+                    product_id: l.product_id,
+                    qty: l.qty,
+                    reference_doc: l.reference_doc,
+                    branch_id: l.branch_id
+                });
+            }
+        }
+
+        // 5. Find confirmed stock documents (RR/RQ/RE/TF/SA) with 0 associated ledger entries
+        const stockDocTypes = new Set(['RR', 'RQ', 'RE', 'TF', 'SA']);
+        const confirmedDocs = docs.filter(d => d.status === 'confirmed' && stockDocTypes.has(String(d.doc_type || '').toUpperCase()));
+        const ledgerRefs = new Set(ledgers.map(l => String(l.reference_doc || '').trim()).filter(Boolean));
+        const confirmedNoLedger = [];
+        for (const d of confirmedDocs) {
+            const docNo = String(d.doc_no || '').trim();
+            if (!docNo || !ledgerRefs.has(docNo)) {
+                confirmedNoLedger.push({
+                    id: d.id,
+                    doc_no: d.doc_no,
+                    doc_type: d.doc_type,
+                    issue_date: d.issue_date,
+                    branch_id: d.branch_id
+                });
+            }
+        }
+
+        res.json({
+            negativeStock,
+            orphanLedgers,
+            confirmedNoLedger
+        });
+    } catch (err) {
+        console.error('[Data] stock-check integrity failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/data/custom/integrity/document-check
+ * Checks for duplicate doc_no, orphaned items, and confirmed docs without ledgers.
+ */
+router.get('/custom/integrity/document-check', async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin') {
+            return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น (Admin only)' });
+        }
+
+        const docs = await db.getAllRecords('documents', {});
+
+        // 1. Find duplicate doc_no values in documents table
+        const docNoCounts = {};
+        for (const d of docs) {
+            const docNo = String(d.doc_no || '').trim();
+            if (docNo) {
+                docNoCounts[docNo] = (docNoCounts[docNo] || 0) + 1;
+            }
+        }
+        const duplicateDocNos = [];
+        for (const [docNo, count] of Object.entries(docNoCounts)) {
+            if (count > 1) {
+                const conflicting = docs.filter(d => String(d.doc_no || '').trim() === docNo);
+                duplicateDocNos.push({
+                    doc_no: docNo,
+                    count,
+                    documents: conflicting.map(d => ({ id: d.id, doc_type: d.doc_type, branch_id: d.branch_id, status: d.status }))
+                });
+            }
+        }
+
+        // 2. Find document_items where document_id doesn't exist in documents
+        const docItems = await db.getAllRecords('document_items', {});
+        const docIds = new Set(docs.map(d => String(d.id)));
+        const orphanItems = [];
+        for (const item of docItems) {
+            const docId = String(item.document_id || '');
+            if (!docId || !docIds.has(docId)) {
+                orphanItems.push({
+                    id: item.id,
+                    document_id: item.document_id,
+                    product_id: item.product_id,
+                    product_name: item.product_name,
+                    qty: item.qty
+                });
+            }
+        }
+
+        // 3. Find confirmed stock docs with 0 ledger entries
+        const ledgers = await db.getAllRecords('stock_ledgers', {});
+        const stockDocTypes = new Set(['RR', 'RQ', 'RE', 'TF', 'SA']);
+        const confirmedDocs = docs.filter(d => d.status === 'confirmed' && stockDocTypes.has(String(d.doc_type || '').toUpperCase()));
+        const ledgerRefs = new Set(ledgers.map(l => String(l.reference_doc || '').trim()).filter(Boolean));
+        const confirmedNoLedger = [];
+        for (const d of confirmedDocs) {
+            const docNo = String(d.doc_no || '').trim();
+            if (!docNo || !ledgerRefs.has(docNo)) {
+                confirmedNoLedger.push({
+                    id: d.id,
+                    doc_no: d.doc_no,
+                    doc_type: d.doc_type,
+                    issue_date: d.issue_date,
+                    branch_id: d.branch_id
+                });
+            }
+        }
+
+        res.json({
+            duplicateDocNos,
+            orphanItems,
+            confirmedNoLedger
+        });
+    } catch (err) {
+        console.error('[Data] document-check integrity failed:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * POST /api/data/custom/admin/recalculate-costs
+ * Recalculates weighted average costs for all products.
+ */
+router.post('/custom/admin/recalculate-costs', async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin') {
+            return res.status(403).json({ error: 'เฉพาะผู้ดูแลระบบเท่านั้น (Admin only)' });
+        }
+
+        const products = await db.getAllRecords('products', {});
+        const productIds = products.map(p => p.id).filter(Boolean);
+
+        await recalculateAverageCost(productIds);
+
+        res.json({
+            updated: productIds.length,
+            skipped: 0,
+            errors: []
+        });
+    } catch (err) {
+        console.error('[Data] recalculate-costs failed:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

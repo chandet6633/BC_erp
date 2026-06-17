@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ตรวจสอบความสมบูรณ์ข้อมูล - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/page-header.css" />
+    <link href="../../assets/css/style.css?v=3" rel="stylesheet" />
+    <style>
+        .integrity-card { background: white; border-radius: var(--radius-lg); padding: var(--space-4); border: 1px solid var(--surface-200); margin-bottom: var(--space-4); }
+        .integrity-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-100); padding-bottom: var(--space-2); margin-bottom: var(--space-3); }
+        .integrity-header h2 { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0; color: var(--surface-900); }
+        .results-box { background: var(--surface-50); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-sm); max-height: 300px; overflow-y: auto; border: 1px dashed var(--surface-200); }
+        .btn-group { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+        .result-row { padding: var(--space-2); border-bottom: 1px solid var(--surface-100); display: flex; justify-content: space-between; font-family: monospace; }
+        .result-row:last-child { border-bottom: none; }
+        .audit-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+        .audit-table th { text-align: left; padding: var(--space-2); background: var(--surface-100); font-weight: 600; }
+        .audit-table td { padding: var(--space-2); border-bottom: 1px solid var(--surface-100); }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+</head>
+<body class="page-bg">
+    <div class="container" style="max-width: 900px; padding: 20px;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><span class="material-icons-outlined" style="font-size:1.6rem;vertical-align:bottom">fact_check</span> ตรวจสอบความสมบูรณ์ข้อมูล</h1>
+                <p class="page-subtitle">Diagnostic & Recovery Center</p>
+            </div>
+            <div class="page-actions">
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
+        </div>
+
+        <!-- Section 1: Stock Check & Recalculate -->
+        <div class="integrity-card">
+            <div class="integrity-header">
+                <h2><span class="material-icons-outlined" style="color:#1d4ed8">inventory_2</span> ตรวจสอบสต็อกคงเหลือ & ต้นทุนเฉลี่ย</h2>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnCheckStock">
+                    <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">search</span> ตรวจสอบสต็อก
+                </button>
+                <button class="btn btn-warning" id="btnRecalcCosts">
+                    <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">calculate</span> คำนวณต้นทุนใหม่ทั้งหมด
+                </button>
+            </div>
+            <div class="results-box" id="stockResults">กดปุ่มเพื่อเริ่มตรวจสอบ...</div>
+        </div>
+
+        <!-- Section 2: Document Check -->
+        <div class="integrity-card">
+            <div class="integrity-header">
+                <h2><span class="material-icons-outlined" style="color:#15803d">description</span> ตรวจสอบความสมบูรณ์ของเอกสาร</h2>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnCheckDocs">
+                    <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">search</span> ตรวจสอบเอกสาร
+                </button>
+            </div>
+            <div class="results-box" id="docResults">กดปุ่มเพื่อเริ่มตรวจสอบ...</div>
+        </div>
+
+        <!-- Section 3: Audit Log History -->
+        <div class="integrity-card">
+            <div class="integrity-header">
+                <h2><span class="material-icons-outlined" style="color:#7c3aed">history</span> ประวัติการแก้ไขรายการล่าสุด</h2>
+                <button class="btn btn-sm btn-outline" id="btnLoadAudit">โหลดประวัติ</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>เวลา</th>
+                            <th>ผู้ดำเนินการ</th>
+                            <th>การกระทำ</th>
+                            <th>รายละเอียด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogsBody">
+                        <tr>
+                            <td colspan="4" style="text-align:center;color:var(--surface-500)">ยังไม่มีการโหลดข้อมูล</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./integrity-check.js"></script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

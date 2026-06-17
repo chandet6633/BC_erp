@@ -10,7 +10,8 @@ const ROLE_MENUS = {
   owner: '*',
   manager: '*',
   sa: '#/dashboard,#/job,#/kanban,#/stock-list,#/requisition,#/stock-return,#/stock-transfer,#/stock-adjust',
-  mechanic: '#/dashboard,#/kanban,#/job'
+  mechanic: '#/mechanic-kpi',
+  technician: '#/mechanic-kpi'
 };
 const TEST_USERS = {
   admin: { id: 'test-admin', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' },
@@ -39,10 +40,13 @@ async function loginMungkhudShop(page, username, password) {
     localStorage.setItem('mungkhud_jwt', token);
     localStorage.setItem('bcauto_jwt', token);
     localStorage.setItem('mungkhud_changelog_version', '2.3.0');
-    if (user.branch && user.branch !== 'all') {
-      localStorage.setItem('mungkhud_branch', user.branch);
-    } else {
-      localStorage.removeItem('mungkhud_branch');
+    if (!sessionStorage.getItem('mungkhud_test_logged_in')) {
+      sessionStorage.setItem('mungkhud_test_logged_in', 'true');
+      if (user.branch && user.branch !== 'all') {
+        localStorage.setItem('mungkhud_branch', user.branch);
+      } else {
+        localStorage.removeItem('mungkhud_branch');
+      }
     }
   }, { token, user, allowedMenus });
 
@@ -117,3 +121,4 @@ async function apiLogin(page, username, password) {
 }
 
 module.exports = { loginMungkhudShop, loginManagement, gotoMungkhudRoute };
+

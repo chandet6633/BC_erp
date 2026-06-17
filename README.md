@@ -166,6 +166,15 @@ Routes:
 | `DELETE` | `/api/data/:table/:id` | JWT | Delete record |
 | `POST` | `/api/notify/*` | JWT | Telegram notification actions |
 | `GET` | `/api/health` | none | Health check |
+| `POST` | `/api/data/custom/confirm-document/:id` | JWT | Confirm document + post stock ledgers atomically |
+| `POST` | `/api/data/custom/void-document/:id` | JWT | Void document + reverse stock ledgers |
+| `GET` | `/api/data/custom/stock-balances` | JWT | Aggregated stock qty by product (server-side SUM) |
+| `GET` | `/api/data/custom/generate-doc-id` | JWT | Generate next document number for a prefix |
+| `POST` | `/api/data/custom/upsert-customer` | JWT | Atomic create-or-find customer |
+| `POST` | `/api/data/custom/upsert-vehicle` | JWT | Atomic create-or-find vehicle |
+| `GET` | `/api/data/custom/integrity/stock-check` | JWT (admin) | Detect stock integrity issues |
+| `GET` | `/api/data/custom/integrity/document-check` | JWT (admin) | Detect document integrity issues |
+| `POST` | `/api/data/custom/admin/recalculate-costs` | JWT (admin) | Recalculate weighted average cost for all products |
 
 RBAC notes:
 

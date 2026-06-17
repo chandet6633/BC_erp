@@ -515,6 +515,55 @@ $$;
 -- INDEXES for common query patterns
 -- ═══════════════════════════════════════════
 
+-- Standard ERP metadata columns for governance, auditability, and soft lifecycle state.
+DO $$
+DECLARE
+    tbl TEXT;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY[
+        'users',
+        'system_settings',
+        'system_roles',
+        'transactions',
+        'service_items',
+        'mgmt_product_groups',
+        'financial_ledger',
+        'image_storage',
+        'hr_employees',
+        'hr_attendance',
+        'hr_leaves',
+        'app_users',
+        'lookups',
+        'branches',
+        'companies',
+        'customers',
+        'vehicles',
+        'product_brands',
+        'product_groups',
+        'products',
+        'vendors',
+        'jobs',
+        'job_items',
+        'documents',
+        'document_items',
+        'stock_ledgers',
+        'settings',
+        'app_settings',
+        'favorite_products',
+        'job_evaluations',
+        'job_payments'
+    ]
+    LOOP
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS created_by TEXT', tbl);
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS updated_by TEXT', tbl);
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS source TEXT', tbl);
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true', tbl);
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ', tbl);
+        EXECUTE format('ALTER TABLE IF EXISTS %I ADD COLUMN IF NOT EXISTS metadata_json JSONB DEFAULT ''{}''::jsonb', tbl);
+    END LOOP;
+END;
+$$;
+
 CREATE INDEX IF NOT EXISTS idx_transactions_job_id ON transactions(job_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_branch ON transactions(branch);
 CREATE INDEX IF NOT EXISTS idx_service_items_job_id ON service_items(job_id);

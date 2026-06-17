@@ -143,8 +143,8 @@ function renderAddEditTab(panel, mainContainer) {
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">หมายเหตุ</label>
-                    <textarea class="form-control" id="jobNotes" rows="2" placeholder="หมายเหตุ..."></textarea>
+                    <label class="form-label">รายละเอียดงาน</label>
+                    <textarea class="form-control" id="jobNotes" rows="3" placeholder="ระบุรายละเอียดงาน อาการที่ลูกค้าแจ้ง หรือจุดที่ต้องตรวจเป็นพิเศษ..."></textarea>
                 </div>
             </div>
 
@@ -216,28 +216,6 @@ function renderAddEditTab(panel, mainContainer) {
                 </div>
             </div>
 
-            <!-- ─── Payment Info + VAT Toggle ─── -->
-            <div class="job-section">
-                <div class="job-section-title"><span class="material-icons-outlined">payment</span> การชำระเงิน</div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label class="form-label">ประเภทการชำระ</label>
-                        <select class="form-control touch-target" id="jobPaymentType">
-                            <option value="cash">เงินสด</option>
-                            <option value="transfer">โอนเงิน</option>
-                            <option value="credit">บัตรเครดิต</option>
-                            <option value="qr">QR Payment</option>
-                            <option value="credit_term">เครดิต</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ส่วนลด (%)</label>
-                        <input type="number" class="form-control" id="jobDiscount" value="0" min="0" max="100">
-                    </div>
-                </div>
-                <div id="jobVatToggle" style="margin-top:var(--sp-3);"></div>
-            </div>
-
             <!-- Service Items Grid -->
             <div class="job-section job-items-section">
                 <div class="job-section-title"><span class="material-icons-outlined">list_alt</span> รายการบริการ / สินค้า</div>
@@ -287,30 +265,6 @@ function renderAddEditTab(panel, mainContainer) {
                 </div>
             </div>
 
-            <!-- Repair Evaluation -->
-            <div class="job-section">
-                <div class="job-section-title"><span class="material-icons-outlined">checklist</span> ประเมินงานซ่อม</div>
-                <div class="form-row-2">
-                    <div class="form-group">
-                        <label class="form-label">ผลการตรวจสอบ</label>
-                        <select class="form-control" id="jobEvalResult">
-                            <option value="">ยังไม่ประเมิน</option>
-                            <option value="pass">ผ่าน ✅</option>
-                            <option value="fix_needed">ต้องแก้ไข ⚠️</option>
-                            <option value="fail">ไม่ผ่าน ❌</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ผู้ประเมิน</label>
-                        <input type="text" class="form-control" id="jobEvaluator" placeholder="ชื่อผู้ประเมิน...">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">บันทึกผลการประเมิน</label>
-                    <textarea class="form-control" id="jobEvalNotes" rows="2" placeholder="ผลตรวจสอบ / รายละเอียดที่ต้องแก้ไข..."></textarea>
-                </div>
-            </div>
-
             <!-- Multiple Payment Methods -->
             <div class="job-section">
                 <div class="job-section-title"><span class="material-icons-outlined">account_balance_wallet</span> แยกชำระหลายช่องทาง</div>
@@ -330,6 +284,18 @@ function renderAddEditTab(panel, mainContainer) {
                 <div style="display:flex;gap:var(--sp-2);margin-top:var(--sp-2);">
                     <button class="btn btn-sm btn-outline" id="btnAddPayment"><span class="material-icons-outlined" style="font-size:16px;">add</span> เพิ่มช่องทาง</button>
                     <span class="text-sm text-muted" style="align-self:center;" id="paymentSumLabel">ยอดชำระ: ฿0.00</span>
+                </div>
+                
+                <div style="border-top:1px solid var(--bc-border);margin-top:var(--sp-4);padding-top:var(--sp-4);">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">ส่วนลด (%)</label>
+                            <input type="number" class="form-control" id="jobDiscount" value="0" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <div id="jobVatToggle"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group" style="margin-top:var(--sp-4);">
                     <label class="form-label">สลิปโอนเงิน / หลักฐานชำระเงิน (ถ้ามี)</label>
@@ -414,6 +380,10 @@ function renderAddEditTab(panel, mainContainer) {
         const plateVal = plateAutocomplete.input.value.trim()
         const selectedId = plateAutocomplete.input.dataset?.selectedId
         if (!plateVal || selectedId) return  // skip if empty or already selected from dropdown
+        if (!/^[0-9A-Za-z\u0E00-\u0E7F]{1,3}-[0-9]{1,4}$/.test(plateVal)) {
+            showToast("รูปแบบทะเบียนต้องเป็น ตัวอักษร/เลขไม่เกิน 3 ตัว-เลขไม่เกิน 4 ตัว เช่น 3กค-1515", 'error')
+            return
+        }
         // Small delay to allow onSelect to fire first
         setTimeout(async () => {
             if (plateAutocomplete.input.dataset?.selectedId) return  // selection happened

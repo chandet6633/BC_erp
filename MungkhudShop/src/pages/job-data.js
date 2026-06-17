@@ -15,6 +15,11 @@ import { addJobLineRow, recalcTotals } from './job-line-items.js'
 import { checkDuplicateJob, checkDuplicateVehicle, checkDuplicateCustomer } from '@shared/duplicate-check.js'
 import { getSelectedHelperIds, setHelperChipState } from './job.js'
 
+const WORKFLOW_META_RE = /\n*\[MECHANIC_WORKFLOW_JSON\][\s\S]*?\[\/MECHANIC_WORKFLOW_JSON\]\s*$/
+function visibleJobNotes(notes) {
+    return String(notes || '').replace(WORKFLOW_META_RE, '').trim()
+}
+
 /** Load jobs from server (with branch filter) */
 export async function loadSearchData(panel, mainContainer) {
     if (!panel || !mainContainer) return
@@ -99,7 +104,7 @@ export async function editJob(id, mainContainer) {
     panel.querySelector('#jobStatus').value = item.status || 'pending'
     panel.querySelector('#jobStartDate').value = item.start_date ? item.start_date.split(' ')[0] : ''
     panel.querySelector('#jobEndDate').value = item.end_date ? item.end_date.split(' ')[0] : ''
-    panel.querySelector('#jobNotes').value = item.notes || ''
+    panel.querySelector('#jobNotes').value = visibleJobNotes(item.notes)
 
     // v2: Lead mechanic
     const leadSel = panel.querySelector('#jobLeadMechanic')
@@ -131,7 +136,7 @@ export async function editJob(id, mainContainer) {
     if (customerAC) customerAC.setValue(item.customer_name || '')
     panel.querySelector('#jobCustomerPhone').value = item.customer_phone || ''
 
-    panel.querySelector('#jobPaymentType').value = item.payment_type || 'cash'
+    const editPaymentTypeEl = panel.querySelector('#jobPaymentType'); if (editPaymentTypeEl) editPaymentTypeEl.value = item.payment_type || 'cash'
     panel.querySelector('#jobDiscount').value = item.discount_pct || 0
 
     if (vatToggle) vatToggle.setState({ vatEnabled: !!item.vat_enabled, vatMode: item.vat_mode || 'customer_pays' })
@@ -183,7 +188,7 @@ export async function editJob(id, mainContainer) {
     jItems.forEach((ji, idx) => addJobLineRow(panel, ji, idx + 1))
     recalcTotals(panel)
 
-    mainContainer.querySelector('.tab-btn[data-tab="add"]').click()
+    mainContainer.querySelector('.tab-btn[data-tab="add"]')?.click()
 }
 
 /** Delete a job */
@@ -226,6 +231,12 @@ export async function saveJobData(panel, mainContainer) {
             btnSave.innerHTML = originalBtnText;
         }
     };
+
+    const platePattern = /^[0-9A-Za-z\u0E00-\u0E7F]{1,3}-[0-9]{1,4}$/
+    if (plate && !platePattern.test(plate)) {
+        unlockBtn();
+        return showToast("รูปแบบทะเบียนต้องเป็น ตัวอักษร/เลขไม่เกิน 3 ตัว-เลขไม่เกิน 4 ตัว เช่น 3กค-1515", 'error')
+    }
 
     if (!job_no || !plate || !customer_name) {
         unlockBtn();
@@ -349,11 +360,16 @@ export async function saveJobData(panel, mainContainer) {
         paymentStatus = 'credit'
     }
 
+    const cleanDateValue = (value) => {
+        const v = String(value || '').trim()
+        return v ? v : null
+    }
+
     const payload = {
         job_no,
         status: panel.querySelector('#jobStatus').value,
-        start_date: panel.querySelector('#jobStartDate').value,
-        end_date: panel.querySelector('#jobEndDate').value,
+        start_date: cleanDateValue(panel.querySelector('#jobStartDate').value),
+        end_date: cleanDateValue(panel.querySelector('#jobEndDate').value),
         notes: panel.querySelector('#jobNotes').value,
         plate,
         is_red_plate: panel.querySelector('#jobRedPlate').classList.contains('active'),
@@ -391,6 +407,10 @@ export async function saveJobData(panel, mainContainer) {
         payload.profit = grandTotal - totalCost
     }
     
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === null || payload[key] === undefined || payload[key] === '') delete payload[key]
+    })
+
     const fileInput = panel.querySelector('#jobPaymentProof')
     if (fileInput && fileInput.files.length > 0) {
         try {
@@ -496,7 +516,7 @@ export async function saveJobData(panel, mainContainer) {
 
         showToast('บันทึกใบงานเรียบร้อย', 'success')
         clearJobForm(panel)
-        mainContainer.querySelector('.tab-btn[data-tab="search"]').click()
+        mainContainer.querySelector('.tab-btn[data-tab="search"]')?.click()
         loadSearchData(mainContainer.querySelector('#panel-search'), mainContainer)
     } catch (e) {
         console.error(e)
@@ -537,7 +557,7 @@ export function clearJobForm(panel) {
     const colorEl = panel.querySelector('#jobColor'); if (colorEl) colorEl.value = ''
     if (customerAC) { customerAC.setValue(''); customerAC.input && (customerAC.input.dataset.selectedId = '') }
     panel.querySelector('#jobCustomerPhone').value = ''
-    panel.querySelector('#jobPaymentType').value = 'cash'
+    const paymentTypeEl = panel.querySelector('#jobPaymentType'); if (paymentTypeEl) paymentTypeEl.value = 'cash'
     panel.querySelector('#jobDiscount').value = '0'
     if (vatToggle) vatToggle.setState({ vatEnabled: false, vatMode: 'customer_pays' })
     // v2: Hide badges/prompts

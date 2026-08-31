@@ -30,11 +30,11 @@ Browser → Nginx (/api/*) → Express API (JWT) → NocoDB (xc-token)
 
 | What Changed | Update This |
 |-------------|-------------|
-| New page or tool | `README.md` (Management pages), `registry.js`, `vite.config.js` |
+| New page or tool | `README.md` (Portal pages), `registry.js`, `vite.config.js` |
 | New shared service | `README.md` (Data and Auth / app sections) |
 | New API route | `README.md` (API Server routes table) |
 | New NocoDB table or column | `README.md` (Database section) |
-| New CSS class or component | `README.md` (Management CSS section) |
+| New CSS class or component | `README.md` (Portal CSS section) |
 | New middleware or auth change | `README.md` (API Server section) |
 | Architecture change | `README.md` |
 | New reusable pattern | Knowledge Item: `bcauto-service-patterns` |
@@ -90,7 +90,7 @@ window.showToast?.('สำเร็จ ✅', 'success');
 ### Build & Deploy
 ```bash
 # After frontend changes:
-cd webapp/Management && npm run build
+cd webapp/Portal && npm run build
 
 # After API server changes:
 docker compose -f docker-compose.test.nocodb.yml up -d --build test-api
@@ -102,16 +102,16 @@ docker compose -f docker-compose.test.nocodb.yml up -d --build test-api
 
 | Need | File |
 |------|------|
-| Add a new tool | `Management/src/registry.js` + `Management/vite.config.js` |
-| Data access | `Management/src/services/pocketbase.js` |
-| Auth/roles | `Management/src/services/authService.js` |
-| Toast/modal | `Management/src/components/ui.js` |
-| Branch selector | `Management/src/components/branch-switcher.js` |
-| Formatting utils | `Management/src/utils/helpers.js` |
-| CSS design tokens | `Management/src/assets/css/design-system.css` |
+| Add a new tool | `Portal/src/registry.js` + `Portal/vite.config.js` |
+| Data access | `Portal/src/services/pocketbase.js` |
+| Auth/roles | `Portal/src/services/authService.js` |
+| Toast/modal | `Portal/src/components/ui.js` |
+| Branch selector | `Portal/src/components/branch-switcher.js` |
+| Formatting utils | `Portal/src/utils/helpers.js` |
+| CSS design tokens | `Portal/src/assets/css/design-system.css` |
 | API CRUD routes | `api-server/routes/data.js` |
 | NocoDB client | `api-server/lib/nocodb.js` |
-| Nginx config | `nginx-test-management.conf` |
+| Nginx config | `nginx-test-portal.conf` |
 | Docker stack | `docker-compose.test.nocodb.yml` |
 
 ---
@@ -147,7 +147,7 @@ Response format: { "productId": { qty: N, total_value: M }, ... }
 
 ```bash
 cd api-server && node --check server.js && node --check routes/data.js && node --check middleware/validate.js
-cd Management && npm run build
+cd Portal && npm run build
 cd MungkhudShop && npm run build
 node tests/integration/test_phase5.js
 cd tests/e2e && npx playwright test --reporter=line

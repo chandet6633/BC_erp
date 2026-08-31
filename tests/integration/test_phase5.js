@@ -9,7 +9,7 @@ function createToken(payload) {
 }
 
 // Generate auth tokens for roles/branches
-const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' });
+const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'bc-auto-service' });
 const managerToken = createToken({ id: 'mgr1', username: 'manager', name: 'Manager', role: 'manager', branch: 'main' });
 const saMainToken = createToken({ id: 'sa1', username: 'sa_main', name: 'SA Main', role: 'sa', branch: 'main' });
 const saSuphanToken = createToken({ id: 'sa2', username: 'sa_suphan', name: 'SA Suphan', role: 'sa', branch: 'suphanburi' });

@@ -1,9 +1,9 @@
 /**
- * Dev Tools Management page.
+ * Dev Tools Portal page.
  * Admin only page for clearing data and resetting tables for testing purposes.
  */
 import { showToast, showConfirm } from '../components/ui.js'
-import { getStoredToken, getCurrentUser } from '../services/auth.js'
+import { getApiAuthHeaders, getCurrentUser } from '../services/auth.js'
 
 export function initDevToolsPage(container) {
     const user = getCurrentUser()
@@ -71,13 +71,9 @@ export function initDevToolsPage(container) {
 
     async function callDevApi(action) {
         try {
-            const token = getStoredToken()
             const res = await fetch('/api/dev/clear-data', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ action })
             })
 
@@ -122,7 +118,7 @@ export function initDevToolsPage(container) {
         container.querySelector('#btnCheckStock').addEventListener('click', async () => {
             try {
                 const res = await fetch('/api/data/custom/integrity/stock-check', {
-                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                    headers: getApiAuthHeaders()
                 })
                 showResults(await res.json())
             } catch (e) {
@@ -133,7 +129,7 @@ export function initDevToolsPage(container) {
         container.querySelector('#btnCheckDocs').addEventListener('click', async () => {
             try {
                 const res = await fetch('/api/data/custom/integrity/document-check', {
-                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                    headers: getApiAuthHeaders()
                 })
                 showResults(await res.json())
             } catch (e) {
@@ -146,7 +142,7 @@ export function initDevToolsPage(container) {
             try {
                 const res = await fetch('/api/data/custom/admin/recalculate-costs', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${getStoredToken()}` }
+                    headers: getApiAuthHeaders()
                 })
                 showResults(await res.json())
             } catch (e) {

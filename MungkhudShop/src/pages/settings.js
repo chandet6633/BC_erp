@@ -204,7 +204,7 @@ export function initSettingsPage(container) {
                 <div class="card-header"><h3><span class="material-icons-outlined" style="vertical-align:middle;margin-right:4px;">send</span> Telegram Bot</h3></div>
                 <div class="card-body">
                     <div style="padding:var(--sp-3);background:var(--color-primary-light);border-radius:var(--radius-sm);font-size:0.85rem;margin-bottom:var(--sp-3);">
-                        <strong>ℹ️ ข้อมูล:</strong> คุณสามารถตั้งค่า Chat ID แยกรายสาขา (Jobs / HR / Queue) ได้ที่หน้า <strong>การจัดการสาขา</strong> ในระบบหลังบ้าน (Management Portal) ระบบจะใช้ Default Chat ID หากสาขานั้นไม่ได้ตั้งค่าไว้
+                        <strong>ℹ️ ข้อมูล:</strong> คุณสามารถตั้งค่า Chat ID แยกรายสาขา (Jobs / HR / Queue) ได้ที่หน้า <strong>การจัดการสาขา</strong> ในระบบหลังบ้าน (Portal) ระบบจะใช้ Default Chat ID หากสาขานั้นไม่ได้ตั้งค่าไว้
                     </div>
                     <div class="form-row-2">
                         <div class="form-group">

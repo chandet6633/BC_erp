@@ -1,5 +1,5 @@
 /**
- * Role Permissions Management page.
+ * Role Permissions Portal page.
  * Admin can view and edit granular JSON permissions for system roles (admin, owner, manager, etc.).
  */
 import { createTabs, renderDataGrid, showToast } from '../components/ui.js'

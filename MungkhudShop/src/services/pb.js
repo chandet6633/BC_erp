@@ -15,7 +15,7 @@ import {
     updateRecord,
     deleteRecord,
     fetchFirstListItem,
-    getManagementUrl,
+    getPortalUrl,
     uploadAttachment
 } from '@shared/nocodb-adapter.js'
 
@@ -32,16 +32,16 @@ export {
     updateRecord,
     deleteRecord,
     fetchFirstListItem,
-    getManagementUrl,
+    getPortalUrl,
     uploadAttachment
 }
 
 /**
- * managementPB is no longer needed — both apps share one NocoDB database.
+ * portalPB is no longer needed — both apps share one NocoDB database.
  * Kept as a stub for any remaining references during migration cleanup.
  * @deprecated Use the shared CRUD functions directly.
  */
-export const managementPB = {
+export const portalPB = {
     collection(name) {
         return {
             async getFullList(opts = {}) {
@@ -63,6 +63,6 @@ export const managementPB = {
 /* ── Default export (for direct pb usage if any) ── */
 export default {
     collection(name) {
-        return managementPB.collection(name)
+        return portalPB.collection(name)
     }
 }

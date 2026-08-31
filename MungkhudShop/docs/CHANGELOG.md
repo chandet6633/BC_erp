@@ -9,8 +9,8 @@ All notable changes are documented here.
 ### Cross-App Integration & New Features
 
 - **Kanban Board** (`kanban.js`) — Job status workflow with branch badges
-- **PIN Shared Login** — Authenticates via Management's PocketBase (`pb.js:10-24`)
-- **SSO Support** — Base64 token exchange from Management (`app.js:350-410`)
+- **PIN Shared Login** — Authenticates via Portal's PocketBase (`pb.js:10-24`)
+- **SSO Support** — Base64 token exchange from Portal (`app.js:350-410`)
 - **Password Hashing** — SHA-256 via WebCrypto with auto-migration (`crypto.js`, `auth.js:34-57`)
 - **Dark Mode** — Theme toggle with localStorage persistence (`app.js:443-470`)
 - **Session Timeout** — 30-minute inactivity auto-logout (`app.js:280-308`)
@@ -19,8 +19,8 @@ All notable changes are documented here.
 - **PDF Engine** — Client-side PDF generation (`pdf-engine.js`)
 - **Excel Export** — Spreadsheet export utility (`excel-export.js`)
 - **Low-Stock Alerts** — Automatic check with audio notification (`app.js:498-540`)
-- **Back to Management** — Button for SSO/PIN users (`app.js:428-440`)
-- **Embedded Mode** — iframe support when loaded inside Management (`app.js:413-425`)
+- **Back to Portal** — Button for SSO/PIN users (`app.js:428-440`)
+- **Embedded Mode** — iframe support when loaded inside Portal (`app.js:413-425`)
 
 ---
 
@@ -40,7 +40,7 @@ All notable changes are documented here.
 - Expanded fields on `products`, `vehicles`, `customers`, `jobs`, `documents`, `settings`, `app_users`
 
 **Multi-Shop Branch Support**
-- Branch management CRUD (`master-branch.js`)
+- Branch portal CRUD (`master-branch.js`)
 - Branch switcher in topnav — admin sees all, employees lock to assigned branch
 - `getBranch()`, `setBranch()`, `getBranchFilter()`, `hasPermission()` in `auth.js`
 

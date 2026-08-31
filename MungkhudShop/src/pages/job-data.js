@@ -4,11 +4,10 @@
  */
 import { showToast, showConfirm, formatDate, formatCurrency, renderDataGrid, generateDocId } from '../components/ui.js'
 import { fetchFullList, fetchList, createRecord, updateRecord, deleteRecord, uploadAttachment } from '../services/pb.js'
-import { postToStockLedger } from '../services/inventory.js'
 import { notifyJobCompleted, notifyJobAssigned } from '../services/telegram.js'
 import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
 import { BATCH_SIZE } from '../utils/constants.js'
-import { getBranchFilter, getBranch } from '../services/auth.js'
+import { getApiAuthHeaders, getBranchFilter, getBranch } from '../services/auth.js'
 import { isStockTrackedProduct } from '../utils/stock-rules.js'
 import { getState, setCurrentItems, setEditingId, getMechanics, getProductsWithStock } from './job-state.js'
 import { addJobLineRow, recalcTotals } from './job-line-items.js'
@@ -18,6 +17,51 @@ import { getSelectedHelperIds, setHelperChipState } from './job.js'
 const WORKFLOW_META_RE = /\n*\[MECHANIC_WORKFLOW_JSON\][\s\S]*?\[\/MECHANIC_WORKFLOW_JSON\]\s*$/
 function visibleJobNotes(notes) {
     return String(notes || '').replace(WORKFLOW_META_RE, '').trim()
+}
+
+function serialList(value) {
+    return String(value || '').split(/[\n,;]+/).map(v => v.trim()).filter(Boolean)
+}
+
+function validateJobTrackingRows(panel) {
+    for (const tr of panel.querySelectorAll('#jobItemsBody tr:not(.grid-empty)')) {
+        if (tr.dataset.trackStock === 'false') continue
+        const trackingType = String(tr.dataset.trackingType || 'NONE').toUpperCase()
+        const productName = tr.querySelector('.item-prod')?.value || tr.querySelector('.item-adhoc-name')?.value || 'Job item'
+        const qty = Math.abs(parseFloat(String(tr.querySelector('.item-qty')?.value || '0').replace(/,/g, '')) || 0)
+        if (trackingType === 'SERIALIZED') {
+            const serialInput = tr.querySelector('.item-serials')
+            const serials = serialList(serialInput?.value)
+            if (!serials.length) {
+                serialInput?.focus()
+                showToast(`Please enter serial number for ${productName}`, 'warning')
+                return false
+            }
+            if (Number.isInteger(qty) && qty > 0 && serials.length !== qty) {
+                serialInput?.focus()
+                showToast(`Serial number count for ${productName} must match quantity ${qty}`, 'warning')
+                return false
+            }
+        }
+        if (trackingType === 'BATCH') {
+            const batchInput = tr.querySelector('.item-batch')
+            if (!batchInput?.value?.trim()) {
+                batchInput?.focus()
+                showToast(`Please enter Batch/Lot for ${productName}`, 'warning')
+                return false
+            }
+        }
+        if (trackingType === 'DIMENSION') {
+            const rollInput = tr.querySelector('.item-roll')
+            const dimensionInput = tr.querySelector('.item-dimension-qty')
+            if (!rollInput?.value?.trim() || !(parseFloat(dimensionInput?.value || '0') > 0)) {
+                ;(rollInput?.value?.trim() ? dimensionInput : rollInput)?.focus()
+                showToast(`Please enter roll number and length/quantity for ${productName}`, 'warning')
+                return false
+            }
+        }
+    }
+    return true
 }
 
 /** Load jobs from server (with branch filter) */
@@ -272,18 +316,16 @@ export async function saveJobData(panel, mainContainer) {
             // BUG 84 FIX: Use atomic upsert to prevent duplicate customers during concurrent saves
             let cust_code = ''
             try {
-                const jwt = localStorage.getItem('mungkhud_jwt') || ''
                 const codeRes = await fetch('/api/data/custom/generate-doc-id?prefix=CUST&table=customers&field=cust_code', {
-                    headers: { 'Authorization': `Bearer ${jwt}` }
+                    headers: getApiAuthHeaders()
                 })
                 const codeData = await codeRes.json()
                 cust_code = codeData.doc_no || ''
             } catch { /* best effort */ }
 
-            const jwt = localStorage.getItem('mungkhud_jwt') || ''
             const upsertRes = await fetch('/api/data/custom/upsert-customer', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ name: customer_name, phone: customerPhone, cust_code, branch_id: getBranch() || '' })
             });
             const custData = await upsertRes.json();
@@ -301,10 +343,9 @@ export async function saveJobData(panel, mainContainer) {
     if (!vehicle_id && plate) {
         try {
             // BUG 85 FIX: Use atomic upsert to prevent duplicate vehicles during concurrent saves
-            const jwt = localStorage.getItem('mungkhud_jwt') || ''
             const upsertRes = await fetch('/api/data/custom/upsert-vehicle', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     plate_number: plate,
                     model: panel.querySelector('#jobModel').value,
@@ -427,6 +468,8 @@ export async function saveJobData(panel, mainContainer) {
         }
     }
 
+    if (!validateJobTrackingRows(panel)) return
+
     try {
         let jobId = editingId
         if (jobId) {
@@ -454,7 +497,7 @@ export async function saveJobData(panel, mainContainer) {
                 product_name = tr.querySelector('.item-adhoc-name')?.value?.trim() || 'รายการด่วน'
                 itemType = 'adhoc'
                 product_type = tr.querySelector('.item-product-type')?.value || 'other'
-                cost = parseFloat(tr.querySelector('.item-cost')?.value) || 0
+                cost = parseFloat(String(tr.querySelector('.item-cost')?.value || '0').replace(/,/g, '')) || 0
             } else {
                 const prodInput = tr.querySelector('.item-prod')
                 product_id = prodInput?.dataset?.selectedId || ''
@@ -469,15 +512,27 @@ export async function saveJobData(panel, mainContainer) {
                 cost = prodRecord ? (parseFloat(prodRecord.cost) || 0) : 0
             }
 
-            const qty = parseFloat(tr.querySelector('.item-qty').value) || 0
-            const unit_price = parseFloat(tr.querySelector('.item-price').value) || 0
-            const discount = parseFloat(tr.querySelector('.item-disc').value) || 0
+            const qty = parseFloat(String(tr.querySelector('.item-qty').value || '0').replace(/,/g, '')) || 0
+            const unit_price = parseFloat(String(tr.querySelector('.item-price').value || '0').replace(/,/g, '')) || 0
+            const discount = parseFloat(String(tr.querySelector('.item-disc').value || '0').replace(/,/g, '')) || 0
+            const trackingType = String(tr.dataset.trackingType || 'NONE').toUpperCase()
+            const serialNumbers = tr.querySelector('.item-serials')?.value?.trim() || ''
+            const batchNo = tr.querySelector('.item-batch')?.value?.trim() || ''
+            const expiryDate = tr.querySelector('.item-expiry')?.value || ''
+            const rollNo = tr.querySelector('.item-roll')?.value?.trim() || ''
+            const dimensionQty = parseFloat(tr.querySelector('.item-dimension-qty')?.value || '') || ''
 
             if (product_id || product_name) {
                 const p = {
                     job_id: jobId, product_id, product_name, qty,
                     unit_price, discount, total: (qty * unit_price) - discount,
-                    type: itemType, product_type, cost, branch_id: payload.branch_id
+                    type: itemType, product_type, cost, branch_id: payload.branch_id,
+                    tracking_type: trackingType,
+                    serial_numbers: serialNumbers,
+                    batch_no: batchNo,
+                    expiry_date: expiryDate,
+                    roll_no: rollNo,
+                    dimension_qty: dimensionQty
                 }
                 if (rowId) {
                     await updateRecord('job_items', rowId, p)
@@ -532,7 +587,7 @@ export function clearJobForm(panel) {
     const { plateAC, customerAC, vatToggle } = getState()
     setEditingId(null)
     panel.querySelector('#jobDocId').value = 'กำลังสร้าง...'
-    fetch('/api/data/custom/generate-doc-id?prefix=JOB&table=jobs&field=job_no', { headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` } })
+    fetch('/api/data/custom/generate-doc-id?prefix=JOB&table=jobs&field=job_no', { headers: getApiAuthHeaders() })
         .then(r => r.json()).then(d => {
             const input = panel.isConnected ? panel.querySelector('#jobDocId') : null
             if (input) input.value = d.doc_no || generateDocId('JOB')

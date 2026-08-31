@@ -5,8 +5,11 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
+    "test:portal-dev": "playwright test specs/dev-portal-smoke.spec.js --project=Portal",
+    "test:role-metadata": "playwright test specs/role-metadata-visibility.spec.js --project=Portal",
+    "test:admin-suite": "playwright test specs/admin-suite-smoke.spec.js --project=Portal",
     "test:mungkhud": "playwright test --project=MungkhudShop",
-    "test:management": "playwright test --project=Management"
+    "test:portal": "playwright test --project=Portal"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",

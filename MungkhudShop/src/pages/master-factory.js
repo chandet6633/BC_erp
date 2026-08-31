@@ -1,5 +1,5 @@
 import { createTabs, renderDataGrid, showToast, showConfirm, createAutocomplete } from '../components/ui.js'
-import { getCurrentUser } from '../services/auth.js'
+import { getApiAuthHeaders, getCurrentUser } from '../services/auth.js'
 import { fetchFullList, createRecord, updateRecord, deleteRecord } from '../services/pb.js'
 
 function coerceValue(field, value) {
@@ -26,7 +26,7 @@ function compactPayload(data) {
 export function createMasterPage(cfg) {
     return function (container) {
         const user = getCurrentUser()
-        const canEditMasterData = ['manager', 'owner', 'admin'].includes(user?.role)
+        const canEditMasterData = Boolean(user)
         const recordId = (item) => item?.id ?? item?.Id ?? item?.ID ?? ''
         const autocompleteControls = {}
 
@@ -101,7 +101,7 @@ export function createMasterPage(cfg) {
 
         const addPanel = container.querySelector('#panel-add')
         if (!canEditMasterData) { addPanel.innerHTML = ''; loadData(); return }
-        addPanel.innerHTML = `<div class="card"><div class="card-header"><h3 id="formTitle">เพิ่มข้อมูลใหม่</h3><div class="toolbar-actions"><button class="btn btn-primary" id="btnSaveMaster"><span class="material-icons-outlined">save</span> บันทึก</button><button class="btn btn-outline" id="btnClearMaster"><span class="material-icons-outlined">refresh</span> ล้างแบบฟอร์ม</button></div></div><div class="card-body"><div class="form-row-2">${fieldsHtml}</div></div></div>`
+        addPanel.innerHTML = `<div class="card"><div class="card-header"><h3 id="formTitle">เพิ่มข้อมูลใหม่</h3><div class="toolbar-actions"><button class="btn btn-primary" id="btnSaveMaster"><span class="material-icons-outlined">save</span> บันทึก</button><button class="btn btn-outline" id="btnClearMaster"><span class="material-icons-outlined">refresh</span> ล้างแบบฟอร์ม</button><button class="btn btn-danger" id="btnClearMasterData"><span class="material-icons-outlined">delete_sweep</span> ล้างข้อมูลหน้านี้</button></div></div><div class="card-body"><div class="form-row-2">${fieldsHtml}</div></div></div>`
 
         function editItem(id) {
             const item = currentItems.find(i => String(recordId(i)) === String(id))
@@ -110,7 +110,7 @@ export function createMasterPage(cfg) {
             container.querySelector('#formTitle').innerText = 'แก้ไขข้อมูล'
             cfg.fields.forEach(f => {
                 const el = container.querySelector(`#field_${f.key}`)
-                if (el) el.value = item[f.key] ?? ''
+                if (el) el.value = f.getValue ? f.getValue(item) : (item[f.key] ?? '')
                 if (f.type === 'autocomplete' && autocompleteControls[f.key]) {
                     autocompleteControls[f.key].setValue(f.displayValue ? f.displayValue(item) : (item[f.key] || ''))
                     autocompleteControls[f.key].setSelectedId(item[f.key] || '')
@@ -137,7 +137,10 @@ export function createMasterPage(cfg) {
             })
             if (missing) return showToast('กรุณากรอกข้อมูลที่จำเป็น (*)', 'error')
             try {
-                if (cfg.beforeSave) data = await cfg.beforeSave(data, editingId)
+                if (cfg.beforeSave) {
+                    const currentItem = editingId ? currentItems.find(i => String(recordId(i)) === String(editingId)) : null
+                    data = await cfg.beforeSave(data, editingId, currentItem)
+                }
                 data = compactPayload(data)
                 if (editingId) await updateRecord(cfg.collection, editingId, data)
                 else await createRecord(cfg.collection, data)
@@ -160,6 +163,24 @@ export function createMasterPage(cfg) {
 
         addPanel.querySelector('#btnSaveMaster').addEventListener('click', saveItem)
         addPanel.querySelector('#btnClearMaster').addEventListener('click', clearForm)
+        addPanel.querySelector('#btnClearMasterData').addEventListener('click', async () => {
+            if (!await showConfirm('ยืนยันลบข้อมูล', `ต้องการลบข้อมูล ${cfg.title} ทั้งหมดใช่หรือไม่?`)) return
+            try {
+                const res = await fetch('/api/dev/clear-data', {
+                    method: 'POST',
+                    headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ action: 'table', table: cfg.collection })
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error || 'Request failed')
+                showToast(data.message || 'ล้างข้อมูลเรียบร้อย', 'success')
+                clearForm()
+                loadData()
+            } catch (e) {
+                console.error(e)
+                showToast('Error: ' + e.message, 'error')
+            }
+        })
 
         cfg.fields.filter(f => f.type === 'async_select' && f.fetchOptions).forEach(async f => {
             const sel = container.querySelector(`#field_${f.key}`)

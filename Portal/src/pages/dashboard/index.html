@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manager Dashboard | BC AutoXperience</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=7" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css">
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f8fb;
+            --panel: #ffffff;
+            --ink: #172033;
+            --muted: #64748b;
+            --line: #d9e2ef;
+            --blue: #2563eb;
+            --green: #059669;
+            --red: #dc2626;
+            --amber: #d97706;
+            --violet: #7c3aed;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Inter, "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+        }
+        .dashboard-shell {
+            width: min(1280px, 100%);
+            margin: 0 auto;
+            padding: 18px;
+        }
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .title-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            min-width: 0;
+        }
+        .title-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            background: #e8f0ff;
+            color: var(--blue);
+            border: 1px solid #c8d7fb;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            line-height: 1.2;
+        }
+        .subtitle {
+            margin: 3px 0 0;
+            color: var(--muted);
+            font-size: .86rem;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .control, .icon-btn, .back-link {
+            min-height: 40px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 8px;
+            color: var(--ink);
+            font: inherit;
+        }
+        .control {
+            padding: 0 10px;
+            min-width: 128px;
+        }
+        .icon-btn, .back-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 12px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .icon-btn:hover, .back-link:hover { border-color: var(--blue); color: var(--blue); }
+        .status-strip {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            color: var(--muted);
+            font-size: .84rem;
+        }
+        .status-chip {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            min-height: 30px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 8px;
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .kpi {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 14px;
+            min-height: 118px;
+        }
+        .kpi-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: .78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .kpi-value {
+            margin-top: 14px;
+            font-size: 1.45rem;
+            font-weight: 850;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+        }
+        .kpi-sub {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: .82rem;
+        }
+        .green { color: var(--green); }
+        .blue { color: var(--blue); }
+        .red { color: var(--red); }
+        .amber { color: var(--amber); }
+        .violet { color: var(--violet); }
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr);
+            gap: 12px;
+            align-items: start;
+        }
+        .content-grid > *,
+        .content-grid aside {
+            min-width: 0;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 14px;
+            min-width: 0;
+        }
+        .panel + .panel { margin-top: 12px; }
+        .panel-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .panel-title h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+        .chart {
+            height: 250px;
+            display: grid;
+            grid-template-columns: repeat(var(--bars, 1), minmax(18px, 1fr));
+            gap: 6px;
+            align-items: end;
+            border-bottom: 1px solid var(--line);
+            padding-top: 10px;
+        }
+        .bar-pair {
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            align-items: end;
+        }
+        .bar {
+            min-height: 2px;
+            border-radius: 5px 5px 0 0;
+        }
+        .bar.revenue { background: var(--blue); }
+        .bar.expense { background: #f87171; }
+        .legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: .82rem;
+            margin-top: 10px;
+        }
+        .legend span::before {
+            content: "";
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+            margin-right: 6px;
+            background: var(--blue);
+        }
+        .legend .expense::before { background: #f87171; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .86rem;
+        }
+        th, td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #edf2f7;
+            text-align: left;
+            vertical-align: middle;
+        }
+        th {
+            color: var(--muted);
+            font-size: .76rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+        }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 8px;
+            border-radius: 6px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: .76rem;
+            font-weight: 800;
+        }
+        .alert-list {
+            display: grid;
+            gap: 8px;
+        }
+        .alert {
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--amber);
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+        }
+        .alert.critical { border-left-color: var(--red); }
+        .alert-title { font-weight: 800; }
+        .alert-detail { color: var(--muted); font-size: .82rem; margin-top: 2px; }
+        .state {
+            display: none;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 22px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .state.active { display: block; }
+        .empty {
+            color: var(--muted);
+            padding: 18px 0;
+            text-align: center;
+        }
+        @media (max-width: 980px) {
+            .topbar { grid-template-columns: 1fr; }
+            .actions { justify-content: flex-start; }
+            .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .content-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 560px) {
+            .dashboard-shell { padding: 12px; }
+            .title-row { align-items: flex-start; }
+            .actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+            .control, .icon-btn, .back-link { width: 100%; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            .chart {
+                grid-template-columns: repeat(var(--bars, 1), minmax(6px, 1fr));
+                gap: 3px;
+            }
+            .bar-pair { min-width: 0; }
+            th:nth-child(3), td:nth-child(3) { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <main class="dashboard-shell">
+        <section class="topbar">
+            <div class="title-row">
+                <div class="title-icon"><span class="material-icons-outlined">monitoring</span></div>
+                <div>
+                    <h1>แดชบอร์ดผู้จัดการ</h1>
+                    <p class="subtitle">รายรับ กำไร ค่าใช้จ่าย งาน และสัญญาณเตือนจากข้อมูลจริง</p>
+                </div>
+            </div>
+            <div class="actions">
+                <select id="periodSelect" class="control" aria-label="ช่วงเวลา">
+                    <option value="today">วันนี้</option>
+                    <option value="week">สัปดาห์นี้</option>
+                    <option value="month" selected>เดือนนี้</option>
+                </select>
+                <select id="branchSelect" class="control" aria-label="สาขา">
+                    <option value="all">กำลังโหลดสาขา...</option>
+                </select>
+                <select id="langSelect" class="control" aria-label="ภาษา">
+                    <option value="th">TH</option>
+                    <option value="en">EN</option>
+                </select>
+                <button id="refreshBtn" class="icon-btn" type="button">
+                    <span class="material-icons-outlined">refresh</span>
+                    รีเฟรช
+                </button>
+                <a class="back-link" href="../main/index.html">
+                    <span class="material-icons-outlined">arrow_back</span>
+                    Portal
+                </a>
+            </div>
+        </section>
+
+        <section class="status-strip">
+            <span class="status-chip"><span class="material-icons-outlined" style="font-size:17px;">store</span><span id="scopeLabel">-</span></span>
+            <span class="status-chip"><span class="material-icons-outlined" style="font-size:17px;">calendar_month</span><span id="periodLabel">-</span></span>
+            <span class="status-chip"><span class="material-icons-outlined" style="font-size:17px;">schedule</span><span id="updatedLabel">-</span></span>
+        </section>
+
+        <div id="loadingState" class="state active">กำลังโหลดข้อมูลแดชบอร์ด...</div>
+        <div id="errorState" class="state"></div>
+
+        <section id="dashboardContent" style="display:none;">
+            <div class="kpi-grid">
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiRevenueLabel">Revenue</span><span class="material-icons-outlined green">payments</span></div>
+                    <div id="kpiRevenue" class="kpi-value green">฿0</div>
+                    <div id="kpiCompleted" class="kpi-sub">0 งานเสร็จ</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiGrossLabel">Gross Profit</span><span class="material-icons-outlined blue">show_chart</span></div>
+                    <div id="kpiGross" class="kpi-value blue">฿0</div>
+                    <div id="kpiGrossMargin" class="kpi-sub">0% margin</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiExpensesLabel">Expenses</span><span class="material-icons-outlined red">receipt_long</span></div>
+                    <div id="kpiExpenses" class="kpi-value red">฿0</div>
+                    <div id="kpiExpenseRatio" class="kpi-sub">0% ของรายรับ</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiNetLabel">Net Profit</span><span class="material-icons-outlined amber">savings</span></div>
+                    <div id="kpiNet" class="kpi-value amber">฿0</div>
+                    <div id="kpiNetMargin" class="kpi-sub">0% net margin</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiOpenJobsLabel">Open Jobs</span><span class="material-icons-outlined violet">build</span></div>
+                    <div id="kpiOpenJobs" class="kpi-value violet">0</div>
+                    <div class="kpi-sub">งานที่ยังไม่ปิด</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiUnpaidLabel">Unpaid</span><span class="material-icons-outlined red">priority_high</span></div>
+                    <div id="kpiUnpaid" class="kpi-value red">0</div>
+                    <div class="kpi-sub">งานค้างชำระ</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiLowStockLabel">Low Stock</span><span class="material-icons-outlined amber">inventory</span></div>
+                    <div id="kpiLowStock" class="kpi-value amber">0</div>
+                    <div class="kpi-sub">รายการต้องดูแล</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-head"><span id="kpiScopeLabel">Scope</span><span class="material-icons-outlined blue">hub</span></div>
+                    <div id="kpiScope" class="kpi-value blue">-</div>
+                    <div class="kpi-sub">ขอบเขตข้อมูล</div>
+                </article>
+            </div>
+
+            <div class="content-grid">
+                <div>
+                    <section class="panel">
+                        <div class="panel-title">
+                            <h2 id="trendTitle">แนวโน้มรายรับ / รายจ่าย</h2>
+                            <span id="trendBadge" class="badge">รายวัน</span>
+                        </div>
+                        <div id="trendChart" class="chart"></div>
+                        <div class="legend"><span id="legendRevenue">รายรับ</span><span id="legendExpenses" class="expense">รายจ่าย</span></div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-title">
+                            <h2 id="branchTitle">เปรียบเทียบสาขา</h2>
+                            <span id="branchBadge" class="badge">Branch</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr><th id="branchHeadBranch">สาขา</th><th id="branchHeadRevenue" class="num">รายรับ</th><th id="branchHeadExpenses" class="num">รายจ่าย</th><th id="branchHeadNet" class="num">กำไรสุทธิ</th><th id="branchHeadJobs" class="num">งาน</th></tr>
+                                </thead>
+                                <tbody id="branchRows"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-title">
+                            <h2 id="jobsTitle">ใบงานล่าสุด</h2>
+                            <span id="jobsBadge" class="badge">Jobs</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr><th id="jobHeadJob">ใบงาน</th><th id="jobHeadCustomer">ลูกค้า</th><th id="jobHeadPlate">ทะเบียน</th><th id="jobHeadStatus">สถานะ</th><th id="jobHeadTotal" class="num">ยอดรวม</th></tr>
+                                </thead>
+                                <tbody id="jobRows"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <aside>
+                    <section class="panel">
+                        <div class="panel-title">
+                            <h2 id="alertsTitle">สัญญาณเตือน</h2>
+                            <span id="alertCount" class="badge">0</span>
+                        </div>
+                        <div id="alertList" class="alert-list"></div>
+                    </section>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./js/dashboard.js"></script>
+</body>
+</html>

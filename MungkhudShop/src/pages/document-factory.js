@@ -5,12 +5,12 @@
  */
 import { createTabs, renderDataGrid, showToast, showConfirm, formatDate, formatCurrency, generateDocId, createAutocomplete, createVatToggle, calcVat } from '../components/ui.js'
 import { fetchFullList, createRecord, updateRecord, deleteRecord } from '../services/pb.js'
-import { postToStockLedger } from '../services/inventory.js'
 import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
 import { BATCH_SIZE } from '../utils/constants.js'
-import { getBranchFilter, getBranch } from '../services/auth.js'
+import { getApiAuthHeaders, getBranchFilter, getBranch } from '../services/auth.js'
 import { openPrintWindow } from '../utils/print-utils.js'
 import { isStockTrackedProduct } from '../utils/stock-rules.js'
+import { getBaseUom, getProductTrackingType, parseMetadata } from '../utils/inventory-domain.js'
 
 // Document conversion rules: which doc type can convert to what
 const CONVERT_MAP = {
@@ -53,14 +53,66 @@ export function createDocumentPage(cfg) {
 
         // Check if this is an OUT document (sales/inventory deduction)
         const isPurchaseDoc = ['RR', 'PIV', 'PCN', 'PAY'].includes(cfg.prefix)
-        const isInventoryDoc = ['RR', 'RQ', 'RE', 'TF', 'SA'].includes(cfg.prefix)
+        const isInventoryDoc = ['RR', 'RQ', 'RE', 'TF', 'SA', 'PCN'].includes(cfg.prefix)
         const isAmountOnlyDoc = cfg.amountOnly === true
         
         // Fetch stock cache for OUT documents if needed
         if (!isPurchaseDoc) {
-            fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` } })
+            fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, { headers: getApiAuthHeaders() })
                 .then(r => r.json()).then(data => { if (!isDestroyed()) documentStockCache = data })
                 .catch(e => console.warn('Failed to load stock balances', e))
+        }
+
+        function trackingValue(record, key, fallback = '') {
+            const metadata = parseMetadata(record)
+            return record?.[key] ?? metadata[key] ?? fallback
+        }
+
+        function serialList(value) {
+            return String(value || '').split(/[\n,;]+/).map(v => v.trim()).filter(Boolean)
+        }
+
+        function validateTrackingRows(panel, { focus = true } = {}) {
+            if (!isInventoryDoc) return true
+            const rows = [...panel.querySelectorAll('.doc-items-body tr:not(.grid-empty)')]
+            for (const tr of rows) {
+                if (tr.dataset.trackStock === 'false') continue
+                const productName = tr.querySelector('.line-prod')?.value || 'รายการสินค้า'
+                const trackingType = String(tr.dataset.trackingType || 'NONE').toUpperCase()
+                const qty = Math.abs(parseFloat(tr.querySelector('.line-qty')?.value || '0') || 0)
+                if (trackingType === 'SERIALIZED') {
+                    const serialInput = tr.querySelector('.line-serials')
+                    const serials = serialList(serialInput?.value)
+                    if (!serials.length) {
+                        if (focus) serialInput?.focus()
+                        showToast(`กรุณากรอก Serial number สำหรับ ${productName}`, 'warning')
+                        return false
+                    }
+                    if (Number.isInteger(qty) && qty > 0 && serials.length !== qty) {
+                        if (focus) serialInput?.focus()
+                        showToast(`Serial number ของ ${productName} ต้องมี ${qty} รายการ`, 'warning')
+                        return false
+                    }
+                }
+                if (trackingType === 'BATCH') {
+                    const batchInput = tr.querySelector('.line-batch')
+                    if (!batchInput?.value?.trim()) {
+                        if (focus) batchInput?.focus()
+                        showToast(`กรุณากรอก Batch/Lot สำหรับ ${productName}`, 'warning')
+                        return false
+                    }
+                }
+                if (trackingType === 'DIMENSION') {
+                    const rollInput = tr.querySelector('.line-roll')
+                    const dimensionInput = tr.querySelector('.line-dimension-qty')
+                    if (!rollInput?.value?.trim() || !(parseFloat(dimensionInput?.value || '0') > 0)) {
+                        if (focus) (rollInput?.value?.trim() ? dimensionInput : rollInput)?.focus()
+                        showToast(`กรุณากรอก Roll no. และจำนวน/ความยาวสำหรับ ${productName}`, 'warning')
+                        return false
+                    }
+                }
+            }
+            return true
         }
 
         container.innerHTML = `
@@ -104,8 +156,13 @@ export function createDocumentPage(cfg) {
             { key: 'grand_total', label: 'ยอดรวม', render: r => formatCurrency(r.grand_total) },
             { key: 'status', label: 'สถานะ', render: r => {
                 const s = r.status || 'draft'
-                const badge = s === 'confirmed' ? 'closed' : s === 'voided' ? 'cancelled' : 'open'
-                const label = s === 'confirmed' ? 'ยืนยัน' : s === 'voided' ? 'ยกเลิก' : s === 'paid' ? 'ชำระแล้ว' : 'ฉบับร่าง'
+                const badge = ['confirmed', 'received'].includes(s) ? 'closed' : s === 'voided' ? 'cancelled' : 'open'
+                const label = s === 'confirmed' ? 'ยืนยัน'
+                    : s === 'in_transit' ? 'กำลังโอน'
+                    : s === 'received' ? 'รับแล้ว'
+                    : s === 'voided' ? 'ยกเลิก'
+                    : s === 'paid' ? 'ชำระแล้ว'
+                    : 'ฉบับร่าง'
                 return `<span class="badge badge-${badge}">${label}</span>`
             }},
             {
@@ -158,7 +215,9 @@ export function createDocumentPage(cfg) {
                     <button class="btn btn-primary" id="btnSaveDoc"><span class="material-icons-outlined">save</span> บันทึก</button>
                     ${isInventoryDoc ? `<button class="btn btn-success" id="btnSaveConfirmDoc"><span class="material-icons-outlined">task_alt</span> บันทึกและยืนยัน</button>` : ''}
                     <button class="btn btn-outline" id="btnClearDoc"><span class="material-icons-outlined">refresh</span> ล้างแบบฟอร์ม</button>
+                    <button class="btn btn-danger" id="btnClearDocData"><span class="material-icons-outlined">delete_sweep</span> ล้างข้อมูลหน้านี้</button>
                     <button class="btn btn-success" id="btnConfirmDoc" style="display:none;"><span class="material-icons-outlined">check_circle</span> ยืนยัน</button>
+                    ${cfg.prefix === 'TF' ? `<button class="btn btn-primary" id="btnReceiveTransfer" style="display:none;"><span class="material-icons-outlined">move_to_inbox</span> รับโอนเข้า</button>` : ''}
                     <button class="btn btn-danger" id="btnVoidDoc" style="display:none;"><span class="material-icons-outlined">cancel</span> ยกเลิก</button>
                     <button class="btn btn-outline" id="btnPrintDoc" style="display:none;color:var(--color-primary);border-color:var(--color-primary);"><span class="material-icons-outlined">print</span> พิมพ์</button>
                     ${CONVERT_MAP[cfg.prefix] ? `<button class="btn btn-outline" id="btnConvertDoc" style="display:none;color:#C8A048;border-color:#C8A048;"><span class="material-icons-outlined">arrow_forward</span> ${CONVERT_MAP[cfg.prefix].label}</button>` : ''}
@@ -219,9 +278,9 @@ export function createDocumentPage(cfg) {
                     </div>
                     <div class="data-grid">
                         <table>
-                            <thead><tr><th>#</th><th>สินค้า / บริการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>ส่วนลด</th><th>รวม</th><th></th></tr></thead>
+                            <thead><tr><th>#</th><th>สินค้า / บริการ</th><th>จำนวน</th><th>UOM</th><th>ราคา/หน่วย</th><th>ส่วนลด</th><th>รวม</th><th></th></tr></thead>
                             <tbody class="doc-items-body">
-                                <tr><td colspan="7" class="grid-empty" style="text-align:center;padding:var(--sp-6);">กดปุ่ม "เพิ่มรายการ"</td></tr>
+                                <tr><td colspan="8" class="grid-empty" style="text-align:center;padding:var(--sp-6);">กดปุ่ม "เพิ่มรายการ"</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -331,9 +390,8 @@ export function createDocumentPage(cfg) {
             input.value = fallback
 
             try {
-                const jwt = localStorage.getItem('mungkhud_jwt') || ''
                 const res = await fetch(`/api/data/custom/generate-doc-id?prefix=${encodeURIComponent(cfg.prefix)}`, {
-                    headers: { 'Authorization': `Bearer ${jwt}` }
+                    headers: getApiAuthHeaders()
                 })
                 const data = await res.json().catch(() => ({}))
                 if (!isDestroyed() && data?.doc_no) input.value = data.doc_no
@@ -366,16 +424,16 @@ export function createDocumentPage(cfg) {
 
             if (cfg.hasItems !== false) {
                 const tbody = addPanel.querySelector('.doc-items-body')
-                tbody.innerHTML = '<tr class="grid-empty"><td colspan="7" style="text-align:center;">กำลังโหลดรายการ...</td></tr>'
+                tbody.innerHTML = '<tr class="grid-empty"><td colspan="8" style="text-align:center;">กำลังโหลดรายการ...</td></tr>'
                 const dItems = await fetchFullList('document_items', { filter: `document_id='${sanitizeFilter(item.id)}'` })
                 tbody.innerHTML = ''
-                if (dItems.length === 0) tbody.innerHTML = '<tr class="grid-empty"><td colspan="7" style="text-align:center;">ไม่มีรายการ</td></tr>'
+                if (dItems.length === 0) tbody.innerHTML = '<tr class="grid-empty"><td colspan="8" style="text-align:center;">ไม่มีรายการ</td></tr>'
                 dItems.forEach((di, idx) => addLineRow(di, idx + 1, item.status))
                 updateTotals()
             }
             
             // BUG 4 FIX: Disable editing of sealed documents
-            const isSealed = ['confirmed', 'paid', 'voided'].includes(item.status)
+            const isSealed = ['confirmed', 'in_transit', 'received', 'paid', 'voided'].includes(item.status)
             addPanel.querySelectorAll('input, select, textarea').forEach(el => el.disabled = isSealed)
             const saveBtn = addPanel.querySelector('#btnSaveDoc')
             if (saveBtn) saveBtn.style.display = isSealed ? 'none' : 'inline-flex'
@@ -386,12 +444,16 @@ export function createDocumentPage(cfg) {
             // B3: Show confirm/void buttons when editing
             const btnConfirm = addPanel.querySelector('#btnConfirmDoc')
             const btnVoid = addPanel.querySelector('#btnVoidDoc')
+            const btnReceiveTransfer = addPanel.querySelector('#btnReceiveTransfer')
             if (item.status === 'draft' || item.status === 'pending' || !item.status) {
                 btnConfirm.style.display = 'inline-flex'
                 btnVoid.style.display = 'inline-flex'
             } else {
                 btnConfirm.style.display = 'none'
                 btnVoid.style.display = item.status !== 'voided' ? 'inline-flex' : 'none'
+            }
+            if (btnReceiveTransfer) {
+                btnReceiveTransfer.style.display = (cfg.prefix === 'TF' && item.status === 'in_transit') ? 'inline-flex' : 'none'
             }
             // Show Print button when editing any existing document
             const btnPrint = addPanel.querySelector('#btnPrintDoc')
@@ -474,6 +536,10 @@ export function createDocumentPage(cfg) {
                 unlockBtn();
                 return showToast('Please enter an amount greater than zero.', 'error')
             }
+            if (!validateTrackingRows(addPanel)) {
+                unlockBtn();
+                return
+            }
 
             // D2: Check for duplicate doc_no when creating new
             if (!editingId) {
@@ -520,6 +586,13 @@ export function createDocumentPage(cfg) {
                         const qty = parseFloat(tr.querySelector('.line-qty').value) || 0
                         const unit_price = parseFloat(tr.querySelector('.line-price').value) || 0
                         const discount = parseFloat(tr.querySelector('.line-disc')?.value) || 0
+                        const trackingType = String(tr.dataset.trackingType || 'NONE').toUpperCase()
+                        const serialNumbers = tr.querySelector('.line-serials')?.value?.trim() || ''
+                        const batchNo = tr.querySelector('.line-batch')?.value?.trim() || ''
+                        const expiryDate = tr.querySelector('.line-expiry')?.value || ''
+                        const rollNo = tr.querySelector('.line-roll')?.value?.trim() || ''
+                        const dimensionQty = parseFloat(tr.querySelector('.line-dimension-qty')?.value || '') || ''
+                        const uom = tr.querySelector('.line-uom')?.textContent?.trim() || ''
                         
                         // BUG 2 FIX: Snapshot product cost
                         const cost = parseFloat(tr.dataset.cost || 0)
@@ -528,12 +601,33 @@ export function createDocumentPage(cfg) {
                             prodInput?.focus()
                             throw new Error('กรุณาเลือกสินค้าในรายการจากช่องค้นหา ห้ามพิมพ์ชื่อสินค้าอย่างเดียวสำหรับเอกสารสต็อก')
                         }
+                        if (isInventoryDoc && tr.dataset.trackStock !== 'false') {
+                            if (trackingType === 'SERIALIZED' && !serialNumbers) {
+                                prodInput?.focus()
+                                throw new Error('กรุณากรอก Serial number สำหรับสินค้าที่ต้องติดตาม Serial')
+                            }
+                            if (trackingType === 'BATCH' && !batchNo) {
+                                prodInput?.focus()
+                                throw new Error('กรุณากรอก Batch/Lot สำหรับสินค้าที่ต้องติดตาม Batch')
+                            }
+                            if (trackingType === 'DIMENSION' && (!rollNo || !dimensionQty)) {
+                                prodInput?.focus()
+                                throw new Error('กรุณากรอก Roll no. และความยาว/จำนวน สำหรับสินค้าที่ต้องติดตามแบบม้วน/มิติ')
+                            }
+                        }
 
                         if (product_id || product_name) {
                             const p = {
                                 document_id: docId, product_id, product_name, qty,
                                 price: unit_price, unit_price, discount, cost,
-                                total: (qty * unit_price) - discount, branch_id: payload.branch_id
+                                total: (qty * unit_price) - discount, branch_id: payload.branch_id,
+                                uom,
+                                tracking_type: trackingType,
+                                serial_numbers: serialNumbers,
+                                batch_no: batchNo,
+                                expiry_date: expiryDate,
+                                roll_no: rollNo,
+                                dimension_qty: dimensionQty
                             }
                             if (rowId) {
                                 await updateRecord('document_items', rowId, p)
@@ -555,25 +649,14 @@ export function createDocumentPage(cfg) {
                         await Promise.all(toDelete.slice(i, i + BATCH_SIZE).map(o => deleteRecord('document_items', o.id)))
                     }
 
-                    // BUG 5 FIX: Only post to stock ledger when document is confirmed, not on every draft save.
-                    // Posting to stock on draft saves causes false inventory counts.
-                    if (payload.status === 'confirmed' || editingId) {
-                        const docRecord = editingId
-                            ? await fetchFullList('documents', { filter: `id='${sanitizeFilter(editingId)}'`, requestKey: null }).then(r => r[0])
-                            : null
-                        const isConfirmed = payload.status === 'confirmed' || (docRecord && docRecord.status === 'confirmed')
-                        if (isConfirmed) {
-                            const destBranch = cfg.prefix === 'TF' ? (container.querySelector('#destination_branch_id')?.value || null) : null
-                            await postToStockLedger(cfg.prefix, doc_no, itemsForLedger, payload.branch_id, destBranch)
-                        }
-                    }
+                    // Stock posting is server-owned. Draft saves only sync document_items;
+                    // confirm/receive endpoints create immutable ledger rows.
                 }
 
                 if (shouldConfirmAfterSave && isInventoryDoc) {
-                    const jwt = localStorage.getItem('mungkhud_jwt') || ''
                     const res = await fetch(`/api/data/custom/confirm-document/${encodeURIComponent(docId)}`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' }
+                        headers: getApiAuthHeaders({ 'Content-Type': 'application/json' })
                     })
                     if (!res.ok) {
                         const text = await res.text()
@@ -605,12 +688,14 @@ export function createDocumentPage(cfg) {
             if (entityAC) { entityAC.setValue(''); entityAC.setSelectedId('') }
             if (docVatToggle) docVatToggle.setState({ vatEnabled: false, vatMode: 'customer_pays' })
             if (cfg.hasItems !== false) {
-                addPanel.querySelector('.doc-items-body').innerHTML = '<tr class="grid-empty"><td colspan="7" style="text-align:center;">กดปุ่ม "เพิ่มรายการ"</td></tr>'
+                addPanel.querySelector('.doc-items-body').innerHTML = '<tr class="grid-empty"><td colspan="8" style="text-align:center;">กดปุ่ม "เพิ่มรายการ"</td></tr>'
                 updateTotals()
             }
             // B3: Hide confirm/void/print/convert buttons on clear
             addPanel.querySelector('#btnConfirmDoc').style.display = 'none'
             addPanel.querySelector('#btnVoidDoc').style.display = 'none'
+            const receiveBtn = addPanel.querySelector('#btnReceiveTransfer')
+            if (receiveBtn) receiveBtn.style.display = 'none'
             addPanel.querySelector('#btnSaveDoc').style.display = 'inline-flex'
             const saveConfirmBtn = addPanel.querySelector('#btnSaveConfirmDoc')
             if (saveConfirmBtn) saveConfirmBtn.style.display = 'inline-flex'
@@ -622,15 +707,34 @@ export function createDocumentPage(cfg) {
             if (addLineBtn) addLineBtn.style.display = 'inline-flex'
         })
 
+        addPanel.querySelector('#btnClearDocData')?.addEventListener('click', async () => {
+            if (!await showConfirm('ยืนยันลบข้อมูลเอกสาร', `ต้องการลบเอกสาร ${cfg.title} ทั้งหมดใช่หรือไม่?`)) return
+            try {
+                const res = await fetch('/api/dev/clear-data', {
+                    method: 'POST',
+                    headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ action: 'document_type', doc_type: cfg.prefix })
+                })
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error || 'Request failed')
+                showToast(data.message || 'ล้างข้อมูลเอกสารเรียบร้อย', 'success')
+                addPanel.querySelector('#btnClearDoc')?.click()
+                loadData()
+            } catch (e) {
+                console.error(e)
+                showToast('Error: ' + e.message, 'error')
+            }
+        })
+
         // B3: Confirm document
         addPanel.querySelector('#btnConfirmDoc')?.addEventListener('click', async () => {
             if (!editingId) return
             if (await showConfirm('ยืนยันเอกสาร', 'ต้องการยืนยันเอกสารนี้?')) {
+                if (!validateTrackingRows(addPanel)) return
                 try {
-                    const jwt = localStorage.getItem('mungkhud_jwt') || ''
                     const res = await fetch(`/api/data/custom/confirm-document/${encodeURIComponent(editingId)}`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' }
+                        headers: getApiAuthHeaders({ 'Content-Type': 'application/json' })
                     })
                     if (!res.ok) {
                         const text = await res.text()
@@ -647,15 +751,36 @@ export function createDocumentPage(cfg) {
             }
         })
 
+        addPanel.querySelector('#btnReceiveTransfer')?.addEventListener('click', async () => {
+            if (!editingId) return
+            if (await showConfirm('รับโอนเข้า', 'ยืนยันรับสินค้าโอนเข้าปลายทาง?')) {
+                try {
+                    const res = await fetch(`/api/data/custom/receive-transfer/${encodeURIComponent(editingId)}`, {
+                        method: 'POST',
+                        headers: getApiAuthHeaders({ 'Content-Type': 'application/json' })
+                    })
+                    if (!res.ok) {
+                        const text = await res.text()
+                        throw new Error(text || `Receive failed (${res.status})`)
+                    }
+                    showToast('รับโอนเข้าเรียบร้อย', 'success')
+                    addPanel.querySelector('#btnReceiveTransfer').style.display = 'none'
+                    loadData()
+                } catch (err) {
+                    console.error(err)
+                    showToast('รับโอนไม่สำเร็จ: ' + err.message, 'error')
+                }
+            }
+        })
+
         // B3: Void document
         addPanel.querySelector('#btnVoidDoc')?.addEventListener('click', async () => {
             if (!editingId) return
             if (await showConfirm('ยกเลิกเอกสาร', 'ต้องการยกเลิกเอกสารนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
                 try {
-                    const jwt = localStorage.getItem('mungkhud_jwt') || ''
                     const res = await fetch(`/api/data/custom/void-document/${encodeURIComponent(editingId)}`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json' }
+                        headers: getApiAuthHeaders({ 'Content-Type': 'application/json' })
                     })
                     if (!res.ok) {
                         const text = await res.text()
@@ -683,19 +808,85 @@ export function createDocumentPage(cfg) {
             const rowPrice = data ? (data.unit_price ?? data.price ?? 0) : 0
             const displayName = data ? (data.product_name || data.product_id || '') : ''
             
-            const isSealed = ['confirmed', 'paid', 'voided'].includes(docStatus)
+            const isSealed = ['confirmed', 'in_transit', 'received', 'paid', 'voided'].includes(docStatus)
             const disabledAttr = isSealed ? 'disabled' : ''
 
             tr.innerHTML = `
                 <td data-label="#">${index}</td>
-                <td data-label="สินค้า/บริการ"><div class="ac-doc-line-host"></div></td>
-                <td data-label="จำนวน"><input type="number" class="form-control line-qty" value="${data ? data.qty : 1}" ${cfg.allowNegativeQty ? '' : 'min="1"'} style="width:80px;" ${disabledAttr}></td>
+                <td data-label="สินค้า/บริการ">
+                    <div class="ac-doc-line-host"></div>
+                    <div class="line-tracking-panel" style="display:none;margin-top:var(--sp-2);gap:var(--sp-2);flex-wrap:wrap;"></div>
+                </td>
+                <td data-label="จำนวน"><input type="number" class="form-control line-qty" value="${data ? data.qty : 1}" ${cfg.allowNegativeQty ? '' : 'min="1"'} step="0.001" style="width:80px;" ${disabledAttr}></td>
+                <td data-label="UOM"><span class="line-uom text-sm text-muted">${data?.uom || ''}</span></td>
                 <td data-label="ราคา/หน่วย"><input type="number" class="form-control line-price" value="${rowPrice}" min="0" style="width:100px;" ${disabledAttr}></td>
                 <td data-label="ส่วนลด"><input type="number" class="form-control line-disc" value="${data ? (data.discount || 0) : 0}" min="0" style="width:100px;" ${disabledAttr}></td>
                 <td data-label="รวม" class="line-total text-bold">฿0.00</td>
                 <td data-label="ลบ"><button class="btn btn-sm btn-danger line-rm" ${disabledAttr}><span class="material-icons-outlined" style="font-size:16px;">close</span></button></td>
             `
             tbody.appendChild(tr)
+
+            function renderTrackingPanel(type = tr.dataset.trackingType || 'NONE') {
+                const panel = tr.querySelector('.line-tracking-panel')
+                if (!panel) return
+                const sealed = ['confirmed', 'in_transit', 'received', 'paid', 'voided'].includes(docStatus)
+                const disabled = sealed ? 'disabled' : ''
+                const trackingType = String(type || 'NONE').toUpperCase()
+                const trackingMeta = {
+                    SERIALIZED: {
+                        badge: 'Serialized',
+                        hint: 'One serial per unit. Separate multiple serials with comma or new line.'
+                    },
+                    BATCH: {
+                        badge: 'Batch/Lot',
+                        hint: 'Use the supplier lot number. Expiry date is optional but recommended.'
+                    },
+                    DIMENSION: {
+                        badge: 'Dimension/Roll',
+                        hint: 'Record the roll number and measured length or quantity.'
+                    }
+                }[trackingType]
+                panel.style.display = trackingType === 'NONE' ? 'none' : 'grid'
+                if (trackingType === 'SERIALIZED') {
+                    panel.innerHTML = `
+                        <div class="traceability-header">
+                            <span class="traceability-badge">${trackingMeta.badge}</span>
+                            <span class="traceability-hint">${trackingMeta.hint}</span>
+                        </div>
+                        <label class="traceability-field traceability-field-wide">
+                            <span>Serial numbers</span>
+                            <textarea class="form-control line-serials" rows="2" placeholder="SN001, SN002" data-testid="line-serials" ${disabled}>${escapeHtml(trackingValue(data, 'serial_numbers') || trackingValue(data, 'serial_no'))}</textarea>
+                        </label>`
+                } else if (trackingType === 'BATCH') {
+                    panel.innerHTML = `
+                        <div class="traceability-header">
+                            <span class="traceability-badge">${trackingMeta.badge}</span>
+                            <span class="traceability-hint">${trackingMeta.hint}</span>
+                        </div>
+                        <label class="traceability-field">
+                            <span>Batch/Lot no.</span>
+                            <input class="form-control line-batch" placeholder="LOT-2026-001" value="${escapeHtml(trackingValue(data, 'batch_no'))}" data-testid="line-batch" ${disabled}>
+                        </label>
+                        <label class="traceability-field">
+                            <span>Expiry date</span>
+                            <input type="date" class="form-control line-expiry" value="${escapeHtml(String(trackingValue(data, 'expiry_date')).slice(0, 10))}" data-testid="line-expiry" ${disabled}>
+                        </label>`
+                } else if (trackingType === 'DIMENSION') {
+                    panel.innerHTML = `
+                        <div class="traceability-header">
+                            <span class="traceability-badge">${trackingMeta.badge}</span>
+                            <span class="traceability-hint">${trackingMeta.hint}</span>
+                        </div>
+                        <label class="traceability-field">
+                            <span>Roll no.</span>
+                            <input class="form-control line-roll" placeholder="ROLL-001" value="${escapeHtml(trackingValue(data, 'roll_no'))}" data-testid="line-roll" ${disabled}>
+                        </label>
+                        <label class="traceability-field">
+                            <span>Length/qty</span>
+                            <input type="number" step="0.001" class="form-control line-dimension-qty" placeholder="0.000" value="${escapeHtml(trackingValue(data, 'dimension_qty') || data?.qty || '')}" data-testid="line-dimension-qty" ${disabled}>
+                        </label>`
+                }
+            }
 
             // Autocomplete for product in line item
             const acHost = tr.querySelector('.ac-doc-line-host')
@@ -709,9 +900,10 @@ export function createDocumentPage(cfg) {
                     const prods = await fetchFullList('products')
                     const selectableProducts = isInventoryDoc ? prods.filter(isStockTrackedProduct) : prods
                     return selectableProducts.map(p => {
-                        const s = documentStockCache && documentStockCache[p.id] ? (documentStockCache[p.id].qty || 0) : 0
+                        const productId = p.id ?? p.Id ?? p.ID
+                        const s = documentStockCache && documentStockCache[productId] ? (documentStockCache[productId].qty || 0) : 0
                         return {
-                            id: p.id,
+                            id: productId,
                             code: p.code,
                             label: p.name,
                             secondary: isPurchaseDoc
@@ -730,6 +922,12 @@ export function createDocumentPage(cfg) {
                     tr.dataset.cost = item._raw.cost || 0
                     tr.dataset.trackStock = isStockTrackedProduct(item._raw) ? 'true' : 'false'
                     tr.dataset.productType = item._raw.type || ''
+                    tr.dataset.trackingType = getProductTrackingType(item._raw)
+                    tr.dataset.baseUom = getBaseUom(item._raw)
+                    tr.querySelector('.line-uom').textContent = isPurchaseDoc
+                        ? (item._raw.purchase_uom || item._raw.unit || tr.dataset.baseUom)
+                        : (item._raw.sales_uom || item._raw.unit || tr.dataset.baseUom)
+                    renderTrackingPanel(tr.dataset.trackingType)
                     lineAC.input.dataset.selectedId = item.id
                     lineAC.input.classList.add('line-prod')
                     currentStock = tr.dataset.trackStock === 'false' ? null : item.stock
@@ -751,10 +949,13 @@ export function createDocumentPage(cfg) {
             if (data?.product_id) {
                 lineAC.input.dataset.selectedId = data.product_id
                 tr.dataset.trackStock = 'true'
+                tr.dataset.trackingType = trackingValue(data, 'tracking_type', data.stock_tracking_type || 'NONE')
+                renderTrackingPanel(tr.dataset.trackingType)
                 if (!isPurchaseDoc && documentStockCache && documentStockCache[data.product_id]) {
                     currentStock = documentStockCache[data.product_id].qty || 0
                 }
             }
+            renderTrackingPanel(tr.dataset.trackingType || 'NONE')
 
             tr.querySelectorAll('input').forEach(i => i.addEventListener('input', (e) => {
                 // BUG 9 FIX: Check stock on qty change
@@ -813,10 +1014,9 @@ export function createDocumentPage(cfg) {
 
             try {
                 // Generate new doc_no for the target type
-                const jwt = localStorage.getItem('mungkhud_jwt') || ''
                 let newDocNo = ''
                 try {
-                    const idRes = await fetch(`/api/data/custom/generate-doc-id?prefix=${encodeURIComponent(target.target)}`, { headers: { 'Authorization': `Bearer ${jwt}` } })
+                    const idRes = await fetch(`/api/data/custom/generate-doc-id?prefix=${encodeURIComponent(target.target)}`, { headers: getApiAuthHeaders() })
                     const idData = await idRes.json()
                     newDocNo = idData.doc_no
                 } catch { newDocNo = generateDocId(target.target, 1) }
@@ -853,6 +1053,13 @@ export function createDocumentPage(cfg) {
                         discount: si.discount || 0,
                         cost: si.cost || 0,
                         total: si.total || 0,
+                        uom: si.uom || '',
+                        tracking_type: si.tracking_type || 'NONE',
+                        serial_numbers: si.serial_numbers || si.serial_no || '',
+                        batch_no: si.batch_no || '',
+                        expiry_date: si.expiry_date || '',
+                        roll_no: si.roll_no || '',
+                        dimension_qty: si.dimension_qty || '',
                         branch_id: getBranch() || ''
                     })
                 }

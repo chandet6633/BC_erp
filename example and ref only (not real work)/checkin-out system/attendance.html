@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta property="og:title" content="Bancha HR System – ลงเวลาเข้า-ออก & ขอลางาน" />
+  <meta property="og:description" content="ระบบจัดการพนักงาน ลงเวลาเข้า-ออก แจ้งลางาน ง่าย ๆ ผ่านเว็บแอป" />
+  <meta property="og:image" content="https://banchagroup.netlify.app/preview.png" />
+  <meta property="og:url" content="https://banchagroup.netlify.app/" />
+  <title>ลงเวลาเข้า-ออกพนักงาน</title>
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #1565C0;
+      --primary-light: #1E88E5;
+      --primary-dark: #0D47A1;
+      --primary-gradient: linear-gradient(135deg, #1976D2 0%, #1565C0 50%, #0D47A1 100%);
+      --bg: #F0F4F8;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text: #1A202C;
+      --text-secondary: #4A5568;
+      --muted: #718096;
+      --success: #38A169;
+      --success-light: #48BB78;
+      --warning: #DD6B20;
+      --warning-light: #ED8936;
+      --error: #E53E3E;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(56, 161, 105, 0.08) 0%, transparent 50%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .header {
+      margin-bottom: 1.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .clock {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--primary);
+      font-feature-settings: "tnum";
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, rgba(21, 101, 192, 0.1) 0%, rgba(21, 101, 192, 0.05) 100%);
+      border-radius: var(--radius-sm);
+    }
+
+    .clock-icon {
+      font-size: 1.5rem;
+    }
+
+    .card {
+      position: relative;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Status indicator */
+    .status-indicator {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #CBD5E0;
+    }
+
+    .status-dot.loading {
+      background: var(--warning);
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.ready {
+      background: var(--success);
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.9);
+      }
+    }
+
+    /* Admin indicator */
+    .admin-indicator {
+      display: none;
+      background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%);
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Form elements */
+    label {
+      display: block;
+      text-align: left;
+      margin-top: 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    select,
+    input[type="time"],
+    input[type="date"] {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 2px solid #E2E8F0;
+      border-radius: var(--radius-sm);
+      background: #FAFBFC;
+      color: var(--text);
+      appearance: none;
+      transition: all var(--transition);
+    }
+
+    select {
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%234A5568" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.25em;
+      padding-right: 2.5rem;
+    }
+
+    select:focus,
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+    }
+
+    select:disabled,
+    input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #EDF2F7;
+    }
+
+    select.loading {
+      border-color: var(--warning);
+      background-color: #FFFAF0;
+    }
+
+    /* Buttons */
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .buttons button {
+      position: relative;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary-gradient);
+      transition: all var(--transition);
+      overflow: hidden;
+    }
+
+    .buttons button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .buttons button:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    .buttons button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3);
+    }
+
+    .buttons button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .buttons button:disabled {
+      background: linear-gradient(135deg, #A0AEC0 0%, #718096 100%);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .buttons button.loading {
+      pointer-events: none;
+    }
+
+    .buttons button .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+
+    .buttons button.loading .spinner {
+      display: inline-block;
+    }
+
+    .buttons button.loading .btn-text {
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Admin button */
+    .admin-btn {
+      margin-top: 1.5rem;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid #E2E8F0;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .admin-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(21, 101, 192, 0.05);
+    }
+
+    .admin-btn.active {
+      background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%);
+      color: white;
+      border-color: var(--warning);
+    }
+
+    /* Admin panel */
+    .admin-panel {
+      display: none;
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: linear-gradient(135deg, #FFFAF0 0%, #FFF5EB 100%);
+      border: 2px solid rgba(221, 107, 32, 0.2);
+      border-radius: var(--radius-sm);
+      animation: slideDown 0.3s ease;
+    }
+
+    .admin-panel.show {
+      display: block;
+    }
+
+    .admin-panel-title {
+      font-weight: 600;
+      color: var(--warning);
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .admin-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .admin-row label {
+      margin-top: 0.5rem;
+    }
+
+    /* Logos */
+    .logos {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .logos img {
+      height: 36px;
+      border-radius: 6px;
+      opacity: 0.7;
+      transition: all var(--transition);
+    }
+
+    .logos img:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    /* Toast notification */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .toast {
+      display: none;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      animation: toastIn 0.3s ease;
+      margin-bottom: 0.5rem;
+    }
+
+    .toast.show {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .toast-message {
+      flex: 1;
+      white-space: pre-line;
+      line-height: 1.45;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+      color: white;
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, var(--error) 0%, #FC8181 100%);
+      color: white;
+    }
+
+    .toast.info {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Back button */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+
+    .back-link:hover {
+      color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 360px) {
+      .card {
+        padding: 1.5rem;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+      }
+
+      .clock {
+        font-size: 1.5rem;
+      }
+
+      .buttons {
+        gap: 0.75rem;
+      }
+
+      .buttons button {
+        padding: 0.875rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.write(`
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:-apple-system,sans-serif;color:#fff;text-align:center;">
+          <div style="max-width:400px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.1);padding:2.5rem;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;color:#EF4444;">กรุณาใช้งานผ่าน Local Server</h2>
+            <p style="font-size:0.95rem;color:#94A3B8;line-height:1.6;margin-bottom:1.5rem;">
+              ตรวจพบว่าคุณเปิดไฟล์ HTML นี้โดยตรง (file:///) ทำให้เบราว์เซอร์บล็อกการเรียกใช้งานข้อมูลจาก API
+            </p>
+            <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);padding:1rem;border-radius:8px;margin-bottom:1.5rem;">
+              <a href="http://localhost:3005" style="color:#60A5FA;text-decoration:none;font-weight:700;font-size:1.1rem;word-break:break-all;">http://localhost:3005</a>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  </script>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+    <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
+
+    <div class="header">
+      <h1>ลงเวลาเข้า-ออกพนักงาน</h1>
+      <div class="clock">
+        <span class="clock-icon">🕐</span>
+        <span id="clock">--:--:--</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">กำลังโหลด...</span>
+      </div>
+
+      <div id="adminIndicator" class="admin-indicator">
+        🔧 โหมดผู้ดูแลระบบ
+      </div>
+
+      <label for="deptSelect">แผนก</label>
+      <select id="deptSelect" disabled>
+        <option>กำลังโหลดข้อมูล…</option>
+      </select>
+
+      <label for="nameSelect">ชื่อพนักงาน</label>
+      <select id="nameSelect" disabled>
+        <option value="">– เลือกชื่อ –</option>
+      </select>
+
+      <div class="admin-panel" id="adminPanel">
+        <div class="admin-panel-title">⏰ กำหนดเวลาแทนพนักงาน</div>
+        <div class="admin-row">
+          <div>
+            <label for="overrideDate">วันที่</label>
+            <input type="date" id="overrideDate">
+          </div>
+          <div>
+            <label for="overrideTime">เวลา</label>
+            <input type="time" id="overrideTime">
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="btnIn" onclick="doLog('IN')" disabled>
+          <span class="spinner"></span>
+          <span class="btn-text">ลงเวลาเข้า</span>
+        </button>
+        <button id="btnOut" onclick="doLog('OUT')" disabled>
+          <span class="spinner"></span>
+          <span class="btn-text">ลงเวลาออก</span>
+        </button>
+      </div>
+
+      <button class="admin-btn" onclick="toggleAdmin()" id="adminBtn">
+        🔐 เข้าสู่ระบบผู้ดูแล
+      </button>
+
+      <div class="logos">
+        <img src="images/logo-tro.png" alt="ตรอ.">
+        <img src="images/logo-bancha-autoglass.jpeg" alt="Bancha Autoglass">
+        <img src="images/logo-insurance-center.jpeg" alt="ศูนย์รวมประกันภัย">
+        <img src="images/logo-viriyah-service.jpg" alt="Viriyah Service">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Configuration
+    // ═══════════════════════════════════════════════════════════════════════════
+    const API = '/api';
+    const CACHE_VERSION = 'v2'; // Increment this to bust cache
+    const TTL = 5 * 60 * 1000;
+    const ADMIN_PASSWORD = '280612';
+
+    // Clear old cache on version change
+    (function () {
+      try {
+        const storedVersion = localStorage.getItem('cache_version');
+        if (storedVersion !== CACHE_VERSION) {
+          localStorage.clear();
+          localStorage.setItem('cache_version', CACHE_VERSION);
+          console.log('Cache cleared due to version update');
+        }
+      } catch (e) {
+        console.log('localStorage not available');
+      }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Global State
+    // ═══════════════════════════════════════════════════════════════════════════
+    let isAdminMode = false;
+    let isDepartmentLoading = false;
+    let isNamesLoading = false;
+    let departmentsLoaded = false;
+    let namesLoaded = false;
+    let isSubmitting = false;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Toast Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showToast(message, type = 'info', duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type} show`;
+
+      const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️'
+      };
+
+      const icon = document.createElement('span');
+      icon.className = 'toast-icon';
+      icon.textContent = icons[type] || icons.info;
+
+      const text = document.createElement('span');
+      text.className = 'toast-message';
+      text.textContent = message;
+
+      toast.appendChild(icon);
+      toast.appendChild(text);
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Clock
+    // ═══════════════════════════════════════════════════════════════════════════
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('th-TH', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function formatThaiDateInput(date = new Date()) {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(date).reduce((acc, part) => {
+        if (part.type !== 'literal') acc[part.type] = part.value;
+        return acc;
+      }, {});
+      return `${parts.year}-${parts.month}-${parts.day}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Status Indicator
+    // ═══════════════════════════════════════════════════════════════════════════
+    function updateStatusIndicator() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      if (isDepartmentLoading || isNamesLoading) {
+        dot.className = 'status-dot loading';
+        text.textContent = 'กำลังโหลด...';
+      } else if (departmentsLoaded && (namesLoaded || !document.getElementById('deptSelect').value)) {
+        dot.className = 'status-dot ready';
+        text.textContent = 'พร้อมใช้งาน';
+      } else {
+        dot.className = 'status-dot';
+        text.textContent = 'รอข้อมูล';
+      }
+    }
+
+
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LocalStorage Wrapper (handles private browsing)
+    // ═══════════════════════════════════════════════════════════════════════════
+    const storage = {
+      get(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      set(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          // Private browsing mode
+        }
+      },
+      getJSON(key) {
+        try {
+          const val = localStorage.getItem(key);
+          return val ? JSON.parse(val) : null;
+        } catch {
+          return null;
+        }
+      },
+      setJSON(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+          // Private browsing mode
+        }
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Admin Functionality
+    // ═══════════════════════════════════════════════════════════════════════════
+    function toggleAdmin() {
+      if (isAdminMode) {
+        // Logout
+        isAdminMode = false;
+        document.getElementById('adminBtn').textContent = '🔐 เข้าสู่ระบบผู้ดูแล';
+        document.getElementById('adminBtn').classList.remove('active');
+        document.getElementById('adminIndicator').style.display = 'none';
+        document.getElementById('adminPanel').classList.remove('show');
+        showToast('ออกจากโหมดผู้ดูแลแล้ว', 'info');
+        updateButtons();
+      } else {
+        // Login
+        const password = prompt('กรุณาใส่รหัสผ่านผู้ดูแลระบบ:');
+        if (password === ADMIN_PASSWORD) {
+          isAdminMode = true;
+          document.getElementById('adminBtn').textContent = '🔓 ออกจากโหมดผู้ดูแล';
+          document.getElementById('adminBtn').classList.add('active');
+          document.getElementById('adminIndicator').style.display = 'block';
+          document.getElementById('adminPanel').classList.add('show');
+
+          // Set default date/time
+          const now = new Date();
+          document.getElementById('overrideDate').value = formatThaiDateInput(now);
+          document.getElementById('overrideTime').value = now.toTimeString().slice(0, 5);
+
+          showToast('เข้าสู่โหมดผู้ดูแลแล้ว', 'success');
+          updateButtons();
+        } else if (password !== null) {
+          showToast('รหัสผ่านไม่ถูกต้อง', 'error');
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Load Departments
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function loadDepartments() {
+      const sel = document.getElementById('deptSelect');
+      const now = Date.now();
+      const cache = storage.getJSON('depts');
+
+      isDepartmentLoading = true;
+      sel.classList.add('loading');
+      updateStatusIndicator();
+
+      if (cache && now - cache.ts < TTL) {
+        isDepartmentLoading = false;
+        sel.classList.remove('loading');
+        populateDept(cache.data);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}?action=getDepartments`);
+        const depts = await res.json();
+        storage.setJSON('depts', { ts: now, data: depts });
+        populateDept(depts);
+      } catch (e) {
+        showToast('ไม่สามารถโหลดข้อมูลแผนก', 'error');
+        sel.innerHTML = '<option>❌ โหลดข้อมูลไม่สำเร็จ</option>';
+      } finally {
+        isDepartmentLoading = false;
+        sel.classList.remove('loading');
+        updateStatusIndicator();
+      }
+    }
+
+    function populateDept(arr) {
+      const sel = document.getElementById('deptSelect');
+      sel.innerHTML = '<option value="">– เลือกแผนก –</option>';
+      arr.forEach(d => sel.appendChild(new Option(d, d)));
+      sel.disabled = false;
+      departmentsLoaded = true;
+      updateButtons();
+      updateStatusIndicator();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Load Names
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function loadNames(dept) {
+      const nameSelect = document.getElementById('nameSelect');
+
+      if (!dept) {
+        nameSelect.innerHTML = '<option value="">– เลือกชื่อ –</option>';
+        nameSelect.disabled = true;
+        namesLoaded = false;
+        updateButtons();
+        updateStatusIndicator();
+        return;
+      }
+
+      const now = Date.now();
+      const key = 'names_' + dept;
+      const cache = storage.getJSON(key);
+
+      isNamesLoading = true;
+      nameSelect.disabled = true;
+      nameSelect.innerHTML = '<option>กำลังโหลดชื่อ…</option>';
+      nameSelect.classList.add('loading');
+      updateStatusIndicator();
+      updateButtons();
+
+      if (cache && now - cache.ts < TTL) {
+        isNamesLoading = false;
+        nameSelect.classList.remove('loading');
+        populateNames(cache.data);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API}?action=getNamesByDept&dept=${encodeURIComponent(dept)}`
+        );
+        const names = await res.json();
+        storage.setJSON(key, { ts: now, data: names });
+        populateNames(names);
+      } catch (e) {
+        showToast('ไม่สามารถโหลดชื่อพนักงาน', 'error');
+        nameSelect.innerHTML = '<option>❌ โหลดชื่อไม่สำเร็จ</option>';
+      } finally {
+        isNamesLoading = false;
+        nameSelect.classList.remove('loading');
+        updateStatusIndicator();
+      }
+    }
+
+    function populateNames(arr) {
+      const sel = document.getElementById('nameSelect');
+      sel.innerHTML = '<option value="">– เลือกชื่อ –</option>';
+      arr.forEach(n => sel.appendChild(new Option(n, n)));
+      sel.disabled = false;
+      namesLoaded = true;
+      updateButtons();
+      updateStatusIndicator();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Device-level Gating
+    // ═══════════════════════════════════════════════════════════════════════════
+    function todayKey() {
+      return formatThaiDateInput();
+    }
+
+    function typeKey(type) {
+      return `attend_${type}_${todayKey()}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Update Buttons
+    // ═══════════════════════════════════════════════════════════════════════════
+    function updateButtons() {
+      const dept = document.getElementById('deptSelect').value;
+      const name = document.getElementById('nameSelect').value;
+      const btnIn = document.getElementById('btnIn');
+      const btnOut = document.getElementById('btnOut');
+
+      const isLoading = isDepartmentLoading || isNamesLoading || isSubmitting;
+      const hasValidSelection = dept && name;
+
+      if (isAdminMode) {
+        const shouldEnable = hasValidSelection && !isLoading;
+        btnIn.disabled = !shouldEnable;
+        btnOut.disabled = !shouldEnable;
+      } else {
+        const hasLoggedIn = !!storage.get(typeKey('IN'));
+        const hasLoggedOut = !!storage.get(typeKey('OUT'));
+        const dataReady = departmentsLoaded && (dept ? namesLoaded : true);
+
+        btnIn.disabled = !(hasValidSelection && dataReady && !hasLoggedIn && !isLoading);
+        btnOut.disabled = !(hasValidSelection && dataReady && !hasLoggedOut && !isLoading);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Do Log (Check In/Out)
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function doLog(type) {
+      const dept = document.getElementById('deptSelect').value;
+      const name = document.getElementById('nameSelect').value;
+
+      if (!dept || !name) {
+        showToast('กรุณาเลือกทั้งแผนกและชื่อให้ครบถ้วน', 'error');
+        return;
+      }
+
+      if (isDepartmentLoading || isNamesLoading || isSubmitting) {
+        showToast('กรุณารอให้ข้อมูลโหลดเสร็จก่อน', 'info');
+        return;
+      }
+
+      const btn = type === 'IN' ? document.getElementById('btnIn') : document.getElementById('btnOut');
+      btn.classList.add('loading');
+      isSubmitting = true;
+      updateButtons();
+
+      const sendLog = async (lat, lon) => {
+        const params = new URLSearchParams({
+          action: 'log',
+          department: dept,
+          name: name,
+          type: type,
+          lat: lat,
+          lon: lon,
+          isAdmin: isAdminMode
+        });
+
+        if (isAdminMode) {
+          const overrideDate = document.getElementById('overrideDate').value;
+          const overrideTime = document.getElementById('overrideTime').value;
+          if (overrideDate) params.append('overrideDate', overrideDate);
+          if (overrideTime) params.append('overrideTime', overrideTime);
+        }
+
+        try {
+          const response = await fetch(`${API}?${params.toString()}`);
+          const res = await response.json();
+
+          if (res.status === 'success') {
+            if (!isAdminMode) {
+              storage.set(typeKey(type), '1');
+            }
+
+            const actionText = type === 'IN' ? 'ลงเวลาเข้า' : 'ลงเวลาออก';
+            showToast(`${actionText}สำเร็จ ที่ ${res.store}`, 'success');
+
+            // Show leaderboard in toast for check-in/out
+            const leaderboardRows = res.leaderboard
+              ? res.leaderboard.split('\n').filter(Boolean).slice(0, 3)
+              : [];
+            if (leaderboardRows.length) {
+              showToast(`Leaderboard:\n${leaderboardRows.join('\n')}`, 'success', 8000);
+            }
+          } else if (res.status === 'fail') {
+            showToast(res.message, 'error');
+          } else {
+            showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+          }
+        } catch (e) {
+          showToast('บันทึกเวลาไม่สำเร็จ กรุณาลองใหม่', 'error');
+        } finally {
+          btn.classList.remove('loading');
+          isSubmitting = false;
+          updateButtons();
+        }
+      };
+
+      // Admin mode: skip geolocation
+      if (isAdminMode) {
+        await sendLog('', '');
+        return;
+      }
+
+      // Normal mode: require geolocation
+      if (!navigator.geolocation) {
+        showToast('เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง', 'error');
+        btn.classList.remove('loading');
+        isSubmitting = false;
+        updateButtons();
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          await sendLog(pos.coords.latitude, pos.coords.longitude);
+        },
+        err => {
+          showToast('ไม่สามารถตรวจหาตำแหน่งได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง', 'error');
+          btn.classList.remove('loading');
+          isSubmitting = false;
+          updateButtons();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Initialize
+    // ═══════════════════════════════════════════════════════════════════════════
+    window.addEventListener('load', () => {
+      loadDepartments();
+      updateButtons();
+      updateStatusIndicator();
+    });
+
+    document.getElementById('deptSelect').addEventListener('change', e => {
+      namesLoaded = false;
+      loadNames(e.target.value);
+      updateButtons();
+    });
+
+    document.getElementById('nameSelect').addEventListener('change', updateButtons);
+  </script>
+</body>
+
+</html>

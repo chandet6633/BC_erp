@@ -12,6 +12,7 @@
 
 import { translateFilter } from './filter-translator.js'
 import { compressImage } from './image-compressor.js'
+import { buildDevAuthHeaders, hasDevSession } from './session.js'
 
 /* ── Configuration ── */
 
@@ -100,10 +101,14 @@ export function getAuthToken() {
    ══════════════════════════════════════════ */
 
 async function _fetch(url, options = {}) {
+    const token = getAuthToken()
+    const devHeaders = !token ? buildDevAuthHeaders() : {}
+
     const headers = {
         'Content-Type': 'application/json',
         // Send JWT as Authorization: Bearer header
-        ...(JWT_TOKEN ? { 'Authorization': `Bearer ${JWT_TOKEN}` } : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...devHeaders,
         ...(options.headers || {})
     }
     const res = await fetch(url, { ...options, headers })
@@ -111,7 +116,13 @@ async function _fetch(url, options = {}) {
     // Global 401 interceptor: stale/invalid token → clear session & redirect to login
     // NOTE: NO reload() here — that would cause a request storm hitting the rate limiter
     if (res.status === 401 && !url.includes('/api/auth/') && !window._authRedirecting) {
-        window._authRedirecting = true
+        if (typeof window !== 'undefined') {
+            const isDevPortalSession = hasDevSession()
+            if (isDevPortalSession && !token) {
+                return res
+            }
+        }
+
         clearAuthToken()
         try {
             localStorage.removeItem(PRIMARY_TOKEN_KEY)
@@ -123,7 +134,20 @@ async function _fetch(url, options = {}) {
         } catch { }
         if (typeof window !== 'undefined') {
             // Navigate without reload — the router will redirect to login
-            window.location.href = window.location.origin + '/#/login'
+            const pathname = window.location.pathname || '/'
+            const isPortalApp =
+                window.location.port === '9092' ||
+                window.location.port === '8092' ||
+                pathname.includes('/pages/main')
+            if (isPortalApp) {
+                return res
+            }
+
+            window._authRedirecting = true
+            const url = new URL(getPortalUrl(), window.location.href)
+            url.searchParams.set('from', 'mungkhudshop')
+            url.searchParams.set('reason', 'token_expired')
+            window.location.href = url.toString()
         }
     }
 
@@ -416,12 +440,21 @@ export async function getCurrentUser() {
 }
 
 /* ══════════════════════════════════════════
-   MANAGEMENT URL HELPER
+   PORTAL URL HELPER
    ══════════════════════════════════════════ */
 
-export function getManagementUrl() {
+export function getPortalUrl() {
     try {
-        return `${window.location.protocol}//${window.location.hostname}:9092`
+        const portMap = {
+            '3000': '3000',
+            '4000': '3000',
+            '9092': '9092',
+            '9091': '9092',
+            '8092': '8092',
+            '8091': '8092'
+        }
+        const targetPort = portMap[window.location.port] || '9092'
+        return `${window.location.protocol}//${window.location.hostname}:${targetPort}`
     } catch {
         return 'http://localhost:9092'
     }

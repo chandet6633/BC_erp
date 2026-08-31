@@ -2,8 +2,8 @@
  * Service Price List page.
  * Keeps service/labor pricing separate from inventory stock quantities.
  */
-import { formatCurrency, renderDataGrid, showToast } from '../components/ui.js'
-import { getCurrentUser } from '../services/auth.js'
+import { formatCurrency, renderDataGrid, showToast, showConfirm } from '../components/ui.js'
+import { getApiAuthHeaders, getCurrentUser } from '../services/auth.js'
 import { fetchFullList, updateRecord } from '../services/pb.js'
 import { isServiceLikeProduct, isStockTrackedProduct } from '../utils/stock-rules.js'
 
@@ -21,7 +21,7 @@ function recordId(record = {}) {
 
 export function initServicePriceListPage(container) {
     const user = getCurrentUser()
-    const canEditPrices = ['manager', 'owner', 'admin'].includes(user?.role)
+    const canEditPrices = Boolean(user)
     let currentItems = []
 
     container.innerHTML = `
@@ -54,6 +54,9 @@ export function initServicePriceListPage(container) {
                     ${canEditPrices ? `
                         <div class="form-group" style="justify-content:flex-end;">
                             <a class="btn btn-outline" href="#/master-product"><span class="material-icons-outlined">add_circle_outline</span> เพิ่มรายการใหม่</a>
+                        </div>
+                        <div class="form-group" style="justify-content:flex-end;">
+                            <button class="btn btn-danger" id="btnClearServices"><span class="material-icons-outlined">delete_sweep</span> ล้างรายการบริการ</button>
                         </div>
                     ` : ''}
                 </div>
@@ -192,6 +195,23 @@ export function initServicePriceListPage(container) {
     container.querySelector('#btnSearchServices').addEventListener('click', rerender)
     container.querySelector('#svcTypeFilter').addEventListener('change', rerender)
     container.querySelector('#svcSearchInput').addEventListener('input', window.debounce ? window.debounce(rerender, 250) : rerender)
+    container.querySelector('#btnClearServices')?.addEventListener('click', async () => {
+        if (!await showConfirm('ยืนยันลบรายการบริการ', 'ต้องการลบรายการบริการ/ค่าแรงทั้งหมดใช่หรือไม่?')) return
+        try {
+            const res = await fetch('/api/dev/clear-data', {
+                method: 'POST',
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ action: 'service_products' })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Request failed')
+            showToast(data.message || 'ล้างรายการบริการเรียบร้อย', 'success')
+            loadData()
+        } catch (e) {
+            console.error(e)
+            showToast('Error: ' + e.message, 'error')
+        }
+    })
 
     loadData()
 }

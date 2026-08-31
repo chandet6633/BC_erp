@@ -9,7 +9,7 @@
 // but we no longer obfuscate/deobfuscate the token because only Admins
 // with backend access can view the raw token in NocoDB anyway.
 import { fetchFullList, createRecord, updateRecord } from './pb.js'
-import { getAuthToken } from '@shared/nocodb-adapter.js'
+import { getApiAuthHeaders } from './auth.js'
 
 /** Get Telegram config from app_settings collection (For Settings UI only) */
 export async function getTelegramConfig() {
@@ -54,10 +54,7 @@ async function callNotifyApi(endpoint, payload) {
         // If we are in MungkhudShop, Vite proxies /api to port 3000.
         const res = await fetch(`/api/notify/${endpoint}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {})
-            },
+            headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(payload)
         })
         const data = await res.json()

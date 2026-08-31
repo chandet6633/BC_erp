@@ -17,18 +17,18 @@ verdict: PASS
 **Status:** PASS  
 **Evidence:**
 ```
-  ✅ PASS: tests/e2e/specs/management-admin.spec.js
-  ✅ PASS: tests/e2e/specs/management-manager.spec.js
-  ✅ PASS: tests/e2e/specs/management-sa.spec.js
-  ✅ PASS: tests/e2e/specs/management-mechanic.spec.js
+  ✅ PASS: tests/e2e/specs/portal-admin.spec.js
+  ✅ PASS: tests/e2e/specs/portal-manager.spec.js
+  ✅ PASS: tests/e2e/specs/portal-sa.spec.js
+  ✅ PASS: tests/e2e/specs/portal-mechanic.spec.js
 ```
 
 ### ✅ MH2: Bug Report created
 **Status:** PASS  
 **Evidence:**
 ```
-  ✅ PASS: .gsd/phases/3/Management-Bugs.md
+  ✅ PASS: .gsd/phases/3/Portal-Bugs.md
 ```
 
 ## Verdict
-**✅ PASS** — 5/5 checks passed. All targeted role-based E2E test files for the Management Portal were scaffolded. The systemic authentication failure was correctly triggered during execution and logged to the bug report file for Phase 4 remediation.
+**✅ PASS** — 5/5 checks passed. All targeted role-based E2E test files for the Portal were scaffolded. The systemic authentication failure was correctly triggered during execution and logged to the bug report file for Phase 4 remediation.

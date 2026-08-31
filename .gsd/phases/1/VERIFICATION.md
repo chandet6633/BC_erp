@@ -35,9 +35,9 @@ verdict: PASS
 **Evidence:**
 ```
   ✅ PASS: MungkhudShop project configured
-  ✅ PASS: Management project configured
+  ✅ PASS: Portal project configured
   ✅ PASS: MungkhudShop URL configured (9091)
-  ✅ PASS: Management URL configured (9092)
+  ✅ PASS: Portal URL configured (9092)
 ```
 
 ### ✅ MH4: Playwright execution
@@ -47,12 +47,12 @@ verdict: PASS
 [MungkhudShop] › specs\health.spec.js:4:3 › Health Checks › MungkhudShop login page loads
 [MungkhudShop] Title: MungkhudShop — ระบบจัดการธุรกิจ
 
-[Management] › specs\health.spec.js:21:3 › Health Checks › Management Portal login page loads
-[Management] Title: BC Auto Xperience - ระบบจัดการรายรับรายจ่าย
+[Portal] › specs\health.spec.js:21:3 › Health Checks › Portal login page loads
+[Portal] Title: BC Auto Xperience - ระบบจัดการรายรับรายจ่าย
 
   2 skipped
   2 passed (4.3s)
 ```
 
 ## Verdict
-**✅ PASS** — 10/10 checks passed. Playwright is configured, isolated cleanly, and the basic health check confirms it can read titles and wait for locators on both the MungkhudShop and Management portal login pages.
+**✅ PASS** — 10/10 checks passed. Playwright is configured, isolated cleanly, and the basic health check confirms it can read titles and wait for locators on both the MungkhudShop and Portal login pages.

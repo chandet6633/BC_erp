@@ -10,11 +10,12 @@ This is the single current README for the project. Older PocketBase-era docs are
 - Active runtime: Docker stack in `docker-compose.test.nocodb.yml`.
 - Data flow: Browser -> Nginx `/api/*` -> Express API -> NocoDB.
 - The browser never receives the NocoDB `xc-token`; Express keeps it server-side and browser requests use JWTs.
+- Production roadmap: `docs/production-roadmap-app-first.md`. Current priority is functional app workflows first; production auth and LINE Login are deferred until the app is pilot-ready.
 
 ## Current Architecture
 
 ```text
-Management      MungkhudShop      Express API        NocoDB
+Portal      MungkhudShop      Express API        NocoDB
 Vite MPA        Vite SPA          Node/Express       SQLite-backed
 Port 9092       Port 9091         Port 9093          Port 9080
    |               |                  |                  |
@@ -32,7 +33,7 @@ Services:
 | Service | URL |
 | --- | --- |
 | MungkhudShop | http://localhost:9091 |
-| Management | http://localhost:9092 |
+| Portal | http://localhost:9092 |
 | API health | http://localhost:9093/api/health |
 | NocoDB admin | http://localhost:9080 |
 
@@ -46,7 +47,7 @@ docker compose -f docker-compose.test.nocodb.yml up -d --build
 docker compose -f docker-compose.test.nocodb.yml up -d --build test-api
 
 # Recreate stateless frontend containers after npm builds
-docker compose -f docker-compose.test.nocodb.yml up -d --force-recreate test-management test-mungkhud
+docker compose -f docker-compose.test.nocodb.yml up -d --force-recreate test-portal test-mungkhud
 
 # API logs
 docker logs --tail 80 bctest-api
@@ -54,10 +55,10 @@ docker logs --tail 80 bctest-api
 
 ## Local Development
 
-Management:
+Portal:
 
 ```bash
-cd Management
+cd Portal
 npm install
 npm run dev
 npm run lint
@@ -85,7 +86,7 @@ node --check routes/data.js
 node --check routes/notify.js
 ```
 
-Build outputs go to `Management/dist/` and `MungkhudShop/dist/`, which the test Nginx containers serve as read-only bind mounts.
+Build outputs go to `Portal/dist/` and `MungkhudShop/dist/`, which the test Nginx containers serve as read-only bind mounts.
 
 ## Project Layout
 
@@ -93,13 +94,14 @@ Build outputs go to `Management/dist/` and `MungkhudShop/dist/`, which the test 
 BC_ERP/
   AI_GUIDE.md                       AI agent workflow and coding rules
   docker-compose.test.nocodb.yml    Active NocoDB test/dev stack
-  nginx-test-management.conf        Management Nginx config
+  nginx-test-portal.conf        Portal Nginx config
   nginx-test-mungkhud.conf          MungkhudShop Nginx config
   api-server/                       Express API and NocoDB proxy
   shared/                           Shared frontend adapter/utilities
-  Management/                       Back-office frontend
+  Portal/                       Back-office frontend
   MungkhudShop/                     Front-office shop ERP
   tests/e2e/                        Playwright smoke tests
+  docs/production-roadmap-app-first.md App-first production roadmap
   docs/archive/                     Old PocketBase-era documents
 ```
 
@@ -118,7 +120,7 @@ The shim lives in `shared/nocodb-adapter.js` and is exposed through:
 
 | App | Data entry point |
 | --- | --- |
-| Management | `Management/src/services/pocketbase.js` |
+| Portal | `Portal/src/services/pocketbase.js` |
 | MungkhudShop | `MungkhudShop/src/services/pb.js` |
 
 JWT storage is unified across both apps:
@@ -126,7 +128,18 @@ JWT storage is unified across both apps:
 - `mungkhud_jwt`
 - `bcauto_jwt`
 
-Both keys are written so SSO-style handoff between Management and MungkhudShop keeps working after the migration from PocketBase to NocoDB.
+Both keys are written so SSO-style handoff between Portal and MungkhudShop keeps working after the migration from PocketBase to NocoDB.
+
+Current app-first development uses a dev portal session instead of production login. The stable session keys are:
+
+- `bcauto_dev_auth`
+- `bcauto_role`
+- `bcauto_user_id`
+- `bcauto_user_name`
+- `bcauto_auth_model`
+- `bcauto_branch`
+
+Production authentication and LINE Login are deferred until the core app workflows are pilot-ready.
 
 ## API Server
 
@@ -172,15 +185,32 @@ Routes:
 | `GET` | `/api/data/custom/generate-doc-id` | JWT | Generate next document number for a prefix |
 | `POST` | `/api/data/custom/upsert-customer` | JWT | Atomic create-or-find customer |
 | `POST` | `/api/data/custom/upsert-vehicle` | JWT | Atomic create-or-find vehicle |
+| `GET` | `/api/data/custom/branch-metadata` | none | Active branch metadata for app-wide selectors |
+| `GET` | `/api/data/custom/manager-dashboard` | JWT/dev auth | Server-side dashboard KPIs, trends, branch comparison, and alerts |
+| `GET` | `/api/data/custom/admin/branches` | JWT/dev auth (admin/owner) | List branch metadata for Admin Suite |
+| `POST` | `/api/data/custom/admin/branches` | JWT/dev auth (admin/owner) | Create a branch metadata record |
+| `PATCH` | `/api/data/custom/admin/branches/:id` | JWT/dev auth (admin/owner) | Update a branch metadata record |
+| `DELETE` | `/api/data/custom/admin/branches/:id` | JWT/dev auth (admin/owner) | Deactivate a branch metadata record |
+| `POST` | `/api/data/custom/admin/branches/migrate` | JWT/dev auth (admin/owner) | Dry-run or apply branch code migrations |
+| `GET` | `/api/data/custom/admin/roles` | JWT/dev auth (admin/owner) | List normalized role permission metadata |
+| `POST` | `/api/data/custom/admin/roles` | JWT/dev auth (admin/owner) | Upsert role-to-tool metadata |
 | `GET` | `/api/data/custom/integrity/stock-check` | JWT (admin) | Detect stock integrity issues |
 | `GET` | `/api/data/custom/integrity/document-check` | JWT (admin) | Detect document integrity issues |
 | `POST` | `/api/data/custom/admin/recalculate-costs` | JWT (admin) | Recalculate weighted average cost for all products |
+| `POST` | `/api/data/custom/admin/integrity/repair` | JWT (admin) | Run conservative safe integrity repair or dry-run |
+
+Integrity details:
+
+- Admin UI: `Portal/src/pages/admin/integrity-check.html`
+- Documentation: `docs/phase-2-integrity-checks.md`
+- Automated check: `cd api-server && npm.cmd run check:mungkhud-integrity`
 
 RBAC notes:
 
 - Non-admin/owner users are automatically branch-scoped for branch-owned tables.
 - Financial and audit tables are restricted to owner/manager/admin roles.
 - `system_settings`, `system_roles`, and user administration are admin-oriented surfaces.
+- Branches and role-to-module visibility are metadata-driven. Static frontend registry values are bootstrap fallback only.
 - Writes are serialized in `lib/nocodb.js` to reduce SQLite lock contention.
 
 Environment variables:
@@ -192,7 +222,7 @@ Environment variables:
 | `JWT_SECRET` | Secret used to sign browser JWTs |
 | `PORT` | API port inside the container, usually `3000` |
 
-## Management App
+## Portal App
 
 Back-office Vite multi-page app for admin, HR, finance, operations, and dashboards.
 
@@ -200,22 +230,22 @@ Important files:
 
 | File | Purpose |
 | --- | --- |
-| `Management/src/registry.js` | Tool registry and role visibility |
-| `Management/vite.config.js` | MPA build inputs |
-| `Management/src/services/pocketbase.js` | Data shim over the shared NocoDB adapter |
-| `Management/src/services/authService.js` | Login, roles, SSO token handoff, page gating |
-| `Management/src/services/configService.js` | Dynamic settings and role-to-tool permissions |
-| `Management/src/services/auditService.js` | Audit trail logging |
-| `Management/src/components/ui.js` | Toasts, loading overlay, image modal |
-| `Management/src/components/branch-switcher.js` | Branch selector for privileged users |
-| `Management/src/assets/js/app-shell.js` | Global sidebar shell |
-| `Management/src/utils/helpers.js` | Formatting, dates, image compression |
+| `Portal/src/registry.js` | Tool registry and role visibility |
+| `Portal/vite.config.js` | MPA build inputs |
+| `Portal/src/services/pocketbase.js` | Data shim over the shared NocoDB adapter |
+| `Portal/src/services/authService.js` | Login, roles, SSO token handoff, page gating |
+| `Portal/src/services/configService.js` | Dynamic settings and role-to-tool permissions |
+| `Portal/src/services/auditService.js` | Audit trail logging |
+| `Portal/src/components/ui.js` | Toasts, loading overlay, image modal |
+| `Portal/src/components/branch-switcher.js` | Branch selector for privileged users |
+| `Portal/src/assets/js/app-shell.js` | Global sidebar shell |
+| `Portal/src/utils/helpers.js` | Formatting, dates, image compression |
 
-Adding a Management page:
+Adding a Portal page:
 
-1. Create `Management/src/pages/my-feature/index.html`.
-2. Add the page to `Management/src/registry.js`.
-3. Add the page to `Management/vite.config.js` under `build.rollupOptions.input`.
+1. Create `Portal/src/pages/my-feature/index.html`.
+2. Add the page to `Portal/src/registry.js`.
+3. Add the page to `Portal/vite.config.js` under `build.rollupOptions.input`.
 4. Rebuild with `npm run build`.
 
 Common globals:
@@ -235,7 +265,7 @@ CSS load order for pages:
 4. `assets/css/app-shell.css`
 5. Optional page-specific CSS
 
-Management pages:
+Portal pages:
 
 | Page | Path | Primary roles |
 | --- | --- | --- |
@@ -327,7 +357,7 @@ NocoDB field notes:
 Recommended checks after changes:
 
 ```bash
-cd Management
+cd Portal
 npm run lint
 npm run typecheck
 npm run build
@@ -340,6 +370,8 @@ node --check server.js
 node --check routes/auth.js
 node --check routes/data.js
 node --check routes/notify.js
+npm run check:dev-portal-auth
+npm run check:metadata-foundation
 ```
 
 API smoke:

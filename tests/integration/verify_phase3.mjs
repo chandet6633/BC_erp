@@ -4,7 +4,7 @@ const JWT_SECRET = 'bcauto_jwt_secret_2026_change_in_production';
 const API_URL = 'http://localhost:9093/api';
 
 const token = jwt.sign(
-    { id: '1', name: 'Admin User', role: 'admin', branch: 'all' },
+    { id: '1', name: 'Admin User', role: 'admin', branch: 'bc-auto-service' },
     JWT_SECRET,
     { expiresIn: '1h' }
 );

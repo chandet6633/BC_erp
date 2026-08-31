@@ -30,7 +30,7 @@
       "id": "preflight.0.2",
       "section": "0. Preflight And Data Setup",
       "workflow": "Environment Health",
-      "action": "Open Management Portal login page.",
+      "action": "Open Portal login page.",
       "expected": "Portal renders and role selection works.",
       "status": "pass",
       "note": "",

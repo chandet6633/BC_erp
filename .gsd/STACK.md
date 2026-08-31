@@ -22,13 +22,13 @@
 | cors | ^2.8.5 | Cross-origin resource sharing |
 | helmet | ^7.1.0 | Security headers |
 
-### Management Frontend (Production)
+### Portal Frontend (Production)
 | Package | Version | Purpose |
 |---------|---------|---------|
 | chart.js | ^4.4.1 | Dashboard charts & visualizations |
 | xlsx | ^0.18.5 | Excel export for reports |
 
-### Management Frontend (Development)
+### Portal Frontend (Development)
 | Package | Version | Purpose |
 |---------|---------|---------|
 | vite | ^6.0.0 | Build tool & dev server |
@@ -52,7 +52,7 @@
 |---------|----------|---------|
 | NocoDB (SQLite) | Self-hosted Docker | Database + REST API |
 | Express API Server | Self-hosted Docker | Auth, CRUD proxy, middleware |
-| Nginx (Management) | Self-hosted Docker | Static SPA serving + API proxy |
+| Nginx (Portal) | Self-hosted Docker | Static SPA serving + API proxy |
 | Nginx (MungkhudShop) | Self-hosted Docker | Static SPA serving + API proxy |
 | GitHub | Cloud | Source code repository |
 
@@ -63,7 +63,7 @@
 | NocoDB | 9080 | 8080 |
 | API Server | 9093 | 3000 |
 | MungkhudShop | 9091 | 9091 |
-| Management | 9092 | 9092 |
+| Portal | 9092 | 9092 |
 
 ## Configuration
 
@@ -80,7 +80,7 @@
 ## Build Pipeline
 
 ```
-Management/src/  ──→  npm run build  ──→  Management/dist/
+Portal/src/  ──→  npm run build  ──→  Portal/dist/
 MungkhudShop/src/ ──→  npm run build  ──→  MungkhudShop/dist/
                                               ↓
                                     Docker volume mount

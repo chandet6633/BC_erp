@@ -1,5 +1,6 @@
 import { createMasterPage } from './master-factory.js'
 import { fetchFullList } from '../services/pb.js'
+import { getApiAuthHeaders } from '../services/auth.js'
 
 export const initMasterCustomerPage = createMasterPage({
     title: 'ลูกค้า', icon: 'people', collection: 'customers',
@@ -27,9 +28,8 @@ export const initMasterCustomerPage = createMasterPage({
     beforeSave: async (data, editingId) => {
         if (!editingId && !data.cust_code) {
             try {
-                const jwt = localStorage.getItem('mungkhud_jwt') || ''
                 const res = await fetch('/api/data/custom/generate-doc-id?prefix=CUST&table=customers&field=cust_code', {
-                    headers: { 'Authorization': `Bearer ${jwt}` }
+                    headers: getApiAuthHeaders()
                 })
                 const d = await res.json()
                 data.cust_code = d.doc_no || `CUST-${Date.now()}`

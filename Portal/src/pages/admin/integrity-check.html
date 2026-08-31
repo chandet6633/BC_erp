@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Integrity - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            --integrity-bg: #f4f7fb;
+            --integrity-panel: #ffffff;
+            --integrity-line: #d9e2ef;
+            --integrity-ink: #172033;
+            --integrity-muted: #64748b;
+            --integrity-blue: #2563eb;
+            --integrity-green: #059669;
+            --integrity-amber: #b45309;
+            --integrity-red: #dc2626;
+            color-scheme: light;
+        }
+
+        * { box-sizing: border-box; }
+
+        body.integrity-page {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--integrity-bg);
+            color: var(--integrity-ink);
+            font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
+        }
+
+        .shell {
+            width: min(100% - 32px, 1180px);
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8rem;
+            letter-spacing: 0;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--integrity-muted);
+            line-height: 1.5;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            min-height: 42px;
+            border: 1px solid var(--integrity-line);
+            border-radius: 8px;
+            padding: 0 13px;
+            background: white;
+            color: var(--integrity-ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn.primary {
+            border-color: var(--integrity-blue);
+            background: var(--integrity-blue);
+            color: white;
+        }
+
+        .btn.warning {
+            border-color: #f59e0b;
+            background: #fff7ed;
+            color: #92400e;
+        }
+
+        .btn.success {
+            border-color: var(--integrity-green);
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .btn:disabled {
+            opacity: .55;
+            cursor: wait;
+        }
+
+        .notice {
+            display: none;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            border: 1px solid var(--integrity-line);
+            border-radius: 8px;
+            background: var(--integrity-panel);
+            color: var(--integrity-muted);
+            font-weight: 750;
+        }
+
+        .notice.active { display: block; }
+        .notice.error { border-color: #fecaca; background: #fff7f7; color: #991b1b; }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card, .panel {
+            background: var(--integrity-panel);
+            border: 1px solid var(--integrity-line);
+            border-radius: 8px;
+        }
+
+        .summary-card {
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .summary-value {
+            font-size: 1.45rem;
+            font-weight: 850;
+        }
+
+        .summary-label {
+            margin-top: 3px;
+            color: var(--integrity-muted);
+            font-size: .78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .panel {
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .panel-title {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 850;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: .76rem;
+            font-weight: 850;
+            white-space: nowrap;
+            background: #ecfdf5;
+            color: var(--integrity-green);
+        }
+
+        .badge.warn { background: #fff7ed; color: var(--integrity-amber); }
+        .badge.bad { background: #fee2e2; color: var(--integrity-red); }
+
+        .finding-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .finding {
+            border: 1px solid #e7eef8;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fbfdff;
+        }
+
+        .finding-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: .86rem;
+            font-weight: 850;
+        }
+
+        .finding-help {
+            margin-top: 4px;
+            color: var(--integrity-muted);
+            font-size: .78rem;
+            line-height: 1.45;
+        }
+
+        .sample {
+            margin-top: 8px;
+            max-height: 150px;
+            overflow: auto;
+            border-top: 1px solid #e7eef8;
+            padding-top: 8px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: .74rem;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        @media (max-width: 860px) {
+            .shell { width: min(100% - 20px, 1180px); padding-top: 18px; }
+            .topbar { flex-direction: column; }
+            .actions { width: 100%; justify-content: flex-start; }
+            .btn { flex: 1 1 auto; }
+            .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 460px) {
+            .summary { grid-template-columns: 1fr; }
+            h1 { font-size: 1.45rem; }
+        }
+    </style>
+</head>
+<body class="integrity-page">
+    <main class="shell">
+        <header class="topbar">
+            <div>
+                <h1><span class="material-icons-outlined">fact_check</span> Data Integrity</h1>
+                <p class="subtitle">Stock, document, ledger, and product consistency checks for Phase 2 operations.</p>
+            </div>
+            <div class="actions">
+                <a href="index.html" class="btn"><span class="material-icons-outlined">arrow_back</span> Admin</a>
+                <button class="btn primary" id="runAllBtn"><span class="material-icons-outlined">play_arrow</span> Run Checks</button>
+                <button class="btn" id="exportBtn" disabled><span class="material-icons-outlined">download</span> Export JSON</button>
+                <button class="btn success" id="repairBtn"><span class="material-icons-outlined">build</span> Safe Repair</button>
+                <button class="btn warning" id="recalcBtn"><span class="material-icons-outlined">calculate</span> Recalculate Costs</button>
+            </div>
+        </header>
+
+        <div class="notice" id="notice">Ready.</div>
+
+        <section class="summary">
+            <div class="summary-card">
+                <div class="summary-value" id="stockTotal">-</div>
+                <div class="summary-label">Stock Findings</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="docTotal">-</div>
+                <div class="summary-label">Document Findings</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="criticalTotal">-</div>
+                <div class="summary-label">Critical</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="lastRun">-</div>
+                <div class="summary-label">Last Run</div>
+            </div>
+        </section>
+
+        <section class="grid">
+            <article class="panel">
+                <div class="panel-head">
+                    <h2 class="panel-title"><span class="material-icons-outlined">inventory_2</span> Stock Integrity</h2>
+                    <span class="badge" id="stockBadge">Not run</span>
+                </div>
+                <div class="finding-list" id="stockFindings"></div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-head">
+                    <h2 class="panel-title"><span class="material-icons-outlined">description</span> Document Integrity</h2>
+                    <span class="badge" id="docBadge">Not run</span>
+                </div>
+                <div class="finding-list" id="docFindings"></div>
+            </article>
+        </section>
+    </main>
+
+    <script type="module" src="./integrity-check.js"></script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

@@ -17,10 +17,10 @@ verdict: PASS
 **Status:** PASS  
 **Evidence:**
 ```
-  ✅ PASS: Management/src/pages/mechanic/index.html
-  ✅ PASS: Management/src/pages/mechanic/logic.js
-  ✅ PASS: Management/src/pages/mechanic/styles.css
-  ✅ PASS: Management/pb_public/pages/mechanic/index.html
+  ✅ PASS: Portal/src/pages/mechanic/index.html
+  ✅ PASS: Portal/src/pages/mechanic/logic.js
+  ✅ PASS: Portal/src/pages/mechanic/styles.css
+  ✅ PASS: Portal/pb_public/pages/mechanic/index.html
 ```
 
 ### ✅ MH2: Tool registered in registry.js

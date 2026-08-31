@@ -47,13 +47,13 @@ Transform MungkhudShop from a basic job-tracking app into a fully operational fr
 
 ## Non-Goals (Out of Scope)
 
-- Expense/cost entry (handled in Management portal)
+- Expense/cost entry (handled in Portal)
 - Barcode scanning (future phase, needs camera API)
 - LINE/SMS customer notifications (future API integration)
 - Before/after repair photos (needs file upload infrastructure beyond proof-of-payment)
 - Warranty job linking (future schema change)
 - Service reminder system (future CRM feature)
-- Branch management CRUD in MungkhudShop (removing the page; managed via Management portal)
+- Branch management CRUD in MungkhudShop (removing the page; managed via Portal)
 
 ## Users
 
@@ -117,7 +117,7 @@ Transform MungkhudShop from a basic job-tracking app into a fully operational fr
 ### F7: Remove Master Branch Page
 - Remove `master-branch.js` from MungkhudShop
 - Remove route registration from `app.js`
-- Branch management stays in Management portal only
+- Branch management stays in Portal only
 
 ### F8: Quick Print Button
 - Add `🖨️ Print` button on job form (next to Save button)

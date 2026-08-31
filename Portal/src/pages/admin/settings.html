@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Settings - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/page-header.css" />
+    <link href="../../assets/css/style.css?v=3" rel="stylesheet" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            --settings-ink: #152033;
+            --settings-muted: #667085;
+            --settings-line: #d8e0ea;
+            --settings-panel: #ffffff;
+            --settings-accent: #1d5fd1;
+        }
+
+        body.settings-page {
+            min-height: 100vh;
+            margin: 0;
+            background: #eef3f8;
+            color: var(--settings-ink);
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .settings-shell {
+            width: min(100% - 32px, 860px);
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .settings-topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .settings-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            font-size: clamp(1.45rem, 3vw, 2rem);
+            line-height: 1.2;
+            letter-spacing: 0;
+        }
+
+        .settings-subtitle {
+            margin: 6px 0 0;
+            color: var(--settings-muted);
+            font-size: 0.95rem;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .segmented,
+        .text-btn {
+            min-height: 42px;
+            border: 1px solid var(--settings-line);
+            border-radius: 8px;
+            background: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--settings-ink);
+            font-weight: 800;
+        }
+
+        .segmented {
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .segmented button {
+            min-width: 42px;
+            min-height: 36px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--settings-muted);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .segmented button.active {
+            background: #eaf2ff;
+            color: var(--settings-accent);
+        }
+
+        .text-btn {
+            padding: 0 13px;
+        }
+
+        .settings-card {
+            background: var(--settings-panel);
+            border-radius: 8px;
+            padding: 18px;
+            border: 1px solid var(--settings-line);
+            margin-bottom: 14px;
+        }
+
+        .settings-card h2 {
+            margin: 0 0 14px;
+            font-size: 1rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+            gap: 16px;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #edf1f6;
+        }
+
+        .setting-row:last-child {
+            border-bottom: 0;
+        }
+
+        .setting-label {
+            font-size: 0.94rem;
+            font-weight: 800;
+        }
+
+        .setting-desc {
+            color: var(--settings-muted);
+            font-size: 0.83rem;
+            margin-top: 3px;
+            line-height: 1.45;
+        }
+
+        .setting-input {
+            min-height: 42px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 11px;
+            border: 1px solid var(--settings-line);
+            border-radius: 8px;
+            background: white;
+            color: var(--settings-ink);
+            font: inherit;
+        }
+
+        .setting-input:focus {
+            border-color: var(--settings-accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(29, 95, 209, 0.12);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            justify-self: end;
+            width: 48px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 999px;
+            transition: 0.2s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.2s;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--settings-accent);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        .notice {
+            display: none;
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border: 1px solid var(--settings-line);
+            border-radius: 8px;
+            background: white;
+            color: var(--settings-muted);
+            font-weight: 700;
+        }
+
+        .notice.active {
+            display: block;
+        }
+
+        .notice.error {
+            border-color: #fecaca;
+            background: #fff7f7;
+            color: #991b1b;
+        }
+
+        .notice.success {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .save-btn {
+            width: 100%;
+            min-height: 48px;
+            border: 1px solid var(--settings-accent);
+            border-radius: 8px;
+            background: var(--settings-accent);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font: inherit;
+            font-weight: 850;
+            cursor: pointer;
+        }
+
+        .save-btn:disabled {
+            opacity: 0.62;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 640px) {
+            .settings-shell {
+                width: min(100% - 20px, 860px);
+                padding-top: 18px;
+            }
+
+            .settings-topbar {
+                flex-direction: column;
+            }
+
+            .settings-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .text-btn {
+                flex: 1 1 auto;
+            }
+
+            .setting-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .toggle-switch {
+                justify-self: start;
+            }
+        }
+    </style>
+</head>
+<body class="settings-page">
+    <main class="settings-shell">
+        <header class="settings-topbar">
+            <div>
+                <h1 class="settings-title"><span class="material-icons-outlined">settings</span><span data-i18n="title">ตั้งค่าระบบ</span></h1>
+                <p class="settings-subtitle" data-i18n="subtitle">ตั้งค่าระบบจากฐานข้อมูลกลาง</p>
+            </div>
+            <div class="settings-actions">
+                <div class="segmented" aria-label="Language">
+                    <button type="button" id="langTh">TH</button>
+                    <button type="button" id="langEn">EN</button>
+                </div>
+                <a class="text-btn" href="index.html"><span class="material-icons-outlined">arrow_back</span><span data-i18n="back">กลับ</span></a>
+            </div>
+        </header>
+
+        <div id="notice" class="notice"></div>
+
+        <section class="settings-card">
+            <h2><span class="material-icons-outlined">business</span><span data-i18n="company">ข้อมูลบริษัท</span></h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label" data-i18n="companyName">ชื่อบริษัท</div>
+                    <div class="setting-desc" data-i18n="companyNameDesc">ใช้แสดงบนรายงานและเอกสารระบบ</div>
+                </div>
+                <input type="text" class="setting-input" id="s_company_name" value="BC Auto Xperience" />
+            </div>
+        </section>
+
+        <section class="settings-card">
+            <h2><span class="material-icons-outlined">schedule</span><span data-i18n="workTime">เวลาทำงาน</span></h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label" data-i18n="workStart">เวลาเข้างาน</div>
+                    <div class="setting-desc" data-i18n="workStartDesc">ใช้คำนวณเวลาเริ่มงานและการมาสาย</div>
+                </div>
+                <input type="time" class="setting-input" id="s_work_start" value="08:30" />
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label" data-i18n="workEnd">เวลาเลิกงาน</div>
+                    <div class="setting-desc" data-i18n="workEndDesc">ใช้เป็นค่าเริ่มต้นสำหรับตารางเวลา</div>
+                </div>
+                <input type="time" class="setting-input" id="s_work_end" value="17:30" />
+            </div>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label" data-i18n="lateAfter">เกณฑ์มาสาย</div>
+                    <div class="setting-desc" data-i18n="lateAfterDesc">หลังเวลานี้ถือว่าเข้างานสาย</div>
+                </div>
+                <input type="time" class="setting-input" id="s_late_after" value="09:00" />
+            </div>
+        </section>
+
+        <section class="settings-card">
+            <h2><span class="material-icons-outlined">location_on</span><span data-i18n="gps">GPS และการลงเวลา</span></h2>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label" data-i18n="gpsRequired">บังคับใช้ GPS</div>
+                    <div class="setting-desc" data-i18n="gpsRequiredDesc">ผู้ใช้ต้องเปิดตำแหน่งก่อนลงเวลา</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="s_gps_required" />
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </section>
+
+        <button class="save-btn" id="saveBtn" type="button">
+            <span class="material-icons-outlined">save</span><span data-i18n="save">บันทึกการตั้งค่า</span>
+        </button>
+    </main>
+
+    <script type="module">
+        import { AuthService } from '../../services/authService.js';
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+
+        if (!AuthService.hasRole(['admin', 'owner'])) {
+            AuthService.requireRole(['admin', 'owner']);
+        }
+
+        const LANG_KEY = 'app.session.language';
+        const STORAGE_KEY = 'bc_system_settings';
+        const SETTINGS_KEYS = [
+            { key: 'company_name', inputId: 's_company_name', type: 'text' },
+            { key: 'work_start', inputId: 's_work_start', type: 'text' },
+            { key: 'work_end', inputId: 's_work_end', type: 'text' },
+            { key: 'late_after', inputId: 's_late_after', type: 'text' },
+            { key: 'gps_required', inputId: 's_gps_required', type: 'bool' },
+        ];
+
+        const i18n = {
+            th: {
+                title: 'ตั้งค่าระบบ',
+                subtitle: 'ตั้งค่าระบบจากฐานข้อมูลกลาง',
+                back: 'กลับ',
+                company: 'ข้อมูลบริษัท',
+                companyName: 'ชื่อบริษัท',
+                companyNameDesc: 'ใช้แสดงบนรายงานและเอกสารระบบ',
+                workTime: 'เวลาทำงาน',
+                workStart: 'เวลาเข้างาน',
+                workStartDesc: 'ใช้คำนวณเวลาเริ่มงานและการมาสาย',
+                workEnd: 'เวลาเลิกงาน',
+                workEndDesc: 'ใช้เป็นค่าเริ่มต้นสำหรับตารางเวลา',
+                lateAfter: 'เกณฑ์มาสาย',
+                lateAfterDesc: 'หลังเวลานี้ถือว่าเข้างานสาย',
+                gps: 'GPS และการลงเวลา',
+                gpsRequired: 'บังคับใช้ GPS',
+                gpsRequiredDesc: 'ผู้ใช้ต้องเปิดตำแหน่งก่อนลงเวลา',
+                save: 'บันทึกการตั้งค่า',
+                saving: 'กำลังบันทึก...',
+                saved: 'บันทึกแล้ว',
+                saveFailed: error => `บันทึกไม่สำเร็จ: ${error}`,
+                loadFailed: error => `โหลดค่าจากฐานข้อมูลไม่สำเร็จ ใช้ค่าล่าสุดในเครื่องแทน: ${error}`
+            },
+            en: {
+                title: 'System Settings',
+                subtitle: 'Manage shared settings from database metadata',
+                back: 'Back',
+                company: 'Company',
+                companyName: 'Company name',
+                companyNameDesc: 'Shown on reports and system documents',
+                workTime: 'Working Time',
+                workStart: 'Work start',
+                workStartDesc: 'Used for attendance and late arrival calculations',
+                workEnd: 'Work end',
+                workEndDesc: 'Default end time for schedules',
+                lateAfter: 'Late threshold',
+                lateAfterDesc: 'Attendance after this time is marked late',
+                gps: 'GPS and Attendance',
+                gpsRequired: 'Require GPS',
+                gpsRequiredDesc: 'Users must enable location before check-in/out',
+                save: 'Save settings',
+                saving: 'Saving...',
+                saved: 'Saved',
+                saveFailed: error => `Could not save: ${error}`,
+                loadFailed: error => `Could not load database settings; using local cache: ${error}`
+            }
+        };
+
+        let lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th';
+        const notice = document.getElementById('notice');
+        const saveBtn = document.getElementById('saveBtn');
+
+        function t(key, ...args) {
+            const value = i18n[lang][key] ?? i18n.en[key] ?? key;
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        function setNotice(message = '', type = '') {
+            notice.textContent = message;
+            notice.className = `notice ${message ? 'active' : ''} ${type}`;
+        }
+
+        function setSaveLabel(key) {
+            saveBtn.innerHTML = `<span class="material-icons-outlined">${key === 'saved' ? 'check' : 'save'}</span><span>${t(key)}</span>`;
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = lang;
+            localStorage.setItem(LANG_KEY, lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.dataset.i18n);
+            });
+            document.getElementById('langTh').classList.toggle('active', lang === 'th');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            setSaveLabel('save');
+        }
+
+        function authHeaders() {
+            const token = getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || localStorage.getItem('mungkhud_jwt')
+                || sessionStorage.getItem('mungkhud_jwt')
+                || '';
+            if (token) return { Authorization: `Bearer ${token}` };
+
+            return {
+                'x-bcauto-dev-auth': localStorage.getItem('app.session.devAuth') === '1' ? '1' : '',
+                'x-bcauto-dev-role': localStorage.getItem('app.session.role') || '',
+                'x-bcauto-dev-user-id': localStorage.getItem('app.session.userId') || '',
+                'x-bcauto-dev-user-name': encodeURIComponent(localStorage.getItem('app.session.userName') || ''),
+                'x-bcauto-dev-branch': localStorage.getItem('app.session.branchId') || ''
+            };
+        }
+
+        async function api(path, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...authHeaders(),
+                ...(options.headers || {})
+            };
+            const res = await fetch(path, { ...options, headers });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+            return data;
+        }
+
+        function applySettings(settings = {}) {
+            SETTINGS_KEYS.forEach(cfg => {
+                const value = settings[cfg.key];
+                if (value === undefined) return;
+                const el = document.getElementById(cfg.inputId);
+                if (cfg.type === 'bool') {
+                    el.checked = value === 'true' || value === true;
+                } else {
+                    el.value = value;
+                }
+            });
+        }
+
+        function readSettings() {
+            const settings = {};
+            SETTINGS_KEYS.forEach(cfg => {
+                const el = document.getElementById(cfg.inputId);
+                settings[cfg.key] = cfg.type === 'bool' ? String(el.checked) : el.value;
+            });
+            return settings;
+        }
+
+        function loadCachedSettings() {
+            try {
+                applySettings(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
+            } catch (err) {
+                console.warn('Could not load cached settings:', err);
+            }
+        }
+
+        async function loadSettings() {
+            loadCachedSettings();
+            try {
+                const data = await api('/api/data/custom/admin/settings');
+                const settings = {};
+                (data.settings || []).forEach(row => {
+                    if (row.key) settings[row.key] = row.value;
+                });
+                applySettings(settings);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            } catch (err) {
+                console.warn('Could not load database settings:', err);
+                setNotice(t('loadFailed', err.message), 'error');
+            }
+        }
+
+        async function saveSettings() {
+            saveBtn.disabled = true;
+            setNotice('');
+            setSaveLabel('saving');
+            const settings = readSettings();
+            try {
+                await api('/api/data/custom/admin/settings', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        settings: SETTINGS_KEYS.map(cfg => ({
+                            key: cfg.key,
+                            type: cfg.type,
+                            value: settings[cfg.key]
+                        }))
+                    })
+                });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+                setNotice(t('saved'), 'success');
+                setSaveLabel('saved');
+            } catch (err) {
+                console.error('Could not save settings:', err);
+                setNotice(t('saveFailed', err.message), 'error');
+                setSaveLabel('save');
+            } finally {
+                setTimeout(() => {
+                    saveBtn.disabled = false;
+                    setSaveLabel('save');
+                }, 1200);
+            }
+        }
+
+        document.getElementById('langTh').addEventListener('click', () => {
+            lang = 'th';
+            applyLanguage();
+        });
+        document.getElementById('langEn').addEventListener('click', () => {
+            lang = 'en';
+            applyLanguage();
+        });
+        saveBtn.addEventListener('click', saveSettings);
+
+        applyLanguage();
+        loadSettings();
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

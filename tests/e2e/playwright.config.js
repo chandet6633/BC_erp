@@ -21,7 +21,7 @@ module.exports = defineConfig({
       },
     },
     {
-      name: 'Management',
+      name: 'Portal',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9092',

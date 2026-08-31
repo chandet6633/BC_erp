@@ -42,7 +42,7 @@ graph TB
         DB[("SQLite<br/>pb_data/")]
     end
 
-    subgraph "Management PB (Port 8092)"
+    subgraph "Portal PB (Port 8092)"
         MPBAPI["REST API<br/>Shared Users"]
     end
 
@@ -56,13 +56,13 @@ graph TB
 
 | Decision | Rationale |
 |----------|-----------|
-| **Vanilla JS** | Matches Management stack; zero framework complexity |
+| **Vanilla JS** | Matches Portal stack; zero framework complexity |
 | **Hash routing (`#/route`)** | No server-side routing; works with static hosting |
 | **PocketBase** | Single binary; auto-generated REST; admin UI included |
 | **Custom auth (not PB auth)** | Avoids PB SDK quirks; simpler for internal tool (`auth.js:1-5`) |
 | **Factory pattern** | `document-factory.js` + `master-factory.js` generate CRUD for 20+ pages |
 | **Lazy loading** | Dynamic `import()` for all routes except dashboard (`app.js:14-47`) |
-| **Shared PIN auth** | `managementPB` queries Management's `users` collection (`pb.js:10-24`) |
+| **Shared PIN auth** | `portalPB` queries Portal's `users` collection (`pb.js:10-24`) |
 
 ---
 
@@ -93,7 +93,7 @@ MungkhudShop/
 │   │   ├── help.js           # Thai help instructions per route
 │   │   └── changelog.js      # Version changelog modal
 │   ├── services/
-│   │   ├── pb.js             # ★ PocketBase CRUD + audit + Management PB
+│   │   ├── pb.js             # ★ PocketBase CRUD + audit + Portal PB
 │   │   ├── auth.js           # ★ Login, RBAC, branch, permissions
 │   │   ├── inventory.js      # Stock ledger posting (IN/OUT/ADJ)
 │   │   ├── crypto.js         # SHA-256 password hashing
@@ -116,11 +116,11 @@ Boot sequence (`app.js:473-495`):
 3. `initMobileMenu()` — Hamburger menu for mobile
 4. `initHelpButton()` — Floating help button
 5. `initLogout()` — Logout button handler
-6. `initBackToMgmt()` — "Back to Management" for SSO users
+6. `initBackToMgmt()` — "Back to Portal" for SSO users
 7. `initDarkMode()` — Theme toggle
 8. `initSessionTimeout()` — 30-min inactivity logout
 9. `filterSidebarByRole()` — Hide unauthorized nav items
-10. `initBranchSwitcher()` — Populate branch dropdown from Management
+10. `initBranchSwitcher()` — Populate branch dropdown from Portal
 11. `navigate(route)` — Initial route
 
 **Navigation flow** (`app.js:58-156`):
@@ -143,12 +143,12 @@ hashchange → getRouteFromHash() → auth check → RBAC check → render page
 | `updateRecord(collection, id, data)` | Updated record (+ audit log) |
 | `deleteRecord(collection, id)` | void (+ audit log) |
 
-**Cross-app PB**: `managementPB` connects to Management's PocketBase for shared PIN auth (`pb.js:10-24`).
+**Cross-app PB**: `portalPB` connects to Portal's PocketBase for shared PIN auth (`pb.js:10-24`).
 
 ### 4.3 Auth Service (`services/auth.js`)
 
 - **Session key**: `localStorage.mungkhud_auth` (`auth.js:10`)
-- **Login methods**: Username/password (`auth.js:34-86`) + PIN via Management PB (`auth.js:104-162`)
+- **Login methods**: Username/password (`auth.js:34-86`) + PIN via Portal PB (`auth.js:104-162`)
 - **Password hashing**: SHA-256 via `crypto.js`, with plaintext fallback + auto-migration (`auth.js:36-57`)
 - **Branch helpers**: `getBranch()`, `setBranch()`, `getBranchFilter()` (`auth.js:213-233`)
 - **Permissions**: `hasPermission(key)` checks JSON permissions, admin always true (`auth.js:245-255`)

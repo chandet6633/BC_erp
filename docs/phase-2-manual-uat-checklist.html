@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phase 2 Manual UAT Checklist - BC AutoXperience</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d8e1ee;
+      --blue: #2563eb;
+      --green: #059669;
+      --amber: #b45309;
+      --red: #dc2626;
+      --shadow: 0 18px 42px rgba(15, 23, 42, .08);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, "Noto Sans Thai", "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+    }
+
+    a { color: var(--blue); }
+
+    .shell {
+      width: min(100% - 28px, 1240px);
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 16px;
+      align-items: stretch;
+      margin-bottom: 16px;
+    }
+
+    .hero-main,
+    .progress-card,
+    .section,
+    .quick-links {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-main { padding: 24px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(1.8rem, 4vw, 3.15rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .progress-card {
+      padding: 18px;
+      display: grid;
+      align-content: space-between;
+      gap: 14px;
+    }
+
+    .progress-number {
+      font-size: 2.25rem;
+      font-weight: 900;
+    }
+
+    .progress-label {
+      color: var(--muted);
+      font-weight: 750;
+      font-size: .84rem;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #059669);
+      transition: width .2s ease;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn.danger {
+      border-color: #fecaca;
+      color: #991b1b;
+      background: #fff7f7;
+    }
+
+    .quick-links {
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .quick-links h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .link-grid a {
+      display: block;
+      min-width: 0;
+      border: 1px solid #e5edf7;
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #fbfdff;
+      text-decoration: none;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    nav {
+      position: sticky;
+      top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    nav a {
+      display: block;
+      padding: 9px 12px;
+      border-bottom: 1px solid #edf2f7;
+      color: #334155;
+      text-decoration: none;
+      font-size: .86rem;
+      font-weight: 800;
+    }
+
+    nav a:last-child { border-bottom: 0; }
+
+    .sections {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .section {
+      overflow: hidden;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.2;
+    }
+
+    .section-meta {
+      color: var(--muted);
+      font-size: .82rem;
+      margin-top: 5px;
+    }
+
+    .tag {
+      align-self: start;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: .76rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .guide {
+      margin: 0;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      color: #475569;
+      background: #fff;
+      font-size: .9rem;
+    }
+
+    .items {
+      display: grid;
+      gap: 0;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #edf2f7;
+      background: #fff;
+    }
+
+    .item:last-child { border-bottom: 0; }
+
+    .item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin: 2px 0 0;
+      accent-color: var(--green);
+    }
+
+    .item-text {
+      min-width: 0;
+      font-weight: 700;
+    }
+
+    .item-text code {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: .86em;
+    }
+
+    .hint {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 500;
+    }
+
+    .note-box {
+      padding: 12px 16px 16px;
+      background: #fbfdff;
+      border-top: 1px solid var(--line);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 70px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      resize: vertical;
+      font: inherit;
+      background: #fff;
+    }
+
+    .note-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .print-note {
+      display: none;
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: .82rem;
+    }
+
+    @media (max-width: 920px) {
+      .hero { grid-template-columns: 1fr; }
+      .layout { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .link-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 18px, 1240px); padding-top: 12px; }
+      .hero-main, .progress-card { padding: 16px; }
+      .link-grid { grid-template-columns: 1fr; }
+      .section-head { grid-template-columns: 1fr; }
+      .tag { justify-self: start; }
+      .toolbar .btn { flex: 1 1 auto; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .shell { width: 100%; padding: 0; }
+      .toolbar, nav, .quick-links { display: none; }
+      .hero { display: block; }
+      .hero-main, .progress-card, .section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .progress-card { margin-top: 10px; }
+      .print-note { display: block; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-main">
+        <span class="eyebrow">Phase 2 UAT</span>
+        <h1>Manual Checklist Before Phase 3</h1>
+        <p class="lead">
+          Use this page to manually verify Portal, MungkhudShop, stock logic, documents, branch isolation, and integrity tools before starting Phase 3 Manager Dashboard.
+          Checkboxes and notes save automatically in this browser.
+        </p>
+        <div class="toolbar">
+          <button class="btn primary" type="button" onclick="window.print()">Print / Save PDF</button>
+          <button class="btn" type="button" id="expandAllBtn">Expand All Notes</button>
+          <button class="btn danger" type="button" id="resetBtn">Reset Checks</button>
+        </div>
+        <p class="print-note">Printed from docs/phase-2-manual-uat-checklist.html.</p>
+      </div>
+      <aside class="progress-card" aria-label="Checklist progress">
+        <div>
+          <div class="progress-number" id="progressNumber">0%</div>
+          <div class="progress-label" id="progressLabel">0 of 0 checks complete</div>
+        </div>
+        <div class="bar" aria-hidden="true"><div class="bar-fill" id="progressFill"></div></div>
+        <div class="section-meta">Recommended flow: setup, Portal session, MungkhudShop, job, documents, stock, integrity, isolation, responsive check, sign-off.</div>
+      </aside>
+    </section>
+
+    <section class="quick-links">
+      <h2>Quick Links</h2>
+      <div class="link-grid">
+        <a href="http://localhost:9092" target="_blank" rel="noreferrer">Portal :9092</a>
+        <a href="http://localhost:9092/?from=mungkhudshop&amp;reason=token_expired" target="_blank" rel="noreferrer">Expired Token Test</a>
+        <a href="http://localhost:9092/pages/admin/integrity-check.html" target="_blank" rel="noreferrer">Admin Integrity</a>
+        <a href="http://localhost:9093/api/health" target="_blank" rel="noreferrer">API Health</a>
+      </div>
+    </section>
+
+    <div class="layout">
+      <nav aria-label="Checklist sections" id="toc"></nav>
+      <div class="sections" id="sections"></div>
+    </div>
+  </main>
+
+  <script>
+    const storageKey = 'bcauto_phase2_uat_html_v2_branch_isolation';
+
+    const checklist = [
+      {
+        title: 'Test Setup',
+        guide: 'Start here. Confirm services are reachable and prepare a clean browser session before testing workflows.',
+        items: [
+          ['Docker stack is running.', 'Run docker compose for the active test stack and confirm containers are healthy.'],
+          ['API is reachable at http://localhost:9093/api/health.', 'Open the API health link and expect an OK/healthy response.'],
+          ['Portal is reachable at http://localhost:9092.', 'Open Portal and confirm the dev access screen or module portal renders.'],
+          ['MungkhudShop is reachable through the Portal module card, not direct login.', 'Use Portal first; MungkhudShop should not require its own login page.'],
+          ['Browser dev tools console is open.', 'Keep Console and Network visible so errors can be captured immediately.'],
+          ['Use a clean browser profile or clear app storage before starting.', 'Clear localStorage/sessionStorage for localhost ports 9091 and 9092.'],
+          ['BC Auto Service branch is available as bc-auto-service.', 'Confirm this real branch appears in the Portal branch selector.'],
+          ['BC Auto Samchuk branch is available as bc-auto-samchuk.', 'Confirm this real branch appears in the Portal branch selector.'],
+          ['BC Auto Mueng Suphan branch is available as bc-auto-mueng-suphan.', 'Confirm this real branch appears in the Portal branch selector.'],
+          ['No All branches / ทุกสาขา option appears in normal Portal branch selection.', 'Admin, Owner, and Manager should also choose one real branch.']
+        ]
+      },
+      {
+        title: 'Portal Dev Access',
+        guide: 'Verify the current dev login contract. This is the temporary fast-testing entry point until production auth is built later.',
+        items: [
+          ['Open http://localhost:9092/?from=mungkhudshop&reason=token_expired.', 'The selector should appear and should not bounce between Portal and MungkhudShop.'],
+          ['Selector renders without redirect loop.', 'Wait 10 seconds and confirm the URL/page remains stable.'],
+          ['Query params are cleaned after render.', 'After the page settles, confirm token_expired/from params no longer cause repeated redirects.'],
+          ['Select Admin + BC Auto Service and enter Portal.', 'Use role selector first, then choose the real branch bc-auto-service, then Enter Portal.'],
+          ['app.session.devAuth = 1 is written.', 'Check Application > Storage. This key should be present in localStorage.'],
+          ['app.session.role = admin is written.', 'Check localStorage for the neutral session contract.'],
+          ['app.session.userId exists.', 'The value can be synthetic for dev mode.'],
+          ['app.session.userName exists.', 'The value should match the dev user label.'],
+          ['app.session.authModel exists.', 'Confirm a session/auth model value is written.'],
+          ['app.session.branchId = bc-auto-service is written.', 'Confirm the selected branch is stored as a real branch ID, not a display label.'],
+          ['app.session.branchLocked = true is written.', 'Normal dev sessions should be locked to the selected branch.'],
+          ['Legacy keys are not written.', 'Confirm bcauto_dev_auth, bcauto_role, bcauto_branch, and mungkhud_branch are empty unless you are testing migration from old storage.'],
+          ['Switch Role returns to selector.', 'Click Switch Role and confirm the dev session clears enough to choose again.'],
+          ['Repeat entry for Owner.', 'Confirm owner can enter without credentials.'],
+          ['Repeat entry for Manager.', 'Confirm manager can enter without credentials.'],
+          ['Repeat entry for S.A.', 'Confirm S.A. can enter without credentials.'],
+          ['Repeat entry for Mechanic/Technician.', 'Confirm mechanic/technician can enter without credentials.'],
+          ['Repeat with BC Auto Service / bc-auto-service.', 'Confirm selection persists into the Portal session.'],
+          ['Repeat with BC Auto Samchuk / bc-auto-samchuk.', 'Confirm selection persists into the Portal session.'],
+          ['Repeat with BC Auto Mueng Suphan / bc-auto-mueng-suphan.', 'Confirm selection persists into the Portal session.'],
+          ['Confirm All branches / ทุกสาขา is not available for Admin, Owner, or Manager.', 'No normal role should enter the app with branchId=all.']
+        ]
+      },
+      {
+        title: 'Portal Module Visibility',
+        guide: 'Check role-based module visibility in the Portal and with direct URLs. Menus are helpful, but direct URL denial matters more.',
+        items: [
+          ['Admin sees Admin Suite.', 'Login as Admin and confirm Admin Suite module/card is visible.'],
+          ['Admin sees Garage Portal System.', 'Admin should see the MungkhudShop/Garage entry.'],
+          ['Owner sees Manager Dashboard.', 'Login as Owner and confirm dashboard access.'],
+          ['Manager sees Manager Dashboard.', 'Login as Manager and confirm dashboard access.'],
+          ['S.A. sees Garage, HR, Technical Knowledge, and S.A. docs.', 'Confirm each module card is present for S.A.'],
+          ['Mechanic sees Garage/mechanic access, HR self-service, and Technical Knowledge.', 'Mechanic should not see broad admin/finance modules.'],
+          ['S.A. cannot open Manager Dashboard by direct URL.', 'Paste dashboard URL manually and expect denial or redirect.'],
+          ['Mechanic cannot open Manager Dashboard by direct URL.', 'Paste dashboard URL manually and expect denial or redirect.'],
+          ['Non-admin cannot open Admin Suite direct URLs.', 'Try Admin Suite URLs as Manager/S.A./Mechanic and expect denial or redirect.']
+        ]
+      },
+      {
+        title: 'Portal To MungkhudShop Session',
+        guide: 'This checks the most important integration rule: MungkhudShop is entered through Portal session/SSO only.',
+        items: [
+          ['Login through Portal as Admin or Manager.', 'Use dev access mode.'],
+          ['Click Garage Portal System.', 'Use the module card, not direct browser navigation.'],
+          ['MungkhudShop opens without showing its own login page.', 'The dashboard or allowed page should load immediately.'],
+          ['MungkhudShop shows selected role.', 'Look for user role/session display or role-driven menu behavior.'],
+          ['MungkhudShop shows the selected real branch.', 'Confirm selected branch is visible or reflected in branch-restricted data; it should not show an all-branch scope.'],
+          ['MungkhudShop uses app.session.branchId.', 'Check storage and confirm it does not depend on bcauto_branch or mungkhud_branch.'],
+          ['Refresh MungkhudShop dashboard.', 'Press browser refresh on MungkhudShop.'],
+          ['Session survives refresh.', 'You should remain inside MungkhudShop dashboard/workspace.'],
+          ['Open MungkhudShop directly in a fresh tab without Portal session.', 'Use a clean profile or clear storage first.'],
+          ['User is redirected back to Portal safely.', 'Expect Portal selector, not a loop.'],
+          ['Switch role in Portal and reopen MungkhudShop.', 'Change role/branch and open Garage again.'],
+          ['MungkhudShop reflects the new role/branch.', 'Confirm menus/data scope changed.']
+        ]
+      },
+      {
+        title: 'Job Lifecycle',
+        guide: 'Run one complete job from customer/vehicle through payment. Record job number, invoice number, and receipt number.',
+        items: [
+          ['As S.A. or Manager, create a new customer.', 'Use a unique test name with date/time.'],
+          ['Create or select a vehicle for that customer.', 'Use a unique plate number.'],
+          ['Create a new job.', 'Confirm job number is generated.'],
+          ['Assign a mechanic.', 'Pick an available mechanic user.'],
+          ['Add at least one service line.', 'Use a labor/service item.'],
+          ['Add at least one stock-tracked product line.', 'Pick an item with available stock.'],
+          ['Save job.', 'Refresh and confirm it remains.'],
+          ['Move job through service status/kanban stages.', 'Use the kanban/status UI.'],
+          ['Mechanic view can see assigned work.', 'Login as mechanic if needed and check assigned job.'],
+          ['Complete/QC job where available.', 'Advance the job through the final work state.'],
+          ['Close job using the server close/payment flow.', 'Use the UI close/pay action, not direct table edit.'],
+          ['Invoice is generated or confirmed.', 'Record invoice number.'],
+          ['Receipt is generated or confirmed.', 'Record receipt number.'],
+          ['Job status becomes completed.', 'Check job header/status list.'],
+          ['Payment status becomes paid.', 'Check payment status field.'],
+          ['Refresh after close.', 'Browser refresh should not lose the closed state.'],
+          ['Job/document/payment state remains correct.', 'Reopen customer/job history and confirm consistency.']
+        ]
+      },
+      {
+        title: 'Document Workflow',
+        guide: 'Confirm normal document progression and blocked edits to protected documents.',
+        items: [
+          ['Create quotation.', 'Use a test customer/vehicle/job where possible.'],
+          ['Confirm quotation.', 'Use the UI confirm action.'],
+          ['Create invoice from quotation/job where available.', 'Record invoice number.'],
+          ['Confirm invoice.', 'Status should become confirmed.'],
+          ['Create receipt/payment.', 'Record receipt number.'],
+          ['Confirm receipt.', 'Status should become confirmed.'],
+          ['Try editing confirmed document item.', 'Expect the system to block the edit.'],
+          ['Edit is blocked.', 'Record any error message if shown.'],
+          ['Try deleting confirmed document.', 'Expect the system to block deletion.'],
+          ['Delete is blocked.', 'Record response/error.'],
+          ['Try voiding paid document.', 'Expect the system to block voiding paid docs.'],
+          ['Void is blocked.', 'Record response/error.'],
+          ['Create a stock document in draft.', 'Use RR/RQ/TF/SA as appropriate.'],
+          ['Confirm through server endpoint/UI only.', 'Do not manually edit database status.'],
+          ['Direct table status edit is blocked or posts ledger correctly through backend guard.', 'If attempted, confirm ledger rules are still enforced.']
+        ]
+      },
+      {
+        title: 'Stock Receipt And Weighted Average Cost',
+        guide: 'Use simple numbers so average cost is easy to verify. Example: receive 10 at 100, then 10 at 200, expected average 150.',
+        items: [
+          ['Select branch BC Auto Service.', 'Use branch selector/session branch.'],
+          ['Create or identify a stock product.', 'Use a test product that tracks stock.'],
+          ['Create goods receipt at cost A.', 'Example: quantity 10, unit cost 100.'],
+          ['Confirm goods receipt.', 'Status should become confirmed.'],
+          ['Confirm stock balance increases.', 'Check stock list/balance.'],
+          ['Create second goods receipt at cost B.', 'Example: quantity 10, unit cost 200.'],
+          ['Confirm goods receipt.', 'Status should become confirmed.'],
+          ['Confirm product average cost recalculates correctly.', 'Expected average in example is 150.'],
+          ['Create requisition/issue.', 'Issue a quantity within available stock.'],
+          ['Confirm requisition.', 'Status should become confirmed.'],
+          ['Confirm stock decreases.', 'Check stock list/balance.'],
+          ['Confirm cost remains sensible after OUT.', 'Average cost should not become negative or strange.'],
+          ['Try issue greater than available stock.', 'Use quantity above on-hand.'],
+          ['System blocks with insufficient stock error.', 'Expected HTTP/status/UI error is insufficient stock.']
+        ]
+      },
+      {
+        title: 'Stock Adjustment',
+        guide: 'Adjustment must require a reason and must not allow negative stock unless policy explicitly changes later.',
+        items: [
+          ['Create positive stock adjustment with reason.', 'Use a clear reason like Phase 2 UAT positive adjustment.'],
+          ['Confirm adjustment.', 'Status should become confirmed.'],
+          ['Balance increases.', 'Check stock list/balance.'],
+          ['Create negative stock adjustment with reason within available balance.', 'Use a small quantity.'],
+          ['Confirm adjustment.', 'Status should become confirmed.'],
+          ['Balance decreases.', 'Check stock list/balance.'],
+          ['Create stock adjustment without reason.', 'Leave reason/notes blank.'],
+          ['System blocks the adjustment.', 'Expected adjustment reason required.'],
+          ['Try negative adjustment greater than stock.', 'Use quantity above available.'],
+          ['System blocks negative stock.', 'Expected insufficient stock/negative prevention.'],
+          ['Recalculate Costs from Admin Integrity page.', 'Use the Recalculate Costs button.'],
+          ['Product cost remains/recalculates correctly.', 'No negative or unexpected cost.']
+        ]
+      },
+      {
+        title: 'Branch Transfer',
+        guide: 'Verify source, in-transit, destination, receive, and reversal behavior across branches.',
+        items: [
+          ['Select source branch BC Auto Service.', 'Use a product with available stock in source branch.'],
+          ['Select destination branch BC Auto Samchuk.', 'Use transfer destination field.'],
+          ['Destination selector lists only real branches.', 'It should exclude the current source branch and must not include All branches / ทุกสาขา.'],
+          ['Create stock transfer.', 'Record transfer document number.'],
+          ['Confirm transfer.', 'Status should become in_transit or equivalent.'],
+          ['Source branch balance decreases.', 'Check source stock list.'],
+          ['Destination branch shows in-transit quantity.', 'Check destination/in-transit state.'],
+          ['Receive transfer.', 'Use receive action.'],
+          ['Destination branch on-hand increases.', 'Check destination stock list.'],
+          ['Void an in-transit transfer before receive.', 'Create another transfer and void before receive.'],
+          ['Source branch balance is restored.', 'Check source stock after void.'],
+          ['Try voiding a received transfer after destination stock has been consumed.', 'Receive transfer, issue/consume destination stock, then try void.'],
+          ['System blocks reversal if it would create negative destination stock.', 'Expected 409/insufficient stock style block.']
+        ]
+      },
+      {
+        title: 'Traceability',
+        guide: 'Use unique serial and batch numbers with today/time in the value so duplicate checks are meaningful.',
+        items: [
+          ['Create or identify serial-tracked product.', 'Product tracking type should be serialized.'],
+          ['Receive serial-tracked product with serial number.', 'Use unique serial, e.g. UAT-SN-date-time.'],
+          ['Try receiving duplicate serial.', 'Use same serial again.'],
+          ['System blocks duplicate serial.', 'Expected validation error.'],
+          ['Issue serial-tracked product with valid serial.', 'Use the received serial.'],
+          ['System accepts.', 'Issue should confirm.'],
+          ['Try issuing same serial again.', 'Use same serial after it has left stock.'],
+          ['System blocks.', 'Expected unavailable serial error.'],
+          ['Create or identify batch-tracked product.', 'Product tracking type should be batch/lot.'],
+          ['Receive batch product with batch/lot number.', 'Use unique lot number.'],
+          ['Issue from valid batch.', 'Use the received lot.'],
+          ['System accepts.', 'Issue should confirm.'],
+          ['Try issuing unknown batch.', 'Use a lot that was never received.'],
+          ['System blocks.', 'Expected unknown/insufficient batch error.'],
+          ['For FIFO-enabled product, receive old lot then new lot.', 'Use dates or lot sequence to make old/new clear.'],
+          ['Try issuing new lot before old lot.', 'Select the newer lot while old lot remains.'],
+          ['System blocks with FIFO requirement.', 'Expected FIFO_BATCH_REQUIRED or similar.']
+        ]
+      },
+      {
+        title: 'Admin Integrity Page',
+        guide: 'The integrity page does not need all findings to be zero yet. It must detect, display, export, and safely repair only low-risk items.',
+        items: [
+          ['Login as Admin.', 'Use Portal dev access Admin.'],
+          ['Open http://localhost:9092/pages/admin/integrity-check.html.', 'Use the quick link above.'],
+          ['Page loads without console errors.', 'Check browser console.'],
+          ['Run Checks.', 'Click Run Checks.'],
+          ['Summary cards update.', 'Counts should appear.'],
+          ['Stock Integrity section renders all categories.', 'Negative stock, orphan ledgers, confirmed docs without ledgers, etc.'],
+          ['Document Integrity section renders all categories.', 'Duplicate docs, orphan items, invalid product items, etc.'],
+          ['Export JSON downloads a file.', 'Open downloaded JSON if needed.'],
+          ['Safe Repair button is visible.', 'Admin only.'],
+          ['Safe Repair asks for confirmation.', 'Click and confirm browser confirmation appears.'],
+          ['Cancel Safe Repair; no data changes.', 'Cancel the confirm dialog.'],
+          ['Run Recalculate Costs.', 'Click Recalculate Costs and wait for completion.'],
+          ['Page refreshes checks after recalculation.', 'Counts should reload.'],
+          ['Login as Owner/Manager/S.A./Mechanic.', 'Switch role and test direct URL.'],
+          ['Direct URL to integrity page is denied or redirected.', 'Only Admin should access this page.']
+        ]
+      },
+      {
+        title: 'Role And Branch Isolation',
+        guide: 'Menu hiding is not enough. Also paste direct URLs and observe API behavior where possible.',
+        items: [
+          ['Login as Admin + BC Auto Service; only that branch normal workflow data is visible.', 'Admin is still branch-locked in normal workflows.'],
+          ['Login as Owner + BC Auto Samchuk; normal workflows remain single-branch.', 'Owner all-branch reporting should be a separate future reporting module, not normal workflow scope.'],
+          ['Login as Manager + one branch; other branch data is not visible in branch-scoped workflows.', 'Compare stock/jobs/documents against another branch.'],
+          ['Login as S.A. + one branch; admin/finance unsafe pages are hidden and data is branch-scoped.', 'Try menu and direct URLs.'],
+          ['Login as Mechanic + one branch; payment/admin/stock settings are hidden and data is branch-scoped.', 'Try menu and direct URLs.'],
+          ['Direct URL checks enforce the same restrictions as menu visibility.', 'Paste restricted URLs manually.'],
+          ['API calls with invalid dev role are rejected.', 'Use browser/network tooling or existing script if available.'],
+          ['API calls with valid dev role and real branch headers succeed only for allowed routes.', 'Use allowed route with branch header bc-auto-service, bc-auto-samchuk, or bc-auto-mueng-suphan.'],
+          ['Manager dashboard has no All branches option.', 'The dashboard branch selector should be locked to the selected real branch.'],
+          ['Manager dashboard request with branch_id=all is rejected.', 'Expected API behavior is HTTP 400 for normal dashboard requests.'],
+          ['Job cards, kanban, stock, reports, documents, and mechanic views show only selected-branch records.', 'Look for accidental cross-branch records in each major view.'],
+          ['Cross-branch activity is possible only through stock transfer create/receive flow.', 'No other normal workflow should mix branch data.']
+        ]
+      },
+      {
+        title: 'Bilingual And Responsive Spot Check',
+        guide: 'This is not final UI polish, but it must be usable enough for testing in Thai and English on mobile and desktop.',
+        items: [
+          ['Portal language toggle switches Thai to English without reload.', 'Click EN/TH toggle on Portal.'],
+          ['Portal language toggle switches English to Thai without reload.', 'Switch back.'],
+          ['New Portal text changes language.', 'Module labels and dev selector should update.'],
+          ['Mobile viewport around 390px wide works for dev selector.', 'Use browser device toolbar.'],
+          ['Mobile Portal module cards are single column.', 'No two-column squeeze on small phones.'],
+          ['Thai labels do not clip or overlap.', 'Check role buttons and module cards.'],
+          ['English labels do not clip or overlap.', 'Check role buttons and module cards.'],
+          ['MungkhudShop main dashboard is usable on mobile.', 'Basic navigation should be possible.'],
+          ['Stock/document/job screens remain usable enough for current dev phase.', 'Not final polish, but no blocking overlap.']
+        ]
+      },
+      {
+        title: 'Regression Watch List',
+        guide: 'These are previous pain points. Check them explicitly before signing off Phase 2.',
+        items: [
+          ['No kick-out redirect loop.', 'Stay on Portal and MungkhudShop for a few minutes and refresh.'],
+          ['No stale token loop.', 'Use expired-token URL once and confirm it settles.'],
+          ['No MungkhudShop login page appears in normal Portal flow.', 'Garage module should enter directly.'],
+          ['No direct MungkhudShop access without Portal session.', 'Clean storage and open MungkhudShop directly.'],
+          ['No branch names other than BC Auto Service, BC Auto Samchuk, BC Auto Mueng Suphan.', 'Check Portal selector and MungkhudShop branch displays.'],
+          ['No hardcoded branch assumptions are visible in UI.', 'Look for old main branch labels or สาขาหลัก.'],
+          ['No console errors during core workflow.', 'Review browser console at the end.'],
+          ['No API 500 during core workflow.', 'Review Network tab for 500s.']
+        ]
+      },
+      {
+        title: 'Sign-Off',
+        guide: 'Use this only after the above sections are complete or failures are documented and accepted.',
+        items: [
+          ['Phase 2 manual UAT passed.', 'All critical workflow checks are complete.'],
+          ['Failed items are documented with screenshot, role, branch, URL, and document/job number.', 'Add details in notes below.'],
+          ['Dirty integrity findings are either repaired or explicitly accepted for current test data.', 'Use Admin Integrity export as evidence.'],
+          ['Ready to start Phase 3 Manager Dashboard.', 'Phase 3 should begin only after this is acceptable.']
+        ]
+      }
+    ];
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function slug(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function inlineCode(value) {
+      return escapeHtml(value).replace(/`([^`]+)`/g, '<code>$1</code>');
+    }
+
+    function render() {
+      const state = loadState();
+      const toc = document.getElementById('toc');
+      const sectionsEl = document.getElementById('sections');
+      toc.innerHTML = '';
+      sectionsEl.innerHTML = '';
+
+      checklist.forEach((section, sectionIndex) => {
+        const sectionId = slug(section.title);
+        const link = document.createElement('a');
+        link.href = '#' + sectionId;
+        link.textContent = section.title;
+        toc.appendChild(link);
+
+        const article = document.createElement('article');
+        article.className = 'section';
+        article.id = sectionId;
+        article.innerHTML = `
+          <div class="section-head">
+            <div>
+              <h2>${escapeHtml(section.title)}</h2>
+              <div class="section-meta">${section.items.length} checks</div>
+            </div>
+            <span class="tag" id="tag-${sectionIndex}">0/${section.items.length}</span>
+          </div>
+          <p class="guide">${escapeHtml(section.guide)}</p>
+          <div class="items">
+            ${section.items.map((item, itemIndex) => {
+              const id = `s${sectionIndex}-i${itemIndex}`;
+              const checked = state[id]?.checked ? 'checked' : '';
+              return `
+                <label class="item" for="${id}">
+                  <input id="${id}" data-section="${sectionIndex}" type="checkbox" ${checked} />
+                  <span class="item-text">
+                    ${inlineCode(item[0])}
+                    <span class="hint">${escapeHtml(item[1])}</span>
+                  </span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <div class="note-box">
+            <label class="note-label" for="note-${sectionIndex}">Notes / Evidence</label>
+            <textarea id="note-${sectionIndex}" data-note="${sectionIndex}" placeholder="Add document numbers, job numbers, branch, role, screenshot name, or failure notes here.">${escapeHtml(state[`note-${sectionIndex}`]?.value || '')}</textarea>
+          </div>
+        `;
+        sectionsEl.appendChild(article);
+      });
+
+      document.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', () => {
+          const nextState = loadState();
+          nextState[input.id] = { checked: input.checked };
+          saveState(nextState);
+          updateProgress();
+        });
+      });
+
+      document.querySelectorAll('textarea[data-note]').forEach(textarea => {
+        textarea.addEventListener('input', () => {
+          const nextState = loadState();
+          nextState[textarea.id] = { value: textarea.value };
+          saveState(nextState);
+        });
+      });
+
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const checks = [...document.querySelectorAll('input[type="checkbox"]')];
+      const done = checks.filter(input => input.checked).length;
+      const total = checks.length;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById('progressNumber').textContent = percent + '%';
+      document.getElementById('progressLabel').textContent = `${done} of ${total} checks complete`;
+      document.getElementById('progressFill').style.width = percent + '%';
+
+      checklist.forEach((section, index) => {
+        const sectionChecks = checks.filter(input => Number(input.dataset.section) === index);
+        const sectionDone = sectionChecks.filter(input => input.checked).length;
+        const tag = document.getElementById(`tag-${index}`);
+        if (tag) {
+          tag.textContent = `${sectionDone}/${section.items.length}`;
+          tag.style.background = sectionDone === section.items.length ? '#ecfdf5' : '#f1f5f9';
+          tag.style.color = sectionDone === section.items.length ? '#047857' : '#334155';
+        }
+      });
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (!confirm('Reset all checkboxes and notes for this checklist in this browser?')) return;
+      localStorage.removeItem(storageKey);
+      render();
+    });
+
+    document.getElementById('expandAllBtn').addEventListener('click', () => {
+      document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.style.minHeight = textarea.style.minHeight === '160px' ? '70px' : '160px';
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

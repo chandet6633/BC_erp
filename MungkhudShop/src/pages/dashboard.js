@@ -4,7 +4,7 @@
  */
 import { formatCurrency, renderDataGrid, formatDate } from '../components/ui.js'
 import { fetchFullList } from '../services/pb.js'
-import { getBranch, getBranchFilter, getCurrentUser } from '../services/auth.js'
+import { getApiAuthHeaders, getBranch, getBranchFilter, getCurrentUser } from '../services/auth.js'
 import { notifyLowStock } from '../services/telegram.js'
 import { getStockStatus, isLowStock, isStockTrackedProduct } from '../utils/stock-rules.js'
 
@@ -46,7 +46,7 @@ function getTrendIndicator(values) {
 
 export function initDashboardPage(container) {
     const user = getCurrentUser()
-    const branchLabel = getBranch() ? '' : ' (ทุกสาขา)'
+    const branchLabel = getBranch() ? '' : ' (branch required)'
 
     container.innerHTML = `
         <style>
@@ -213,7 +213,7 @@ async function loadDashboardData(container, forceRefresh = false) {
         let stockMap = {}
         try {
             const stockRes = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+                headers: getApiAuthHeaders()
             })
             if (stockRes.ok) {
                 const rawMap = await stockRes.json()

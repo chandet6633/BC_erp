@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Branch Portal - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            --branch-border: #d8dee8;
+            --branch-muted: #64748b;
+            --branch-ink: #0f172a;
+            --branch-panel: #ffffff;
+            --branch-soft: #f6f8fb;
+            --branch-accent: #2563eb;
+            --branch-success: #15803d;
+            --branch-danger: #b91c1c;
+        }
+
+        body.branch-admin {
+            margin: 0;
+            background: #eef2f7;
+            color: var(--branch-ink);
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .branch-shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 48px;
+        }
+
+        .branch-topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .branch-title-block {
+            display: grid;
+            gap: 6px;
+        }
+
+        .branch-title {
+            margin: 0;
+            font-size: clamp(1.35rem, 2vw, 1.85rem);
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .branch-subtitle {
+            margin: 0;
+            color: var(--branch-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-width: 760px;
+        }
+
+        .branch-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .segmented {
+            display: inline-grid;
+            grid-template-columns: repeat(2, minmax(42px, 1fr));
+            border: 1px solid var(--branch-border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--branch-panel);
+        }
+
+        .segmented button {
+            border: 0;
+            background: transparent;
+            padding: 9px 12px;
+            min-height: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--branch-muted);
+        }
+
+        .segmented button.active {
+            background: var(--branch-ink);
+            color: white;
+        }
+
+        .icon-btn,
+        .text-btn {
+            min-height: 40px;
+            border: 1px solid var(--branch-border);
+            background: var(--branch-panel);
+            color: var(--branch-ink);
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .text-btn.primary {
+            border-color: var(--branch-accent);
+            background: var(--branch-accent);
+            color: white;
+        }
+
+        .text-btn.danger {
+            border-color: #fecaca;
+            color: var(--branch-danger);
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--branch-panel);
+            border: 1px solid var(--branch-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--branch-border);
+            background: #fbfcfe;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .branch-table-wrap {
+            overflow-x: auto;
+        }
+
+        .branch-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+            font-size: 0.9rem;
+        }
+
+        .branch-table th,
+        .branch-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #edf1f6;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .branch-table th {
+            color: var(--branch-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            background: #fbfcfe;
+        }
+
+        .branch-code {
+            display: block;
+            color: var(--branch-muted);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.78rem;
+            margin-top: 3px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            background: #dcfce7;
+            color: var(--branch-success);
+            white-space: nowrap;
+        }
+
+        .status-pill.inactive {
+            background: #fee2e2;
+            color: var(--branch-danger);
+        }
+
+        .row-actions {
+            display: inline-flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .row-actions .icon-btn {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+        }
+
+        .side-panel {
+            display: grid;
+            gap: 16px;
+        }
+
+        .info-list {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .metric-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+
+        .metric-line strong {
+            font-size: 1.1rem;
+        }
+
+        .migration-box {
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .migration-result {
+            min-height: 92px;
+            border: 1px solid var(--branch-border);
+            background: var(--branch-soft);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.78rem;
+            white-space: pre-wrap;
+            overflow: auto;
+            color: #334155;
+        }
+
+        .empty-state,
+        .error-state,
+        .loading-state {
+            padding: 36px 16px;
+            text-align: center;
+            color: var(--branch-muted);
+        }
+
+        .error-state {
+            color: var(--branch-danger);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.56);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            width: min(720px, 100%);
+            max-height: min(860px, calc(100vh - 28px));
+            overflow: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--branch-border);
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+        }
+
+        .modal-head,
+        .modal-foot {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--branch-border);
+            background: #fbfcfe;
+        }
+
+        .modal-foot {
+            border-top: 1px solid var(--branch-border);
+            border-bottom: 0;
+            justify-content: flex-end;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .branch-form {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #475569;
+        }
+
+        .field input {
+            min-height: 42px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--branch-border);
+            border-radius: 8px;
+            padding: 10px 11px;
+            font: inherit;
+        }
+
+        .toggle-field {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid var(--branch-border);
+            border-radius: 8px;
+            padding: 11px 12px;
+            min-height: 42px;
+        }
+
+        .toggle-field input {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .branch-topbar {
+                flex-direction: column;
+            }
+
+            .branch-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .branch-shell {
+                width: min(100% - 20px, 1180px);
+                padding-top: 16px;
+            }
+
+            .text-btn {
+                flex: 1 1 auto;
+            }
+
+            .branch-form {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-head,
+            .modal-foot {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body class="branch-admin">
+    <main class="branch-shell">
+        <header class="branch-topbar">
+            <div class="branch-title-block">
+                <h1 class="branch-title" data-i18n="title">จัดการสาขา</h1>
+                <p class="branch-subtitle" data-i18n="subtitle">จัดการข้อมูลสาขาจากฐานข้อมูลกลาง เพื่อให้ Portal, MungkhudShop และแดชบอร์ดใช้ข้อมูลเดียวกัน</p>
+            </div>
+            <div class="branch-actions">
+                <div class="segmented" aria-label="Language">
+                    <button type="button" id="langTh">TH</button>
+                    <button type="button" id="langEn">EN</button>
+                </div>
+                <a class="text-btn" href="index.html"><span class="material-icons-outlined">arrow_back</span><span data-i18n="back">กลับ</span></a>
+                <button class="text-btn primary" type="button" id="addBranchBtn"><span class="material-icons-outlined">add_business</span><span data-i18n="add">เพิ่มสาขา</span></button>
+            </div>
+        </header>
+
+        <section class="admin-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title" data-i18n="branchList">รายการสาขา</h2>
+                    <button class="icon-btn" type="button" id="refreshBtn" title="Refresh"><span class="material-icons-outlined">refresh</span></button>
+                </div>
+                <div class="branch-table-wrap">
+                    <table class="branch-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="branch">สาขา</th>
+                                <th data-i18n="contact">ติดต่อ</th>
+                                <th data-i18n="sort">ลำดับ</th>
+                                <th data-i18n="status">สถานะ</th>
+                                <th data-i18n="actions" style="text-align:right">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchBody">
+                            <tr><td colspan="5"><div class="loading-state" data-i18n="loading">กำลังโหลด...</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" data-i18n="summary">สรุป</h2>
+                    </div>
+                    <div class="info-list">
+                        <div class="metric-line"><span data-i18n="activeBranches">สาขาที่เปิดใช้งาน</span><strong id="activeCount">0</strong></div>
+                        <div class="metric-line"><span data-i18n="inactiveBranches">สาขาที่ปิดใช้งาน</span><strong id="inactiveCount">0</strong></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" data-i18n="migration">Branch Migration</h2>
+                    </div>
+                    <div class="migration-box">
+                        <p class="branch-subtitle" data-i18n="migrationCopy">ตรวจและย้ายข้อมูลที่ยังใช้ alias เดิมไปเป็นรหัสสาขาปัจจุบัน เริ่มจาก Dry run ก่อนเสมอ</p>
+                        <button class="text-btn" type="button" id="dryRunBtn"><span class="material-icons-outlined">rule</span><span data-i18n="dryRun">ตรวจสอบก่อนย้าย</span></button>
+                        <button class="text-btn primary" type="button" id="runMigrationBtn"><span class="material-icons-outlined">sync_alt</span><span data-i18n="runMigration">ย้ายข้อมูลจริง</span></button>
+                        <div class="migration-result" id="migrationResult" data-i18n="migrationEmpty">ยังไม่ได้ตรวจสอบ</div>
+                    </div>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="branchModal">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-head">
+                <h2 class="modal-title" id="modalTitle">เพิ่มสาขา</h2>
+                <button class="icon-btn" type="button" id="closeModalBtn" title="Close"><span class="material-icons-outlined">close</span></button>
+            </div>
+            <form id="branchForm">
+                <div class="branch-form">
+                    <input type="hidden" id="branchId" />
+                    <div class="field">
+                        <label for="displayName" data-i18n="displayName">ชื่อสาขา</label>
+                        <input id="displayName" required autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="displayNameEn" data-i18n="displayNameEn">ชื่อภาษาอังกฤษ</label>
+                        <input id="displayNameEn" required autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="branchCode" data-i18n="code">รหัสสาขา</label>
+                        <input id="branchCode" required autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="sortOrder" data-i18n="sortOrder">ลำดับแสดงผล</label>
+                        <input id="sortOrder" type="number" min="0" step="1" />
+                    </div>
+                    <div class="field full">
+                        <label for="address" data-i18n="address">ที่อยู่</label>
+                        <input id="address" autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="phone" data-i18n="phone">เบอร์โทร</label>
+                        <input id="phone" autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label data-i18n="active">เปิดใช้งาน</label>
+                        <div class="toggle-field">
+                            <span data-i18n="activeHint">ให้ระบบแสดงสาขานี้ในตัวเลือก</span>
+                            <input id="isActive" type="checkbox" checked />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="latitude">Latitude</label>
+                        <input id="latitude" autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="longitude">Longitude</label>
+                        <input id="longitude" autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="tgJobs">Telegram Jobs</label>
+                        <input id="tgJobs" autocomplete="off" />
+                    </div>
+                    <div class="field">
+                        <label for="tgHr">Telegram HR</label>
+                        <input id="tgHr" autocomplete="off" />
+                    </div>
+                    <div class="field full">
+                        <label for="tgQueue">Telegram Queue</label>
+                        <input id="tgQueue" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <button class="text-btn" type="button" id="cancelBtn" data-i18n="cancel">ยกเลิก</button>
+                    <button class="text-btn primary" type="submit" id="saveBtn"><span class="material-icons-outlined">save</span><span data-i18n="save">บันทึก</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+        import { AuthService } from '../../services/authService.js';
+
+        AuthService.requireOwner();
+
+        const LANG_KEY = 'app.session.language';
+        const state = {
+            lang: localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th',
+            branches: [],
+            editing: null
+        };
+
+        const i18n = {
+            th: {
+                title: 'จัดการสาขา',
+                subtitle: 'จัดการข้อมูลสาขาจากฐานข้อมูลกลาง เพื่อให้ Portal, MungkhudShop และแดชบอร์ดใช้ข้อมูลเดียวกัน',
+                back: 'กลับ',
+                add: 'เพิ่มสาขา',
+                branchList: 'รายการสาขา',
+                branch: 'สาขา',
+                contact: 'ติดต่อ',
+                sort: 'ลำดับ',
+                status: 'สถานะ',
+                actions: 'จัดการ',
+                loading: 'กำลังโหลด...',
+                empty: 'ยังไม่มีสาขา',
+                active: 'เปิดใช้งาน',
+                inactive: 'ปิดใช้งาน',
+                summary: 'สรุป',
+                activeBranches: 'สาขาที่เปิดใช้งาน',
+                inactiveBranches: 'สาขาที่ปิดใช้งาน',
+                migration: 'Branch Migration',
+                migrationCopy: 'ตรวจและย้ายข้อมูลที่ยังใช้ alias เดิมไปเป็นรหัสสาขาปัจจุบัน เริ่มจาก Dry run ก่อนเสมอ',
+                dryRun: 'ตรวจสอบก่อนย้าย',
+                runMigration: 'ย้ายข้อมูลจริง',
+                migrationEmpty: 'ยังไม่ได้ตรวจสอบ',
+                displayName: 'ชื่อสาขา',
+                displayNameEn: 'ชื่อภาษาอังกฤษ',
+                code: 'รหัสสาขา',
+                sortOrder: 'ลำดับแสดงผล',
+                address: 'ที่อยู่',
+                phone: 'เบอร์โทร',
+                activeHint: 'ให้ระบบแสดงสาขานี้ในตัวเลือก',
+                cancel: 'ยกเลิก',
+                save: 'บันทึก',
+                editTitle: 'แก้ไขสาขา',
+                addTitle: 'เพิ่มสาขา',
+                deactivateConfirm: name => `ปิดใช้งานสาขา "${name}" หรือไม่?`,
+                runConfirm: 'ยืนยันย้ายข้อมูลจริงหลังจากตรวจสอบ Dry run แล้วหรือไม่?',
+                noAddress: 'ไม่ระบุที่อยู่',
+                noPhone: 'ไม่ระบุเบอร์',
+                saved: 'บันทึกแล้ว',
+                deactivated: 'ปิดใช้งานแล้ว'
+            },
+            en: {
+                title: 'Branch Portal',
+                subtitle: 'Manage branch metadata from the database so Portal, MungkhudShop, and dashboards use the same source.',
+                back: 'Back',
+                add: 'Add branch',
+                branchList: 'Branches',
+                branch: 'Branch',
+                contact: 'Contact',
+                sort: 'Sort',
+                status: 'Status',
+                actions: 'Actions',
+                loading: 'Loading...',
+                empty: 'No branches yet',
+                active: 'Active',
+                inactive: 'Inactive',
+                summary: 'Summary',
+                activeBranches: 'Active branches',
+                inactiveBranches: 'Inactive branches',
+                migration: 'Branch Migration',
+                migrationCopy: 'Check and move records that still use old aliases to the current branch codes. Always dry-run first.',
+                dryRun: 'Dry run',
+                runMigration: 'Run migration',
+                migrationEmpty: 'No migration check yet',
+                displayName: 'Display name',
+                displayNameEn: 'English name',
+                code: 'Branch code',
+                sortOrder: 'Sort order',
+                address: 'Address',
+                phone: 'Phone',
+                activeHint: 'Show this branch in selectors',
+                cancel: 'Cancel',
+                save: 'Save',
+                editTitle: 'Edit branch',
+                addTitle: 'Add branch',
+                deactivateConfirm: name => `Deactivate "${name}"?`,
+                runConfirm: 'Run the real migration after reviewing dry-run results?',
+                noAddress: 'No address',
+                noPhone: 'No phone',
+                saved: 'Saved',
+                deactivated: 'Deactivated'
+            }
+        };
+
+        function t(key, ...args) {
+            const value = i18n[state.lang][key] ?? i18n.th[key] ?? key;
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+
+        function slug(value) {
+            return String(value || '').trim().toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        }
+
+        function authHeaders() {
+            const token = getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || localStorage.getItem('mungkhud_jwt')
+                || sessionStorage.getItem('mungkhud_jwt')
+                || '';
+            if (token) return { Authorization: `Bearer ${token}` };
+
+            return {
+                'x-bcauto-dev-auth': localStorage.getItem('app.session.devAuth') === '1' ? '1' : '',
+                'x-bcauto-dev-role': localStorage.getItem('app.session.role') || '',
+                'x-bcauto-dev-user-id': localStorage.getItem('app.session.userId') || '',
+                'x-bcauto-dev-user-name': encodeURIComponent(localStorage.getItem('app.session.userName') || ''),
+                'x-bcauto-dev-branch': localStorage.getItem('app.session.branchId') || ''
+            };
+        }
+
+        async function api(path, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...authHeaders(),
+                ...(options.headers || {})
+            };
+            const res = await fetch(path, { ...options, headers });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+            return data;
+        }
+
+        function applyLang() {
+            document.documentElement.lang = state.lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.dataset.i18n);
+            });
+            document.getElementById('langTh').classList.toggle('active', state.lang === 'th');
+            document.getElementById('langEn').classList.toggle('active', state.lang === 'en');
+            localStorage.setItem(LANG_KEY, state.lang);
+            render();
+        }
+
+        async function loadBranches() {
+            const body = document.getElementById('branchBody');
+            body.innerHTML = `<tr><td colspan="5"><div class="loading-state">${esc(t('loading'))}</div></td></tr>`;
+            try {
+                const data = await api('/api/data/custom/admin/branches?include_inactive=true');
+                state.branches = data.branches || [];
+                render();
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan="5"><div class="error-state">${esc(err.message)}</div></td></tr>`;
+            }
+        }
+
+        function render() {
+            const body = document.getElementById('branchBody');
+            if (!body) return;
+
+            const active = state.branches.filter(b => b.is_active !== false);
+            const inactive = state.branches.length - active.length;
+            document.getElementById('activeCount').textContent = String(active.length);
+            document.getElementById('inactiveCount').textContent = String(inactive);
+
+            if (state.branches.length === 0) {
+                body.innerHTML = `<tr><td colspan="5"><div class="empty-state">${esc(t('empty'))}</div></td></tr>`;
+                return;
+            }
+
+            body.innerHTML = state.branches.map(branch => {
+                const name = state.lang === 'en' ? (branch.display_name_en || branch.branch_name) : (branch.display_name || branch.branch_name);
+                const phone = branch.phone || t('noPhone');
+                const address = branch.address || t('noAddress');
+                return `<tr>
+                    <td>
+                        <strong>${esc(name)}</strong>
+                        <span class="branch-code">${esc(branch.branch_id)}</span>
+                    </td>
+                    <td>
+                        <div>${esc(phone)}</div>
+                        <span class="branch-code">${esc(address)}</span>
+                    </td>
+                    <td>${esc(branch.sort_order ?? '')}</td>
+                    <td><span class="status-pill ${branch.is_active === false ? 'inactive' : ''}">${esc(branch.is_active === false ? t('inactive') : t('active'))}</span></td>
+                    <td style="text-align:right">
+                        <span class="row-actions">
+                            <button class="icon-btn" type="button" data-edit="${esc(branch.id || branch.branch_id)}" title="Edit"><span class="material-icons-outlined">edit</span></button>
+                            <button class="icon-btn" type="button" data-deactivate="${esc(branch.id || branch.branch_id)}" title="Deactivate"><span class="material-icons-outlined">block</span></button>
+                        </span>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            body.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => openModal(btn.dataset.edit)));
+            body.querySelectorAll('[data-deactivate]').forEach(btn => btn.addEventListener('click', () => deactivateBranch(btn.dataset.deactivate)));
+        }
+
+        function branchById(id) {
+            return state.branches.find(branch => String(branch.id || branch.branch_id) === String(id));
+        }
+
+        function openModal(id = '') {
+            const branch = id ? branchById(id) : null;
+            state.editing = branch || null;
+            document.getElementById('modalTitle').textContent = branch ? t('editTitle') : t('addTitle');
+            document.getElementById('branchId').value = branch?.id || '';
+            document.getElementById('displayName').value = branch?.display_name || branch?.branch_name || '';
+            document.getElementById('displayNameEn').value = branch?.display_name_en || branch?.branch_name || '';
+            document.getElementById('branchCode').value = branch?.branch_id || '';
+            document.getElementById('sortOrder').value = branch?.sort_order ?? '';
+            document.getElementById('address').value = branch?.address || '';
+            document.getElementById('phone').value = branch?.phone || '';
+            document.getElementById('isActive').checked = branch?.is_active !== false;
+            document.getElementById('latitude').value = branch?.latitude || '';
+            document.getElementById('longitude').value = branch?.longitude || '';
+            document.getElementById('tgJobs').value = branch?.tg_chat_jobs || '';
+            document.getElementById('tgHr').value = branch?.tg_chat_hr || '';
+            document.getElementById('tgQueue').value = branch?.tg_chat_queue || '';
+            document.getElementById('branchModal').classList.add('active');
+            setTimeout(() => document.getElementById('displayName').focus(), 0);
+        }
+
+        function closeModal() {
+            document.getElementById('branchModal').classList.remove('active');
+        }
+
+        function formPayload() {
+            const displayName = document.getElementById('displayName').value.trim();
+            return {
+                display_name: displayName,
+                display_name_en: document.getElementById('displayNameEn').value.trim() || displayName,
+                code: document.getElementById('branchCode').value.trim() || slug(displayName),
+                sort_order: Number(document.getElementById('sortOrder').value || 100),
+                address: document.getElementById('address').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                is_active: document.getElementById('isActive').checked,
+                latitude: document.getElementById('latitude').value.trim(),
+                longitude: document.getElementById('longitude').value.trim(),
+                tg_chat_jobs: document.getElementById('tgJobs').value.trim(),
+                tg_chat_hr: document.getElementById('tgHr').value.trim(),
+                tg_chat_queue: document.getElementById('tgQueue').value.trim()
+            };
+        }
+
+        async function saveBranch(event) {
+            event.preventDefault();
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            try {
+                const payload = formPayload();
+                const id = document.getElementById('branchId').value;
+                if (id) {
+                    await api(`/api/data/custom/admin/branches/${encodeURIComponent(id)}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    await api('/api/data/custom/admin/branches', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                }
+                closeModal();
+                await loadBranches();
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        }
+
+        async function deactivateBranch(id) {
+            const branch = branchById(id);
+            const name = branch?.display_name || branch?.branch_name || id;
+            if (!confirm(t('deactivateConfirm', name))) return;
+            try {
+                await api(`/api/data/custom/admin/branches/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                await loadBranches();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function runMigration(dryRun) {
+            if (!dryRun && !confirm(t('runConfirm'))) return;
+            const box = document.getElementById('migrationResult');
+            box.textContent = t('loading');
+            try {
+                const result = await api('/api/data/custom/admin/branches/migrate', {
+                    method: 'POST',
+                    body: JSON.stringify({ dry_run: dryRun })
+                });
+                box.textContent = JSON.stringify({
+                    dry_run: result.dry_run,
+                    updates: result.updates,
+                    updated_tables: result.updated_tables,
+                    errors: result.errors
+                }, null, 2);
+            } catch (err) {
+                box.textContent = err.message;
+            }
+        }
+
+        document.getElementById('langTh').addEventListener('click', () => { state.lang = 'th'; applyLang(); });
+        document.getElementById('langEn').addEventListener('click', () => { state.lang = 'en'; applyLang(); });
+        document.getElementById('refreshBtn').addEventListener('click', loadBranches);
+        document.getElementById('addBranchBtn').addEventListener('click', () => openModal());
+        document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        document.getElementById('cancelBtn').addEventListener('click', closeModal);
+        document.getElementById('branchModal').addEventListener('click', event => { if (event.target.id === 'branchModal') closeModal(); });
+        document.getElementById('branchForm').addEventListener('submit', saveBranch);
+        document.getElementById('dryRunBtn').addEventListener('click', () => runMigration(true));
+        document.getElementById('runMigrationBtn').addEventListener('click', () => runMigration(false));
+        document.getElementById('displayName').addEventListener('input', () => {
+            const code = document.getElementById('branchCode');
+            if (!state.editing && !code.value.trim()) code.value = slug(document.getElementById('displayName').value);
+        });
+
+        applyLang();
+        loadBranches();
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

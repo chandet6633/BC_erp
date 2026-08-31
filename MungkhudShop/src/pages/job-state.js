@@ -3,7 +3,7 @@
  * v2: Adds mechanicsCache for lead/helper mechanic assignment.
  */
 import { fetchFullList } from '../services/pb.js'
-import { getBranch } from '../services/auth.js'
+import { getApiAuthHeaders, getBranch } from '../services/auth.js'
 
 // Module state
 let currentItems = []
@@ -48,7 +48,7 @@ export async function getProductsWithStock() {
         stockMapCache = {}
         try {
             const res = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+                headers: getApiAuthHeaders()
             })
             if (res.ok) {
                 const stockMap = await res.json()

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta property="og:title" content="Bancha HR System – ประวัติการลงเวลา" />
+    <meta property="og:description" content="ดูประวัติการลงเวลาเข้า-ออกของคุณ" />
+    <title>ประวัติการลงเวลา</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #1565C0;
+            --primary-light: #1E88E5;
+            --primary-dark: #0D47A1;
+            --primary-gradient: linear-gradient(135deg, #1976D2 0%, #1565C0 50%, #0D47A1 100%);
+            --bg: #F0F4F8;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text: #1A202C;
+            --text-secondary: #4A5568;
+            --muted: #718096;
+            --success: #38A169;
+            --warning: #DD6B20;
+            --error: #E53E3E;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(56, 161, 105, 0.08) 0%, transparent 50%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color var(--transition);
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 2px solid #E2E8F0;
+            border-radius: var(--radius-sm);
+            background: #FAFBFC;
+            color: var(--text);
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%234A5568" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            margin-bottom: 1rem;
+            transition: all var(--transition);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+        }
+
+        select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 1rem 0.5rem;
+            background: linear-gradient(135deg, rgba(21, 101, 192, 0.05) 0%, rgba(21, 101, 192, 0.02) 100%);
+            border-radius: var(--radius-sm);
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #EDF2F7;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-right: 1rem;
+        }
+
+        .history-icon.in {
+            background: linear-gradient(135deg, rgba(56, 161, 105, 0.15) 0%, rgba(56, 161, 105, 0.05) 100%);
+        }
+
+        .history-icon.out {
+            background: linear-gradient(135deg, rgba(221, 107, 32, 0.15) 0%, rgba(221, 107, 32, 0.05) 100%);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-type {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .history-store {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .history-time {
+            text-align: right;
+        }
+
+        .history-date {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .history-hour {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #E2E8F0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .toast {
+            display: none;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: toastIn 0.3s ease;
+            background: linear-gradient(135deg, var(--error) 0%, #FC8181 100%);
+            color: white;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            .stats-grid > :nth-child(5) {
+                grid-column: span 2;
+            }
+            .stat-value {
+                font-size: 1.4rem;
+            }
+            .stat-box {
+                padding: 0.75rem 0.25rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        if (window.location.protocol === 'file:') {
+            document.write(`
+                <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:-apple-system,sans-serif;color:#fff;text-align:center;">
+                    <div style="max-width:400px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.1);padding:2.5rem;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+                        <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+                        <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;color:#EF4444;">กรุณาใช้งานผ่าน Local Server</h2>
+                        <p style="font-size:0.95rem;color:#94A3B8;line-height:1.6;margin-bottom:1.5rem;">
+                            ตรวจพบว่าคุณเปิดไฟล์ HTML นี้โดยตรง (file:///) ทำให้เบราว์เซอร์บล็อกการเรียกใช้งานข้อมูลจาก API
+                        </p>
+                        <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);padding:1rem;border-radius:8px;margin-bottom:1.5rem;">
+                            <a href="http://localhost:3005" style="color:#60A5FA;text-decoration:none;font-weight:700;font-size:1.1rem;word-break:break-all;">http://localhost:3005</a>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+    </script>
+    <div class="toast-container">
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
+
+        <h1>📋 ประวัติการลงเวลา</h1>
+
+        <div class="card">
+            <label for="deptSelect">แผนก</label>
+            <select id="deptSelect" disabled>
+                <option>กำลังโหลด...</option>
+            </select>
+
+            <label for="nameSelect">ชื่อพนักงาน</label>
+            <select id="nameSelect" disabled>
+                <option value="">– เลือกชื่อ –</option>
+            </select>
+
+            <label for="monthSelect">เลือกเดือน</label>
+            <input type="month" id="monthSelect" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #E2E8F0; border-radius: var(--radius-sm); font-family: inherit; font-size: 1rem;">
+        </div>
+
+        <div class="card" id="statsCard" style="display: none;">
+            <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">📊 สถิติเดือนที่เลือก</h3>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="statCheckIns">0</div>
+                    <div class="stat-label">วันเข้างาน</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statLate">0</div>
+                    <div class="stat-label">มาสาย</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statOnTime">0%</div>
+                    <div class="stat-label">ตรงเวลา</div>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, rgba(254, 243, 199, 0.4) 0%, rgba(254, 243, 199, 0.1) 100%); border: 1px solid rgba(254, 243, 199, 0.8);">
+                    <div class="stat-value" style="color: #D97706;" id="statMorningBonus">0</div>
+                    <div class="stat-label">เบี้ยขยันเช้า</div>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, rgba(243, 232, 255, 0.4) 0%, rgba(243, 232, 255, 0.1) 100%); border: 1px solid rgba(243, 232, 255, 0.8);">
+                    <div class="stat-value" style="color: #7E22CE;" id="statTotalOT">0.0</div>
+                    <div class="stat-label">OT สะสม (ชม.)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="historyCard" style="display: none;">
+            <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">📅 ประวัติล่าสุด</h3>
+            <div class="history-list" id="historyList"></div>
+        </div>
+
+        <div class="card" id="loadingCard" style="display: none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>กำลังโหลดข้อมูล...</div>
+            </div>
+        </div>
+
+        <div class="card" id="emptyCard" style="display: none;">
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                <div>ยังไม่มีข้อมูลการลงเวลา</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function fetchAPI(action, params = {}) {
+            const searchParams = new URLSearchParams({ action, ...params });
+
+            try {
+                const res = await fetch(`${API}?${searchParams.toString()}`);
+                return await res.json();
+            } catch (e) {
+                showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                return null;
+            }
+        }
+
+        async function loadDepartments() {
+            const sel = document.getElementById('deptSelect');
+            const depts = await fetchAPI('getDepartments');
+            if (depts && Array.isArray(depts)) {
+                sel.innerHTML = '<option value="">– เลือกแผนก –</option>';
+                depts.forEach(d => sel.appendChild(new Option(d, d)));
+                sel.disabled = false;
+            }
+        }
+
+        async function loadNames(dept) {
+            const sel = document.getElementById('nameSelect');
+            if (!dept) {
+                sel.innerHTML = '<option value="">– เลือกชื่อ –</option>';
+                sel.disabled = true;
+                return;
+            }
+
+            sel.disabled = true;
+            sel.innerHTML = '<option>กำลังโหลด...</option>';
+
+            const names = await fetchAPI('getNamesByDept', { dept });
+            if (names && Array.isArray(names)) {
+                sel.innerHTML = '<option value="">– เลือกชื่อ –</option>';
+                names.forEach(n => sel.appendChild(new Option(n, n)));
+                sel.disabled = false;
+            }
+        }
+
+        async function loadHistory(dept, name) {
+            document.getElementById('statsCard').style.display = 'none';
+            document.getElementById('historyCard').style.display = 'none';
+            document.getElementById('emptyCard').style.display = 'none';
+
+            if (!dept || !name) return;
+
+            document.getElementById('loadingCard').style.display = 'block';
+
+            const selectedMonth = document.getElementById('monthSelect').value;
+            const data = await fetchAPI('getEmployeeHistory', { dept, name, limit: 50, month: selectedMonth });
+
+            document.getElementById('loadingCard').style.display = 'none';
+
+            if (!data || data.error) {
+                showToast('ไม่สามารถโหลดข้อมูลได้');
+                return;
+            }
+
+            // Update stats
+            if (data.stats && data.stats.thisMonth) {
+                document.getElementById('statCheckIns').textContent = data.stats.thisMonth.checkIns;
+                document.getElementById('statLate').textContent = data.stats.thisMonth.lateCount;
+                document.getElementById('statOnTime').textContent = data.stats.thisMonth.onTimeRate + '%';
+                document.getElementById('statMorningBonus').textContent = data.stats.thisMonth.morningBonusCount || 0;
+                document.getElementById('statTotalOT').textContent = (data.stats.thisMonth.totalOtHours || 0).toFixed(1);
+                document.getElementById('statsCard').style.display = 'block';
+            }
+
+            // Update history list
+            if (data.history && data.history.length > 0) {
+                const list = document.getElementById('historyList');
+                list.innerHTML = data.history.map(h => {
+                    let badgeHtml = '';
+                    if (h.type === 'IN' && h.isMorningBonus) {
+                        badgeHtml = `<span style="display: inline-block; background: #FEF3C7; color: #D97706; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; font-weight: bold; margin-left: 0.5rem; vertical-align: middle;">☀️ เบี้ยขยันเช้า</span>`;
+                    } else if (h.type === 'OUT' && h.otHours > 0) {
+                        badgeHtml = `<span style="display: inline-block; background: #F3E8FF; color: #7E22CE; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; font-weight: bold; margin-left: 0.5rem; vertical-align: middle;">🔥 OT +${h.otHours.toFixed(1)} ชม.</span>`;
+                    }
+
+                    return `
+          <div class="history-item">
+            <div class="history-icon ${h.type.toLowerCase()}">
+              ${h.type === 'IN' ? '🟢' : '🟠'}
+            </div>
+            <div class="history-info">
+              <div class="history-type" style="display: flex; align-items: center; flex-wrap: wrap;">
+                <span>${h.type === 'IN' ? 'เข้างาน' : 'ออกงาน'}</span>
+                ${badgeHtml}
+              </div>
+              <div class="history-store">${h.store || '-'}</div>
+            </div>
+            <div class="history-time">
+              <div class="history-date">${formatDate(h.date)}</div>
+              <div class="history-hour">${h.time}</div>
+            </div>
+          </div>
+        `;
+                }).join('');
+                document.getElementById('historyCard').style.display = 'block';
+            } else {
+                document.getElementById('emptyCard').style.display = 'block';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return dateStr;
+            const day = parseInt(parts[2], 10);
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${day} ${months[monthIdx]}`;
+        }
+
+        // Event listeners
+        document.getElementById('deptSelect').addEventListener('change', e => {
+            loadNames(e.target.value);
+            document.getElementById('statsCard').style.display = 'none';
+            document.getElementById('historyCard').style.display = 'none';
+            document.getElementById('emptyCard').style.display = 'none';
+        });
+
+        document.getElementById('nameSelect').addEventListener('change', e => {
+            const dept = document.getElementById('deptSelect').value;
+            loadHistory(dept, e.target.value);
+        });
+
+        // Init
+        window.addEventListener('load', () => {
+            const now = new Date();
+            const yearStr = now.getFullYear();
+            const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById('monthSelect').value = `${yearStr}-${monthStr}`;
+        });
+
+        document.getElementById('monthSelect').addEventListener('change', () => {
+            const dept = document.getElementById('deptSelect').value;
+            const name = document.getElementById('nameSelect').value;
+            loadHistory(dept, name);
+        });
+
+        loadDepartments();
+    </script>
+</body>
+
+</html>

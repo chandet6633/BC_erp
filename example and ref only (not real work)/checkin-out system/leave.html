@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta property="og:title" content="Bancha HR System – ลงเวลาเข้า-ออก & ขอลางาน" />
+  <meta property="og:description" content="ระบบจัดการพนักงาน ลงเวลาเข้า-ออก แจ้งลางาน ง่าย ๆ ผ่านเว็บแอป" />
+  <meta property="og:image" content="https://banchagroup.netlify.app/preview.png" />
+  <meta property="og:url" content="https://banchagroup.netlify.app/" />
+  <title>ขอลางาน Bancha Group</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #1565C0;
+      --primary-light: #1E88E5;
+      --primary-dark: #0D47A1;
+      --primary-gradient: linear-gradient(135deg, #1976D2 0%, #1565C0 50%, #0D47A1 100%);
+      --bg: #F0F4F8;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text: #1A202C;
+      --text-secondary: #4A5568;
+      --muted: #718096;
+      --success: #38A169;
+      --success-light: #48BB78;
+      --warning: #DD6B20;
+      --error: #E53E3E;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(56, 161, 105, 0.08) 0%, transparent 50%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .card {
+      position: relative;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      text-align: left;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+    }
+
+    select,
+    input[type="date"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 2px solid #E2E8F0;
+      border-radius: var(--radius-sm);
+      background: #FAFBFC;
+      color: var(--text);
+      appearance: none;
+      transition: all var(--transition);
+    }
+
+    select {
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%234A5568" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1.25em;
+      padding-right: 2.5rem;
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(21, 101, 192, 0.1);
+    }
+
+    select:disabled,
+    input:disabled,
+    textarea:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #EDF2F7;
+    }
+
+    select.loading {
+      border-color: var(--warning);
+      background-color: #FFFAF0;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .date-row>div label {
+      margin-top: 1rem;
+    }
+
+    button[type="submit"] {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    button[type="submit"]::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    button[type="submit"]:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    button[type="submit"]:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3);
+    }
+
+    button[type="submit"]:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button[type="submit"]:disabled {
+      background: linear-gradient(135deg, #A0AEC0 0%, #718096 100%);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+
+    button.loading .spinner {
+      display: inline-block;
+    }
+
+    button.loading .btn-text {
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .logos {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .logos img {
+      height: 36px;
+      border-radius: 6px;
+      opacity: 0.7;
+      transition: all var(--transition);
+    }
+
+    .logos img:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    /* Toast notification */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .toast {
+      display: none;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      animation: toastIn 0.3s ease;
+      margin-bottom: 0.5rem;
+    }
+
+    .toast.show {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+      color: white;
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, var(--error) 0%, #FC8181 100%);
+      color: white;
+    }
+
+    .toast.info {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Back link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color var(--transition);
+    }
+
+    .back-link:hover {
+      color: var(--primary);
+    }
+
+    /* Success overlay */
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    #overlay .msg {
+      background: white;
+      padding: 2.5rem;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 1.1rem;
+      color: var(--text);
+      box-shadow: var(--shadow-lg);
+      max-width: 90%;
+      animation: scaleIn 0.3s ease;
+    }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    #overlay .msg .icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    #overlay .msg button {
+      margin-top: 1.5rem;
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    #overlay .msg button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 360px) {
+      .card {
+        padding: 1.5rem;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+      }
+
+      .date-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.write(`
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:-apple-system,sans-serif;color:#fff;text-align:center;">
+          <div style="max-width:400px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.1);padding:2.5rem;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;color:#EF4444;">กรุณาใช้งานผ่าน Local Server</h2>
+            <p style="font-size:0.95rem;color:#94A3B8;line-height:1.6;margin-bottom:1.5rem;">
+              ตรวจพบว่าคุณเปิดไฟล์ HTML นี้โดยตรง (file:///) ทำให้เบราว์เซอร์บล็อกการเรียกใช้งานข้อมูลจาก API
+            </p>
+            <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);padding:1rem;border-radius:8px;margin-bottom:1.5rem;">
+              <a href="http://localhost:3005" style="color:#60A5FA;text-decoration:none;font-weight:700;font-size:1.1rem;word-break:break-all;">http://localhost:3005</a>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  </script>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+    <a href="index.html" class="back-link">← กลับหน้าหลัก</a>
+
+    <div class="card">
+      <h1>📝 ขอลางาน Bancha Group</h1>
+
+      <form id="leaveForm">
+        <input type="hidden" name="action" value="submitLeave" />
+
+        <label for="department">แผนก</label>
+        <select id="department" name="department" disabled required>
+          <option>กำลังโหลด…</option>
+        </select>
+
+        <label for="fullName">ชื่อ-นามสกุล</label>
+        <select id="fullName" name="fullName" disabled required>
+          <option value="">กรุณาเลือกแผนกก่อน</option>
+        </select>
+
+        <div class="date-row">
+          <div>
+            <label for="startDate">วันที่เริ่มลา</label>
+            <input type="date" id="startDate" name="startDate" required>
+          </div>
+          <div>
+            <label for="endDate">วันที่สิ้นสุด</label>
+            <input type="date" id="endDate" name="endDate" required>
+          </div>
+        </div>
+
+        <label for="totalDays">จำนวนวัน (เต็มวัน)</label>
+        <input type="number" id="totalDays" name="totalDays" min="0" step="0.5" required placeholder="เช่น 1, 1.5, 2">
+
+        <label for="leaveType">สาเหตุการลา</label>
+        <select id="leaveType" name="leaveType" required>
+          <option value="" disabled selected>เลือกสาเหตุ</option>
+          <option value="ลาป่วย">🤒 ลาป่วย</option>
+          <option value="ลากิจ">📋 ลากิจ</option>
+          <option value="ลาคลอด">👶 ลาคลอด</option>
+          <option value="ลาพักร้อน">🏖️ ลาพักร้อน</option>
+        </select>
+
+        <label for="reason">เหตุผลเพิ่มเติม (ถ้ามี)</label>
+        <textarea id="reason" name="reason" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+
+        <button type="submit" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">ส่งคำขอลา</span>
+        </button>
+      </form>
+
+      <div class="logos">
+        <img src="images/logo-tro.png" alt="ตรอ." />
+        <img src="images/logo-bancha-autoglass.jpeg" alt="Bancha Autoglass" />
+        <img src="images/logo-insurance-center.jpeg" alt="ศูนย์รวมประกันภัย" />
+        <img src="images/logo-viriyah-service.jpg" alt="Viriyah Service" />
+      </div>
+    </div>
+
+    <div id="overlay">
+      <div class="msg">
+        <div class="icon" id="overlayIcon">✅</div>
+        <div id="overlayText">ส่งข้อมูลเรียบร้อยแล้ว</div>
+        <button onclick="closeOverlay()">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Configuration
+    // ═══════════════════════════════════════════════════════════════════════════
+    const API_URL = '/api';
+    const CACHE_VERSION = 'v2';
+    const TTL = 5 * 60 * 1000;
+
+    // Clear old cache on version change
+    (function () {
+      try {
+        const storedVersion = localStorage.getItem('cache_version');
+        if (storedVersion !== CACHE_VERSION) {
+          localStorage.clear();
+          localStorage.setItem('cache_version', CACHE_VERSION);
+        }
+      } catch (e) { }
+    })();
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Toast Notifications
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showToast(message, type = 'info', duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type} show`;
+
+      const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️'
+      };
+
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // LocalStorage Wrapper
+    // ═══════════════════════════════════════════════════════════════════════════
+    const storage = {
+      getJSON(key) {
+        try {
+          const val = localStorage.getItem(key);
+          return val ? JSON.parse(val) : null;
+        } catch {
+          return null;
+        }
+      },
+      setJSON(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch { }
+      }
+    };
+
+
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Overlay
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showOverlay(message, isSuccess = true) {
+      document.getElementById('overlayIcon').textContent = isSuccess ? '✅' : '⚠️';
+      document.getElementById('overlayText').textContent = message;
+      document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function closeOverlay() {
+      document.getElementById('overlay').style.display = 'none';
+      if (document.getElementById('overlayIcon').textContent === '✅') {
+        document.getElementById('leaveForm').reset();
+        document.getElementById('fullName').innerHTML = '<option value="">กรุณาเลือกแผนกก่อน</option>';
+        document.getElementById('fullName').disabled = true;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Initialize Departments
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function initDepartments() {
+      const deptSel = document.getElementById('department');
+      const now = Date.now();
+      const cache = storage.getJSON('depts');
+
+      if (cache && now - cache.ts < TTL) {
+        populateDepartments(cache.data);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}?action=getDepartments`);
+        const depts = await res.json();
+        storage.setJSON('depts', { ts: now, data: depts });
+        populateDepartments(depts);
+      } catch {
+        showToast('ดึงข้อมูลแผนกล้มเหลว', 'error');
+        deptSel.innerHTML = '<option>❌ โหลดล้มเหลว</option>';
+      }
+    }
+
+    function populateDepartments(depts) {
+      const deptSel = document.getElementById('department');
+      deptSel.innerHTML = '<option value="">เลือกแผนก</option>';
+      depts.forEach(d => deptSel.appendChild(new Option(d, d)));
+      deptSel.disabled = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Load Names by Department
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.getElementById('department').addEventListener('change', async e => {
+      const nameSel = document.getElementById('fullName');
+      const dept = e.target.value;
+
+      if (!dept) {
+        nameSel.innerHTML = '<option value="">กรุณาเลือกแผนกก่อน</option>';
+        nameSel.disabled = true;
+        return;
+      }
+
+      nameSel.disabled = true;
+      nameSel.innerHTML = '<option>กำลังโหลด…</option>';
+      nameSel.classList.add('loading');
+
+      const now = Date.now();
+      const key = 'names_' + dept;
+      const cache = storage.getJSON(key);
+
+      if (cache && now - cache.ts < TTL) {
+        nameSel.classList.remove('loading');
+        populateNames(cache.data);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}?action=getNamesByDept&dept=${encodeURIComponent(dept)}`);
+        const names = await res.json();
+        storage.setJSON(key, { ts: now, data: names });
+        populateNames(names);
+      } catch {
+        showToast('ดึงข้อมูลชื่อไม่สำเร็จ', 'error');
+        nameSel.innerHTML = '<option>❌ โหลดล้มเหลว</option>';
+      } finally {
+        nameSel.classList.remove('loading');
+      }
+    });
+
+    function populateNames(names) {
+      const nameSel = document.getElementById('fullName');
+      nameSel.innerHTML = '<option value="">เลือกชื่อ-นามสกุล</option>';
+      names.forEach(n => nameSel.appendChild(new Option(n, n)));
+      nameSel.disabled = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Auto-calculate days
+    // ═══════════════════════════════════════════════════════════════════════════
+    function calculateDays() {
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      const totalInput = document.getElementById('totalDays');
+
+      if (start && end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const diffTime = endDate - startDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+        if (diffDays > 0) {
+          totalInput.value = diffDays;
+        }
+      }
+    }
+
+    document.getElementById('startDate').addEventListener('change', calculateDays);
+    document.getElementById('endDate').addEventListener('change', calculateDays);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Form Submit
+    // ═══════════════════════════════════════════════════════════════════════════
+    document.getElementById('leaveForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+
+      // Validate
+      const dept = document.getElementById('department').value;
+      const name = document.getElementById('fullName').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!dept || !name) {
+        showToast('กรุณาเลือกแผนกและชื่อให้ครบถ้วน', 'error');
+        return;
+      }
+
+      if (new Date(endDate) < new Date(startDate)) {
+        showToast('วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มลา', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+
+      const data = {
+        action: 'submitLeave',
+        department: dept,
+        fullName: name,
+        startDate: startDate,
+        endDate: endDate,
+        totalDays: parseFloat(document.getElementById('totalDays').value) || 1,
+        leaveType: document.getElementById('leaveType').value,
+        reason: document.getElementById('reason').value
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+
+        if (json.result === 'success') {
+          showOverlay('ส่งคำขอลาเรียบร้อยแล้ว', true);
+        } else if (json.result === 'duplicate') {
+          showOverlay('ใบลานี้ส่งไปแล้ว', false);
+        } else {
+          showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        }
+      } catch {
+        showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Initialize
+    // ═══════════════════════════════════════════════════════════════════════════
+    window.addEventListener('load', () => {
+      initDepartments();
+
+      // Set min date to today
+      const dateParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(new Date()).reduce((acc, part) => {
+        if (part.type !== 'literal') acc[part.type] = part.value;
+        return acc;
+      }, {});
+      const today = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+      document.getElementById('startDate').min = today;
+      document.getElementById('endDate').min = today;
+    });
+  </script>
+</body>
+
+</html>

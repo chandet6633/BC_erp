@@ -7,7 +7,7 @@
  */
 
 import * as XLSX from 'xlsx';
-import { pb } from '../Management/src/services/pocketbase.js'; // Adjust path depending on usage
+import { pb } from '../Portal/src/services/pocketbase.js'; // Adjust path depending on usage
 
 /**
  * Parse an Excel or JSON file into headers and data rows.

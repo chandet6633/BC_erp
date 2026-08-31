@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Health - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            --health-bg: #f4f7fb;
+            --health-panel: #ffffff;
+            --health-ink: #172033;
+            --health-muted: #64748b;
+            --health-line: #d9e2ef;
+            --health-blue: #2563eb;
+            --health-green: #059669;
+            --health-red: #dc2626;
+            color-scheme: light;
+        }
+
+        * { box-sizing: border-box; }
+
+        body.health-page {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--health-bg);
+            color: var(--health-ink);
+            font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
+        }
+
+        .shell {
+            width: min(100% - 32px, 1040px);
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: clamp(1.45rem, 3vw, 2rem);
+            letter-spacing: 0;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--health-muted);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .segmented, .btn {
+            min-height: 42px;
+            border: 1px solid var(--health-line);
+            border-radius: 8px;
+            background: white;
+            color: var(--health-ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 0 13px;
+        }
+
+        .btn.primary {
+            border-color: var(--health-blue);
+            background: var(--health-blue);
+            color: white;
+        }
+
+        .segmented {
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .segmented button {
+            min-width: 42px;
+            min-height: 36px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--health-muted);
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .segmented button.active {
+            background: #eaf2ff;
+            color: var(--health-blue);
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .summary-card, .check-card, .notice {
+            background: var(--health-panel);
+            border: 1px solid var(--health-line);
+            border-radius: 8px;
+        }
+
+        .summary-card {
+            padding: 14px;
+        }
+
+        .summary-value {
+            font-size: 1.45rem;
+            font-weight: 850;
+        }
+
+        .summary-label {
+            margin-top: 3px;
+            color: var(--health-muted);
+            font-size: .78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .check-card {
+            padding: 16px;
+            min-width: 0;
+        }
+
+        .check-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .check-title {
+            margin: 0;
+            font-weight: 850;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: .76rem;
+            font-weight: 850;
+            background: #ecfdf5;
+            color: var(--health-green);
+            white-space: nowrap;
+        }
+
+        .status.bad {
+            background: #fee2e2;
+            color: var(--health-red);
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: currentColor;
+        }
+
+        .details {
+            margin-top: 12px;
+            color: var(--health-muted);
+            font-size: .86rem;
+            line-height: 1.55;
+            word-break: break-word;
+        }
+
+        .notice {
+            display: none;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            color: var(--health-muted);
+            font-weight: 750;
+        }
+
+        .notice.active { display: block; }
+        .notice.error { border-color: #fecaca; background: #fff7f7; color: #991b1b; }
+
+        @media (max-width: 760px) {
+            .shell { width: min(100% - 20px, 1040px); padding-top: 18px; }
+            .topbar { flex-direction: column; }
+            .actions { width: 100%; justify-content: flex-start; }
+            .btn { flex: 1 1 auto; }
+            .summary, .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="health-page">
+    <main class="shell">
+        <header class="topbar">
+            <div>
+                <h1><span class="material-icons-outlined">monitor_heart</span><span data-i18n="title">สุขภาพระบบ</span></h1>
+                <p class="subtitle" data-i18n="subtitle">ตรวจสอบ API, metadata, ผู้ใช้, บทบาท, สาขา และ settings</p>
+            </div>
+            <div class="actions">
+                <div class="segmented" aria-label="Language">
+                    <button type="button" id="langTh">TH</button>
+                    <button type="button" id="langEn">EN</button>
+                </div>
+                <a class="btn" href="index.html"><span class="material-icons-outlined">arrow_back</span><span data-i18n="back">กลับ</span></a>
+                <button class="btn primary" type="button" id="refreshBtn"><span class="material-icons-outlined">refresh</span><span data-i18n="refresh">รีเฟรช</span></button>
+            </div>
+        </header>
+
+        <div id="notice" class="notice"></div>
+
+        <section class="summary">
+            <div class="summary-card"><div class="summary-value" id="overall">-</div><div class="summary-label" data-i18n="overall">ภาพรวม</div></div>
+            <div class="summary-card"><div class="summary-value" id="passed">-</div><div class="summary-label" data-i18n="passed">ผ่าน</div></div>
+            <div class="summary-card"><div class="summary-value" id="latency">-</div><div class="summary-label" data-i18n="latency">เวลา API</div></div>
+        </section>
+
+        <section class="grid" id="checks"></section>
+    </main>
+
+    <script type="module">
+        import { AuthService } from '../../services/authService.js';
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+
+        if (!AuthService.hasRole(['admin', 'owner'])) {
+            AuthService.requireRole(['admin', 'owner']);
+        }
+
+        const LANG_KEY = 'app.session.language';
+        const i18n = {
+            th: {
+                title: 'สุขภาพระบบ',
+                subtitle: 'ตรวจสอบ API, metadata, ผู้ใช้, บทบาท, สาขา และ settings',
+                back: 'กลับ',
+                refresh: 'รีเฟรช',
+                overall: 'ภาพรวม',
+                passed: 'ผ่าน',
+                latency: 'เวลา API',
+                ok: 'ปกติ',
+                failed: 'ผิดปกติ',
+                loading: 'กำลังตรวจสอบ...',
+                loadFailed: error => `ตรวจสอบไม่สำเร็จ: ${error}`
+            },
+            en: {
+                title: 'System Health',
+                subtitle: 'Check API, metadata, users, roles, branches, and settings',
+                back: 'Back',
+                refresh: 'Refresh',
+                overall: 'Overall',
+                passed: 'Passed',
+                latency: 'API time',
+                ok: 'OK',
+                failed: 'Failed',
+                loading: 'Checking...',
+                loadFailed: error => `Health check failed: ${error}`
+            }
+        };
+
+        let lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th';
+        const checksEl = document.getElementById('checks');
+        const notice = document.getElementById('notice');
+
+        function t(key, ...args) {
+            const value = i18n[lang][key] ?? i18n.en[key] ?? key;
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function authHeaders() {
+            const token = getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || '';
+            if (token) return { Authorization: `Bearer ${token}` };
+            return {
+                'x-bcauto-dev-auth': localStorage.getItem('app.session.devAuth') === '1' ? '1' : '',
+                'x-bcauto-dev-role': localStorage.getItem('app.session.role') || '',
+                'x-bcauto-dev-user-id': localStorage.getItem('app.session.userId') || '',
+                'x-bcauto-dev-user-name': encodeURIComponent(localStorage.getItem('app.session.userName') || ''),
+                'x-bcauto-dev-branch': localStorage.getItem('app.session.branchId') || ''
+            };
+        }
+
+        async function api(path) {
+            const res = await fetch(path, { headers: authHeaders() });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            return data;
+        }
+
+        function setNotice(message = '', type = '') {
+            notice.textContent = message;
+            notice.className = `notice ${message ? 'active' : ''} ${type}`;
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = lang;
+            localStorage.setItem(LANG_KEY, lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+            document.getElementById('langTh').classList.toggle('active', lang === 'th');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+        }
+
+        function detailText(details = {}, error = '') {
+            if (error) return error;
+            return Object.entries(details)
+                .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                .join(' · ');
+        }
+
+        async function loadHealth() {
+            setNotice('');
+            checksEl.innerHTML = `<article class="check-card"><div class="details">${esc(t('loading'))}</div></article>`;
+            const start = performance.now();
+            try {
+                const data = await api('/api/data/custom/admin/health');
+                const apiMs = Math.round(performance.now() - start);
+                const checks = data.checks || [];
+                document.getElementById('overall').textContent = data.ok ? t('ok') : t('failed');
+                document.getElementById('passed').textContent = `${checks.filter(row => row.ok).length}/${checks.length}`;
+                document.getElementById('latency').textContent = `${apiMs}ms`;
+                checksEl.innerHTML = checks.map(check => `
+                    <article class="check-card">
+                        <div class="check-head">
+                            <div>
+                                <h2 class="check-title">${esc(check.label || check.id)}</h2>
+                                <div class="details">${esc(detailText(check.details, check.error))}</div>
+                            </div>
+                            <span class="status ${check.ok ? '' : 'bad'}"><span class="dot"></span>${esc(check.ok ? t('ok') : t('failed'))}</span>
+                        </div>
+                        <div class="details">${esc(check.latency_ms)}ms</div>
+                    </article>
+                `).join('');
+            } catch (err) {
+                document.getElementById('overall').textContent = t('failed');
+                document.getElementById('passed').textContent = '-';
+                document.getElementById('latency').textContent = '-';
+                checksEl.innerHTML = '';
+                setNotice(t('loadFailed', err.message), 'error');
+            }
+        }
+
+        document.getElementById('langTh').addEventListener('click', () => { lang = 'th'; applyLanguage(); loadHealth(); });
+        document.getElementById('langEn').addEventListener('click', () => { lang = 'en'; applyLanguage(); loadHealth(); });
+        document.getElementById('refreshBtn').addEventListener('click', loadHealth);
+
+        applyLanguage();
+        loadHealth();
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

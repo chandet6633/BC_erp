@@ -19,8 +19,8 @@ export const COST_DIFF_THRESHOLD = 0.01
 export const PB_URL = 'http://127.0.0.1:8091'
 export const MANAGEMENT_PB_URL = 'http://127.0.0.1:8092'
 
-/** Default branch name */
-export const DEFAULT_BRANCH = 'BC Auto Service'
+/** Default branch scope; concrete branch labels come from branch metadata. */
+export const DEFAULT_BRANCH = ''
 
 /** ID generation prefix format: PREFIX-YYMM-NNNN */
 export const ID_PAD_LENGTH = 4

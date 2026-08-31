@@ -14,7 +14,7 @@ MungkhudShop is a feature-rich **Thai-language automotive service ERP** for BC B
 | **Backend** | PocketBase on `localhost:8091` |
 | **Routing** | Hash-based SPA (`#/dashboard`, `#/job`, etc.) with lazy loading |
 | **Build** | 48+ modules, 0 errors |
-| **Cross-App Auth** | PIN login via Management PB + SSO tokens |
+| **Cross-App Auth** | PIN login via Portal PB + SSO tokens |
 
 ---
 
@@ -43,7 +43,7 @@ graph TB
         DB[("SQLite")]
     end
     
-    subgraph "Management PB 8092"
+    subgraph "Portal PB 8092"
         MAPI["Shared Users"]
     end
     
@@ -71,7 +71,7 @@ For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 11. ✅ **Settings** — VAT defaults, print layout config
 12. ✅ **User Permissions** — 14 granular permissions across 5 groups
 13. ✅ **Multi-Shop** — Branch CRUD, branch switcher, data filtering
-14. ✅ **Cross-App** — SSO, PIN shared auth, back-to-management, embedded mode
+14. ✅ **Cross-App** — SSO, PIN shared auth, back-to-portal, embedded mode
 15. ✅ **Alerts** — Low-stock notifications with audio + Telegram integration
 
 ---

@@ -5,7 +5,7 @@ const API_URL = 'http://localhost:9093/api';
 
 // Create two tokens: one admin, one standard SA
 const adminToken = jwt.sign(
-    { id: '1', name: 'Admin User', role: 'admin', branch: 'all' },
+    { id: '1', name: 'Admin User', role: 'admin', branch: 'bc-auto-service' },
     JWT_SECRET,
     { expiresIn: '1h' }
 );

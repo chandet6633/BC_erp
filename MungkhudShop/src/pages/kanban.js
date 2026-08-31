@@ -1,15 +1,13 @@
 /**
- * Kanban Board — Locked job status management.
+ * Kanban Board — Locked job status portal.
  * Columns: รับรถ/รอจัดช่าง (pending) → กำลังซ่อม (in_progress) → รอเก็บเงิน (qc_done) → เสร็จสิ้น (completed)
  * Workflow is now strictly role-gated. Drag-and-drop is disabled.
  */
-import { fetchFullList, createRecord, updateRecord, deleteRecord, uploadAttachment } from '../services/pb.js'
-import { postToStockLedger } from '../services/inventory.js'
+import { fetchFullList, uploadAttachment } from '../services/pb.js'
 import { notifyJobCompleted, notifyPaymentCollected } from '../services/telegram.js'
-import { getBranchFilter, getBranch, getCurrentUser } from '../services/auth.js'
+import { getApiAuthHeaders, getBranchFilter, getBranch, getCurrentUser } from '../services/auth.js'
 import { formatCurrency, showToast } from '../components/ui.js'
-import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
-import { isStockTrackedProduct } from '../utils/stock-rules.js'
+import { escapeHtml } from '../utils/sanitize.js'
 import { getMechanics } from './job-state.js'
 import '../assets/css/kanban.css'
 
@@ -175,7 +173,7 @@ let isProcessingPayment = false;
 async function handlePaymentSubmit(container) {
     if (!currentPayJob) return
     if (currentPayJob.status === 'completed' || currentPayJob.payment_status === 'paid') {
-        showToast('ใบงานนี้ถูกชำระเงินและปิดไปแล้ว', 'warning')
+        showToast('This job is already paid and closed.', 'warning')
         return
     }
     if (isProcessingPayment) return
@@ -189,178 +187,71 @@ async function handlePaymentSubmit(container) {
     if (fileInput.files.length > 0) uploadLbl.style.display = 'block'
 
     try {
-        let slipUrl = null
+        let slipUrl = ''
         if (fileInput.files.length > 0) {
-            slipUrl = await uploadAttachment(fileInput.files[0])
+            slipUrl = await uploadAttachment(fileInput.files[0], 'payment_slips')
         }
 
-        // BUG 6 FIX: Serialize Split Payments
-        const payRows = container.querySelectorAll('.pay-row')
         const splits = []
         let paySum = 0
-        payRows.forEach(row => {
-            const m = row.querySelector('.pay-method-sel').value
-            const a = parseFloat(row.querySelector('.pay-amount-inp').value) || 0
-            if (a > 0) {
-                splits.push({ method: m, amount: a })
-                paySum += a
+        container.querySelectorAll('.pay-row').forEach(row => {
+            const method = row.querySelector('.pay-method-sel').value
+            const amount = parseFloat(row.querySelector('.pay-amount-inp').value) || 0
+            if (amount > 0) {
+                splits.push({ method, amount })
+                paySum += amount
             }
         })
-        
-        // If no split provided, default to the first method with full grand_total
-        if (splits.length === 0) {
-            // BUG 83 FIX: Validate that at least one payment row has a positive amount
-            const grandTotal = currentPayJob.grand_total || 0
-            if (grandTotal <= 0) {
-                showToast('ยอดชำระต้องมากกว่า 0', 'error')
-                submitBtn.disabled = false
-                isProcessingPayment = false
-                return
-            }
-            const fallbackMethod = container.querySelector('.pay-method-sel').value
-            splits.push({ method: fallbackMethod, amount: grandTotal })
-            paySum = grandTotal
-        }
 
         const requiredTotal = Number(currentPayJob.grand_total || 0)
+        if (splits.length === 0 && requiredTotal > 0) {
+            const fallbackMethod = container.querySelector('.pay-method-sel').value
+            splits.push({ method: fallbackMethod, amount: requiredTotal })
+            paySum = requiredTotal
+        }
+
         const paymentDiff = Math.round((paySum - requiredTotal) * 100) / 100
         if (requiredTotal <= 0) {
-            showToast('ยอดชำระต้องมากกว่า 0', 'error')
+            showToast('Payment total must be greater than 0.', 'error')
             return
         }
         if (paymentDiff < 0) {
-            showToast(`ยอดรับชำระยังขาด ${formatCurrency(Math.abs(paymentDiff))}`, 'error')
+            showToast(`Payment is short by ${formatCurrency(Math.abs(paymentDiff))}`, 'error')
             return
         }
         if (paymentDiff > 0) {
-            showToast(`ยอดรับชำระเกิน ${formatCurrency(paymentDiff)} กรุณาตรวจสอบ`, 'error')
+            showToast(`Payment exceeds total by ${formatCurrency(paymentDiff)}. Please verify.`, 'error')
             return
         }
 
-        const now = new Date()
-        const jobId = currentPayJob.id
-        const updateData = {
-            status: 'completed',
-            payment_status: 'paid',
-            payment_type: JSON.stringify(splits), // Store as JSON array
-            end_date: now.toISOString(),
-            work_ended_at: now.toISOString()
-        }
-        if (slipUrl) updateData.payment_slip = slipUrl
-
-        const jItems = await fetchFullList('job_items', { filter: `job_id='${sanitizeFilter(jobId)}'` })
-
-        // BUG 47 FIX: Only fetch needed products to prevent Frontend OOM on massive catalogs
-        const pIds = [...new Set(jItems.filter(ji => ji.type !== 'adhoc' && ji.product_id).map(ji => ji.product_id))]
-        let products = []
-        if (pIds.length > 0) {
-            // If more than 50 products, we should chunk, but a single job rarely has >50 items
-            const idFilter = pIds.map(id => `id='${sanitizeFilter(id)}'`).join('||')
-            products = await fetchFullList('products', { filter: `(${idFilter})`, requestKey: null })
+        const closeRes = await fetch(`/api/data/custom/close-job-payment/${encodeURIComponent(currentPayJob.id)}`, {
+            method: 'POST',
+            headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ splits, slip_url: slipUrl || '' })
+        })
+        const closePayload = await closeRes.json().catch(() => ({}))
+        if (!closeRes.ok) {
+            throw new Error(closePayload.error || `Close job payment failed (${closeRes.status})`)
         }
 
-        const pMap = {}
-        products.forEach(p => { pMap[p.id] = p })
-
-        let totalCost = 0
-        const itemsForLedger = []
-        for (const ji of jItems) {
-            // BUG 2 FIX: Calculate ad-hoc item costs properly instead of defaulting to 0
-            let cost = 0
-            if (ji.type === 'adhoc') {
-                // BUG 44 FIX: Prevent malicious ad-hoc cost inflation
-                cost = parseFloat(ji.cost) || 0
-                if (cost < 0) cost = 0
-                const itemPrice = parseFloat(ji.unit_price || ji.price || 0)
-                if (cost > itemPrice) cost = itemPrice // Cost cannot exceed selling price for ad-hoc to prevent negative profit fraud
-            } else {
-                const prod = pMap[ji.product_id]
-                cost = parseFloat(ji.cost) || (prod ? (parseFloat(prod.cost) || 0) : 0)
-            }
-
-            totalCost += cost * (ji.qty || 0)
-
-            // Only post non-adhoc items to stock ledger
-            const trackStock = ji.type !== 'adhoc' && ji.product_id && (!pMap[ji.product_id] || isStockTrackedProduct(pMap[ji.product_id]))
-            if (trackStock && ji.qty) {
-                itemsForLedger.push({ product_id: ji.product_id, qty: ji.qty, unit_price: ji.unit_price || 0 })
-            }
-        }
-
-        const grandTotal = currentPayJob.grand_total || 0
-        const profit = grandTotal - totalCost
-        const jobNo = currentPayJob.job_no || jobId
-
-        updateData.total_cost = Math.round(totalCost * 100) / 100
-        updateData.profit = Math.round(profit * 100) / 100
-
-        // BUG 7 & 8 FIX: Atomic Try-Catch for Job, Financial Ledger, and Stock Ledger
-        let createdLedgers = []
-        try {
-            // First update job
-            await updateRecord('jobs', jobId, updateData)
-
-            const grandTotal = currentPayJob.grand_total || 0
-            if (grandTotal > 0 && splits.length > 0) {
-                const nowStr = new Date().toISOString()
-                
-                // Create multiple ledgers for split payments
-                for (const split of splits) {
-                    const ledgerRecord = await createRecord('financial_ledger', {
-                        date: nowStr.slice(0, 10),
-                        amount: split.amount,
-                        category: 'รายรับจากใบงาน',
-                        notes: `ชำระเงินใบงาน ${currentPayJob.job_no || jobId} (${split.method})`,
-                        receipt_url: slipUrl || '',
-                        branch_id: currentPayJob.branch_id || '',
-                        payment_type: split.method, // Resolved Bug 8: Using split.method directly
-                        excluded: false,
-                        verified: false,
-                        entry_type: 'revenue',
-                        is_confidential: false,
-                        reference_doc: currentPayJob.job_no || jobId
-                    })
-                    createdLedgers.push(ledgerRecord)
-                }
-            }
-
-            await postToStockLedger('JOB', jobNo, itemsForLedger, currentPayJob.branch_id || getBranch() || null)
-        } catch (dbErr) {
-            console.error('[Kanban] Payment transaction failed:', dbErr.message)
-            // Rollback ledgers if job update succeeded but ledgers failed, or vice versa (best effort)
-            for (const l of createdLedgers) {
-                await deleteRecord('financial_ledger', l.id).catch(() => {})
-            }
-            // Try to revert job status if it was updated
-            await updateRecord('jobs', jobId, { status: currentPayJob.status, payment_status: currentPayJob.payment_status }).catch(() => {})
-            
-            showToast('เกิดข้อผิดพลาดในการบันทึกบัญชี: ' + dbErr.message, 'error')
-            submitBtn.innerHTML = 'ยืนยันรับเงินและปิดงาน'
-            submitBtn.disabled = false
-            return
-        }
-        
-        showToast('รับชำระเงินและปิดงานเรียบร้อย', 'success')
+        showToast('Payment received. IV/RC created and job closed.', 'success')
         container.querySelector('#paymentModalOverlay').classList.remove('show')
         fileInput.value = ''
-        
-        // Notify — capture job data BEFORE clearing currentPayJob
-        const updatedJob = { ...currentPayJob, ...updateData }
-        notifyPaymentCollected(updatedJob, updatedJob.branch_id).catch(() => {})
-        notifyJobCompleted(updatedJob, updatedJob.branch_id).catch(() => {})
-        currentPayJob = null
 
+        const closeUpdatedJob = { ...currentPayJob, ...(closePayload.job || {}) }
+        notifyPaymentCollected(closeUpdatedJob, closeUpdatedJob.branch_id).catch(() => {})
+        notifyJobCompleted(closeUpdatedJob, closeUpdatedJob.branch_id).catch(() => {})
+        currentPayJob = null
         loadKanbanData(container)
     } catch (e) {
         console.error('Payment submit failed:', e)
-        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error')
+        showToast(e.message || 'Failed to record payment.', 'error')
     } finally {
         isProcessingPayment = false
         submitBtn.disabled = false
         uploadLbl.style.display = 'none'
     }
 }
-
 // Map mechanic ID to name
 let mechanicCache = {}
 

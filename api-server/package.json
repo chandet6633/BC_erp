@@ -6,7 +6,17 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "check:dev-portal-auth": "node scripts/check-dev-portal-auth.mjs",
+    "check:metadata-foundation": "node scripts/check-metadata-foundation.mjs",
+    "check:admin-suite": "node scripts/check-admin-suite.mjs",
+    "check:mungkhud-stock-flow": "node scripts/check-mungkhud-stock-flow.mjs",
+    "check:mungkhud-job-lifecycle": "node scripts/check-mungkhud-job-lifecycle.mjs",
+    "check:mungkhud-document-chain": "node scripts/check-mungkhud-document-chain.mjs",
+    "check:mungkhud-traceability": "node scripts/check-mungkhud-traceability.mjs",
+    "check:mungkhud-integrity": "node scripts/check-mungkhud-integrity.mjs",
+    "migrate:branches:dry-run": "node scripts/migrate-branch-codes.mjs",
+    "migrate:branches:apply": "node scripts/migrate-branch-codes.mjs --apply"
   },
   "dependencies": {
     "express": "^4.21.0",

@@ -14,12 +14,12 @@ const NUMERIC_FIELDS = {
     jobs: ['subtotal', 'discount', 'vat_amount', 'grand_total', 'mileage_in', 'work_duration_minutes'],
 
     job_items: ['qty', 'price', 'discount', 'total'],
-    products: ['price', 'cost', 'min_stock', 'min_qty', 'max_qty'],
+    products: ['price', 'cost', 'min_stock', 'min_qty', 'max_qty', 'uom_conversion_factor', 'purchase_conversion_factor', 'conversion_factor'],
     documents: ['subtotal', 'discount', 'vat_amount', 'grand_total'],
-    document_items: ['qty', 'price', 'discount', 'total'],
+    document_items: ['qty', 'price', 'discount', 'total', 'dimension_qty'],
     financial_ledger: ['amount'],
     customers: ['credit_limit', 'credit_days'],
-    stock_ledgers: ['qty', 'unit_cost', 'total_value'],
+    stock_ledgers: ['qty', 'qty_base_delta', 'balance_after', 'unit_cost', 'total_value', 'value_delta'],
 }
 
 // Max string lengths to prevent abuse
@@ -37,10 +37,10 @@ const MAX_LENGTHS = {
 
 /**
  * Tables that can only be modified by admin/owner/manager roles.
- * NOTE: 'products' protects master catalog edits (price, cost, name).
- * SA/Mechanic can still READ products and record stock via stock_ledgers.
+ * During the current dev phase, product/service master data is intentionally open
+ * to all logged-in roles so every role can test metadata setup flows.
  */
-const PROTECTED_TABLES = ['users', 'system_settings', 'system_roles', 'products']
+const PROTECTED_TABLES = ['users', 'system_settings', 'system_roles']
 
 /**
  * Validate CREATE body for a given table.
@@ -138,6 +138,14 @@ export function validateCreate(table, body) {
         const pt = String(body.type).toLowerCase()
         if (!VALID_PRODUCT_TYPES.includes(pt)) {
             errors.push(`product type "${body.type}" is not valid. Must be one of: ${VALID_PRODUCT_TYPES.join(', ')}`)
+        }
+    }
+
+    const VALID_TRACKING_TYPES = ['NONE', 'SERIALIZED', 'BATCH', 'DIMENSION']
+    if ((tableLower === 'products' || tableLower === 'document_items' || tableLower === 'job_items') && body.tracking_type !== undefined) {
+        const tt = String(body.tracking_type || 'NONE').toUpperCase()
+        if (!VALID_TRACKING_TYPES.includes(tt)) {
+            errors.push(`tracking_type "${body.tracking_type}" is not valid. Must be one of: ${VALID_TRACKING_TYPES.join(', ')}`)
         }
     }
 

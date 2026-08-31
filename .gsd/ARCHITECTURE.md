@@ -10,7 +10,7 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
 ┌──────────────────────────────────────────────────────────────┐
 │                     BROWSER (Users)                          │
 ├──────────────┬───────────────────────────┬───────────────────┤
-│  Management  │  ← SSO Token (Base64) →  │   MungkhudShop    │
+│  Portal  │  ← SSO Token (Base64) →  │   MungkhudShop    │
 │  (port 9092) │                          │   (port 9091)     │
 │  Nginx SPA   │                          │   Nginx SPA       │
 ├──────────────┴───────────────────────────┴───────────────────┤
@@ -36,26 +36,26 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
   - `middleware/rate-limit.js` — Express rate limiter.
   - `middleware/validate.js` — Input sanitization and protected table checks.
 
-### 2. Management Frontend (`Management/`)
-- **Purpose:** Admin/Owner dashboard — HR, branch operations, financial reporting, user management, system settings, and the MungkhudShop iframe embed.
+### 2. Portal Frontend (`Portal/`)
+- **Purpose:** Admin/Owner dashboard — HR, branch operations, financial reporting, user Portal, system settings, and the MungkhudShop iframe embed.
 - **Build:** Vite 6 → `pb_public/` (served by Nginx)
 - **Key modules:**
   - `src/assets/js/app-shell.js` — Global AppShell class: sidebar, topbar, route guards, change-password modal, MungkhudShop SSO injection.
-  - `src/services/authService.js` — AuthService singleton: login, role checks, branch management, SSO token generation.
+  - `src/services/authService.js` — AuthService singleton: login, role checks, branch Portal, SSO token generation.
   - `src/services/pocketbase.js` — NocoDB wrapper providing PocketBase-compatible API (`pb.collection().getFullList()` etc.).
   - `src/services/uiService.js` — UI utilities (modals, toasts, tables).
   - `src/services/revenueService.js` — Revenue/financial calculations.
-  - `src/services/transaction.js` — Transaction management.
+  - `src/services/transaction.js` — Transaction Portal.
   - `src/services/entry.js` — Employee entry/clock-in service.
   - `src/pages/main/index.html` — Login page (PIN pad + username/password).
   - `src/pages/dashboard/` — Unified dashboard with Chart.js.
-  - `src/pages/admin/` — User management, role management, branches, settings, audit logs.
+  - `src/pages/admin/` — User Portal, role Portal, branches, settings, audit logs.
   - `src/pages/hr/` — HR dashboard, check-in, leave, payroll.
   - `src/pages/branch-operations/` — Branch audit, entry, verification.
   - `src/pages/operations/` — Operational tools.
 
 ### 3. MungkhudShop Frontend (`MungkhudShop/`)
-- **Purpose:** Shop-floor POS/operations app — job management, inventory, invoicing, quotations, kanban board, stock management, reporting.
+- **Purpose:** Shop-floor POS/operations app — job Portal, inventory, invoicing, quotations, kanban board, stock Portal, reporting.
 - **Build:** Vite 6 → `pb_public/` (served by Nginx)
 - **Key modules:**
   - `src/app.js` — SPA router, SSO handler, auto-login, notification panel, low-stock alerts, branch switcher.
@@ -71,13 +71,13 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
 - **Files:**
   - `nocodb-adapter.js` — Browser-side NocoDB client: JWT auth, CRUD (fetchList, fetchFullList, fetchOne, create, update, delete), login functions, password change.
   - `filter-translator.js` — Translates PocketBase-style filters (`field='value'`) to NocoDB where clauses (`(field,eq,value)`).
-  - `attachmentService.js` — File upload/attachment management.
+  - `attachmentService.js` — File upload/attachment Portal.
   - `importService.js` — Data import utilities.
   - `design-tokens.css` — Shared CSS design tokens (colors, spacing, typography).
 
 ### 5. Infrastructure (`scripts/`, root configs)
 - **Docker:** 4 compose files (prod, test-nocodb, test, pocketbase-legacy).
-- **Nginx:** 4 config files (prod/test × management/mungkhud) — reverse proxy `/api/` to Express, serve static `pb_public/`.
+- **Nginx:** 4 config files (prod/test × Portal/mungkhud) — reverse proxy `/api/` to Express, serve static `pb_public/`.
 - **Scripts:** 7 Node.js scripts for NocoDB table setup, data seeding, migration, and user patching.
 - **Batch files:** 6 Windows batch scripts for backup, deployment, status checking.
 
@@ -87,7 +87,7 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
 2. **User logs in** → Frontend calls `/api/auth/login` or `/api/auth/pin-login` → Express validates credentials against NocoDB `users` table → Returns JWT
 3. **Frontend stores JWT** in `localStorage` (`bcauto_jwt`) and sets it in `nocodb-adapter.js`
 4. **CRUD operations** → Frontend calls `/api/data/:table` with `Authorization: Bearer <jwt>` → Express validates JWT, enforces RBAC + branch scoping → Proxies to NocoDB with `xc-token` → Returns normalized data
-5. **Cross-app navigation** → Management generates Base64 SSO token (with embedded JWT) → Appends to MungkhudShop URL → MungkhudShop decodes, sets auth token, fetches role permissions
+5. **Cross-app navigation** → Portal generates Base64 SSO token (with embedded JWT) → Appends to MungkhudShop URL → MungkhudShop decodes, sets auth token, fetches role permissions
 6. **Writes** → Express serializes via write queue to prevent SQLITE_BUSY on SQLite backend
 
 ## Integration Points
@@ -116,8 +116,8 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
 
 ## Technical Debt
 
-- [ ] `managementPB` in `MungkhudShop/src/services/pb.js` is deprecated — still exists as a stub
-- [ ] `pocketbase.js` in Management still uses PocketBase-compatible wrapper — naming could be confusing
+- [ ] `portalPB` in `MungkhudShop/src/services/pb.js` is deprecated — still exists as a stub
+- [ ] `pocketbase.js` in Portal still uses PocketBase-compatible wrapper — naming could be confusing
 - [ ] Legacy `password-login` route in `auth.js` re-invokes router internally (fragile pattern)
 - [ ] No automated tests (test directory exists but appears empty/minimal)
 - [ ] Date filtering workaround in `lib/nocodb.js` (NocoDB v2 limitation) — fetches up to 1000 records for JS-side filtering
@@ -133,7 +133,7 @@ BC AutoXperience is a **multi-tenant auto-service ERP** built as a 4-container D
 - CSS: Shared design tokens in `shared/design-tokens.css`
 
 **Structure:**
-- Pages are self-contained HTML+JS modules (MPA for Management, SPA for MungkhudShop)
+- Pages are self-contained HTML+JS modules (MPA for Portal, SPA for MungkhudShop)
 - Services are ES module singletons
 - Shared code via Vite `@shared` alias pointing to `../shared/`
 

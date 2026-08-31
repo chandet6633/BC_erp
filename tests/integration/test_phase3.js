@@ -11,7 +11,7 @@ function createToken(payload) {
 async function testPhase3() {
     console.log('--- STARTING PHASE 3 EMPIRICAL VALIDATION ---');
 
-    const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' });
+    const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'bc-auto-service' });
     const saToken = createToken({ id: 'sa1', username: 'test_sa', name: 'Test SA', role: 'sa', branch: 'BranchA' });
 
     // ---------------------------------------------------------

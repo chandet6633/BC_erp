@@ -11,7 +11,7 @@ verdict: PASS
 
 ## Must-Haves
 
-### ✅ Must-Have 1: MungkhudShop SPA and Management App Builds Successfully
+### ✅ Must-Have 1: MungkhudShop SPA and Portal App Builds Successfully
 **Status:** PASS
 **Evidence:** 
 ```

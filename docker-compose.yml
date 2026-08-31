@@ -1,21 +1,21 @@
-﻿# โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•
-#  BC AUTO XPERIENCE โ€” Docker Compose (Production โ€” NocoDB + API Server)
-# โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•
+# ═══════════════════════════════════════════════════════════════
+#  BC AUTO XPERIENCE — Docker Compose (Production — NocoDB + API Server)
+# ═══════════════════════════════════════════════════════════════
 #  4-container stack:
-#    1. NocoDB (SQLite)        โ€” port 8080 (internal)
-#    2. API Server (Express)   โ€” port 3000 (internal proxy)
-#    3. MungkhudShop (Nginx)   โ€” port 8091 (public)
-#    4. Management (Nginx)     โ€” port 8092 (public)
+#    1. NocoDB (SQLite)        — port 8080 (internal)
+#    2. API Server (Express)   — port 3000 (internal proxy)
+#    3. MungkhudShop (Nginx)   — port 8091 (public)
+#    4. Portal (Nginx)     — port 8092 (public)
 #
 #  Usage:
 #    Start:  docker compose up -d --build
 #    Stop:   docker compose down
 #    Logs:   docker compose logs -f
-# โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•โ•
+# ═══════════════════════════════════════════════════════════════
 
 services:
 
-  # โ”€โ”€โ”€ NocoDB (API + Built-in SQLite) โ”€โ”€โ”€
+  # ─── NocoDB (API + Built-in SQLite) ───
   nocodb:
     image: nocodb/nocodb:latest
     container_name: bc-nocodb
@@ -36,7 +36,7 @@ services:
     networks:
       - bc-net
 
-  # โ”€โ”€โ”€ API Server (Express middleware) โ”€โ”€โ”€
+  # ─── API Server (Express middleware) ───
   api-server:
     build:
       context: ./api-server
@@ -62,7 +62,7 @@ services:
     networks:
       - bc-net
 
-  # โ”€โ”€โ”€ MungkhudShop Frontend โ”€โ”€โ”€
+  # ─── MungkhudShop Frontend ───
   mungkhudshop:
     image: nginx:alpine
     container_name: bc-mungkhud
@@ -78,14 +78,14 @@ services:
     networks:
       - bc-net
 
-  # โ”€โ”€โ”€ Management Frontend โ”€โ”€โ”€
-  management:
+  # ─── Portal Frontend ───
+  portal:
     image: nginx:alpine
-    container_name: bc-management
+    container_name: bc-portal
     restart: always
     volumes:
-      - ./Management/dist:/usr/share/nginx/html:ro
-      - ./nginx-management.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./Portal/dist:/usr/share/nginx/html:ro
+      - ./nginx-portal.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "8092:80"
     depends_on:

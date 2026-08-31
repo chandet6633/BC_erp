@@ -6,7 +6,7 @@
 #    1. NocoDB (SQLite)        โ€” port 9080  (UI + API)
 #    2. API Server (Express)   โ€” port 9093  (middleware)
 #    3. MungkhudShop (Nginx)   โ€” port 9091  (POS app)
-#    4. Management (Nginx)     โ€” port 9092  (back-office)
+#    4. Portal (Nginx)     โ€” port 9092  (back-office)
 #
 #  Usage:
 #    Start:  docker compose -f docker-compose.test.nocodb.yml up -d --build
@@ -83,14 +83,14 @@ services:
     networks:
       - bctest-net
 
-  # โ”€โ”€โ”€ Management Frontend โ”€โ”€โ”€
-  test-management:
+  # โ”€โ”€โ”€ Portal Frontend โ”€โ”€โ”€
+  test-portal:
     image: nginx:alpine
-    container_name: bctest-management
+    container_name: bctest-portal
     restart: unless-stopped
     volumes:
-      - ./Management/dist:/usr/share/nginx/html:ro
-      - ./nginx-test-management.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./Portal/dist:/usr/share/nginx/html:ro
+      - ./nginx-test-portal.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "9092:80"
     depends_on:

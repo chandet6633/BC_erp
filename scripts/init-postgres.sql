@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- SHARED TABLES (used by both apps)
 -- ═══════════════════════════════════════════
 
--- Unified identity for Management auth (PIN login, RBAC)
+-- Unified identity for Portal auth (PIN login, RBAC)
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name TEXT,
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS hr_attendance (
     updated TIMESTAMPTZ DEFAULT now()
 );
 
--- Leave management
+-- Leave portal
 CREATE TABLE IF NOT EXISTS hr_leaves (
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     employee_id TEXT,

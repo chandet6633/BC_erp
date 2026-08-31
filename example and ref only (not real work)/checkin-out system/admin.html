@@ -1,0 +1,3095 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bancha HR – ระบบจัดการผู้ดูแลระบบ</title>
+  
+  <!-- Inter & Outfit Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --primary-light: rgba(37, 99, 235, 0.1);
+      --bg: #0F172A;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --success: #10B981;
+      --success-light: rgba(16, 185, 129, 0.1);
+      --error: #EF4444;
+      --error-light: rgba(239, 68, 68, 0.1);
+      --warning: #F59E0B;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Auth Screen */
+    #authScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      padding: 2rem;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: zoomIn 0.4s ease-out;
+    }
+
+    .auth-logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .pin-input-group {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .pin-box {
+      width: 50px;
+      height: 55px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .pin-box:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 0.875rem;
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Custom Premium On-screen Numpad Styling */
+    .custom-numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      max-width: 260px;
+      margin: 1.5rem auto 0 auto;
+    }
+    .numpad-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      margin: 0 auto;
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      user-select: none;
+    }
+    .numpad-btn:active, .numpad-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+    .numpad-btn.text {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+    }
+    .numpad-btn.text:active, .numpad-btn.text:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Main App Panel */
+    #adminPanel {
+      display: none;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    /* Navigation Bar */
+    .navbar {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-logo {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      padding: 0.25rem 0.6rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      color: #fff;
+      background: var(--primary-light);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--error);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .logout-btn:hover {
+      background: var(--error);
+      color: white;
+    }
+
+    /* Main Container */
+    .main-content {
+      flex-grow: 1;
+      padding: 2.5rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Header block */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .stat-icon.blue { background: var(--primary-light); color: var(--primary); }
+    .stat-icon.green { background: var(--success-light); color: var(--success); }
+    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .stat-icon.purple { background: rgba(139, 92, 246, 0.1); color: #8B5CF6; }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Forms */
+    .form-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .form-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-input, .form-select {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .form-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .form-btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    /* Tables & Grids */
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .panel-header {
+      padding: 1.25rem 2rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.85rem;
+      width: 250px;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      width: 300px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge.in { background: var(--success-light); color: var(--success); }
+    .badge.out { background: var(--error-light); color: var(--error); }
+    .badge.admin { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
+    .badge.employee { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+
+    .delete-action-btn {
+      background: var(--error-light);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--error);
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .delete-action-btn:hover {
+      background: var(--error);
+      color: white;
+    }
+
+    .edit-action-btn {
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid rgba(37, 99, 235, 0.3);
+      color: #93C5FD;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .edit-action-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-panel {
+      width: min(560px, 100%);
+      background: #111827;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .modal-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .secondary-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Logs view options */
+    .log-filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .log-filter-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .log-filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Toast system */
+    .toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      min-width: 280px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--error); }
+    .toast.info { border-left: 4px solid var(--primary); }
+
+    /* Custom Switch Container */
+    .custom-dept-wrapper {
+      display: none;
+      margin-top: 10px;
+      animation: slideDown 0.2s ease;
+    }
+    
+    .custom-dept-wrapper.show {
+      display: block;
+    }
+
+    /* Animations */
+    @keyframes zoomIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(50px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dashboard Split Layout */
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    @media (min-width: 992px) {
+      .dashboard-layout {
+        grid-template-columns: 4.5fr 5.5fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      margin: 1.5rem auto 0 auto;
+    }
+
+    /* Accordion Details Lists */
+    .details-accordion {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .accordion-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      transition: var(--transition);
+    }
+
+    .accordion-header {
+      padding: 1.25rem 1.5rem;
+      background: rgba(255, 255, 255, 0.01);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .accordion-header .arrow {
+      transition: transform 0.3s ease;
+      font-size: 0.8rem;
+    }
+
+    .accordion-item.open .accordion-header .arrow {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    .accordion-item.open .accordion-content {
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    .accordion-list {
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .accordion-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0.8rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+    }
+
+    .accordion-list-item .name {
+      font-weight: 600;
+    }
+
+    .accordion-list-item .dept {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* Payroll Split Layout */
+    .payroll-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+      align-items: start;
+    }
+
+    @media (min-width: 1200px) {
+      .payroll-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .payroll-layout > * {
+      min-width: 0;
+    }
+
+    .payroll-summary-card {
+      min-width: 0;
+    }
+
+    .payroll-summary-table {
+      min-width: 900px;
+      table-layout: auto;
+    }
+
+    .payroll-summary-table th,
+    .payroll-summary-table td {
+      white-space: nowrap;
+      vertical-align: middle;
+      padding: 10px 12px;
+    }
+
+    .payroll-summary-table th:first-child,
+    .payroll-summary-table td:first-child {
+      width: 180px;
+    }
+
+    .payroll-table-row {
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .payroll-table-row:hover td {
+      background: rgba(37, 99, 235, 0.08) !important;
+    }
+
+    .payroll-table-row.selected td {
+      background: rgba(37, 99, 235, 0.15) !important;
+      border-bottom-color: var(--primary) !important;
+    }
+
+    /* Calendar Grid */
+    .calendar-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .calendar-header {
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .calendar-employee-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .calendar-employee-dept {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+
+    .calendar-day-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .calendar-cell {
+      aspect-ratio: auto;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.4rem;
+      position: relative;
+      font-size: 0.8rem;
+      font-weight: 600;
+      min-width: 0;
+      height: clamp(72px, 7vw, 86px);
+      min-height: 72px;
+      transition: var(--transition);
+    }
+
+    .calendar-cell .day-num {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+
+    .calendar-cell .status-indicator {
+      font-size: 0.6rem;
+      text-align: center;
+      line-height: 1.1;
+      font-weight: 700;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      margin-top: auto;
+    }
+
+    /* Color States for Calendar */
+    .calendar-cell.worked {
+      background: rgba(37, 99, 235, 0.15);
+      border-color: rgba(37, 99, 235, 0.3);
+    }
+    .calendar-cell.worked .day-num { color: #60A5FA; }
+    .calendar-cell.worked .status-indicator { color: #60A5FA; }
+
+    .calendar-cell.half {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .calendar-cell.half .day-num { color: #FBBF24; }
+    .calendar-cell.half .status-indicator { color: #FBBF24; }
+
+    .calendar-cell.leave {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .calendar-cell.leave .day-num { color: #34D399; }
+    .calendar-cell.leave .status-indicator { color: #34D399; }
+
+    .calendar-cell.absent {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+    .calendar-cell.absent .day-num { color: #F87171; }
+    .calendar-cell.absent .status-indicator { color: #F87171; }
+
+    .calendar-cell.sunday {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: rgba(148, 163, 184, 0.25);
+    }
+    .calendar-cell.sunday .day-num { color: #94A3B8; }
+    .calendar-cell.sunday .status-indicator { color: #94A3B8; }
+
+    .calendar-cell.empty {
+      background: transparent;
+      border: none;
+      visibility: hidden;
+    }
+
+    .calendar-legend {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Mobile Responsive Style Adjustments */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem 1rem;
+        gap: 0.75rem;
+      }
+      .nav-links {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .nav-links::-webkit-scrollbar {
+        display: none;
+      }
+      .nav-tab-btn {
+        flex: 0 0 auto;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+      }
+      .main-content {
+        padding: 1rem;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+      .stat-card {
+        padding: 1rem;
+        gap: 0.75rem;
+      }
+      .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+      }
+      .stat-number {
+        font-size: 1.25rem;
+      }
+    }
+
+    /* Print / PDF Export Layout styling */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      #adminPanel {
+        display: block !important;
+      }
+      .navbar, .form-panel, .log-filter-bar, .search-input, .logout-btn, .nav-links, .page-header p, .legend-item, .calendar-legend, #toastContainer, .toast-container, .toast, .panel-card button, .form-btn, button, input, select {
+        display: none !important;
+      }
+      .calendar-container {
+        display: none !important; /* Hide calendar when printing the payroll list */
+      }
+      .main-content {
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .tab-content {
+        display: none !important;
+      }
+      #payrollTab.tab-content {
+        display: block !important;
+        width: 100% !important;
+      }
+      .payroll-layout {
+        display: block !important;
+        width: 100% !important;
+      }
+      .payroll-summary-card {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .panel-card {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        width: 100% !important;
+      }
+      .table-responsive {
+        overflow: visible !important;
+        width: 100% !important;
+      }
+      table.payroll-summary-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #000 !important;
+        border: 2px solid #000 !important;
+      }
+      th {
+        background: #f1f5f9 !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+        font-size: 11pt !important;
+        padding: 12px 8px !important;
+        font-weight: bold !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+      }
+      td {
+        color: #000 !important;
+        border: 1px solid #000 !important;
+        font-size: 11pt !important;
+        padding: 14px 10px !important;
+        white-space: nowrap !important;
+        text-align: left !important;
+      }
+      td:not(:first-child) {
+        text-align: center !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.write(`
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:-apple-system,sans-serif;color:#fff;text-align:center;">
+          <div style="max-width:400px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.1);padding:2.5rem;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;color:#EF4444;">กรุณาใช้งานผ่าน Local Server</h2>
+            <p style="font-size:0.95rem;color:#94A3B8;line-height:1.6;margin-bottom:1.5rem;">
+              ตรวจพบว่าคุณเปิดไฟล์ HTML นี้โดยตรง (file:///) ทำให้เบราว์เซอร์บล็อกการเรียกใช้งานข้อมูลจาก API
+            </p>
+            <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);padding:1rem;border-radius:8px;margin-bottom:1.5rem;">
+              <a href="http://localhost:3005" style="color:#60A5FA;text-decoration:none;font-weight:700;font-size:1.1rem;word-break:break-all;">http://localhost:3005</a>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  </script>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Gateway Login Screen -->
+  <div id="authScreen">
+    <div class="auth-card">
+      <div class="auth-logo">BANCHA HR</div>
+      <div class="auth-subtitle">ระบบผู้ดูแลระบบ (Admin Gateway)</div>
+      
+      <div class="pin-input-group">
+        <input type="password" maxlength="1" class="pin-box" id="pin1" inputmode="none" onkeyup="moveFocus(this, 'pin2')">
+        <input type="password" maxlength="1" class="pin-box" id="pin2" inputmode="none" onkeyup="moveFocus(this, 'pin3')">
+        <input type="password" maxlength="1" class="pin-box" id="pin3" inputmode="none" onkeyup="moveFocus(this, 'pin4')">
+        <input type="password" maxlength="1" class="pin-box" id="pin4" inputmode="none" onkeyup="moveFocus(this, 'pin5')">
+        <input type="password" maxlength="1" class="pin-box" id="pin5" inputmode="none" onkeyup="moveFocus(this, 'pin6')">
+        <input type="password" maxlength="1" class="pin-box" id="pin6" inputmode="none" onkeyup="submitPin(event)">
+      </div>
+
+      <!-- Custom Premium On-screen Numpad -->
+      <div class="custom-numpad">
+        <button type="button" class="numpad-btn" onclick="pressNum(1)">1</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(2)">2</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(3)">3</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(4)">4</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(5)">5</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(6)">6</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(7)">7</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(8)">8</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(9)">9</button>
+        <button type="button" class="numpad-btn text" onclick="pressClear()">C</button>
+        <button type="button" class="numpad-btn" onclick="pressNum(0)">0</button>
+        <button type="button" class="numpad-btn text" onclick="pressBackspace()">⌫</button>
+      </div>
+
+      <!-- Remember Admin Login -->
+      <div class="remember-group" style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+        <input type="checkbox" id="rememberAdmin" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="rememberAdmin" style="color: var(--text-secondary); font-size: 0.9rem; cursor: pointer; user-select: none;">จดจำการเข้าสู่ระบบ (Remember Me)</label>
+      </div>
+      
+      <button class="auth-btn" style="margin-top: 1.5rem;" onclick="validateAdminPin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+
+  <!-- Admin Application Panel -->
+  <div id="adminPanel">
+    <nav class="navbar">
+      <div class="nav-brand">
+        <div class="nav-logo">BANCHA HR ADMIN</div>
+        <span class="nav-badge">ควบคุมระบบ</span>
+      </div>
+      
+      <div class="nav-links">
+        <button class="nav-tab-btn active" onclick="switchTab('dashboardTab', this)">📊 แดชบอร์ด</button>
+        <button class="nav-tab-btn" onclick="switchTab('employeesTab', this)">👤 พนักงาน</button>
+        <button class="nav-tab-btn" onclick="switchTab('payrollTab', this)">💰 คำนวณเงินเดือน</button>
+        <button class="nav-tab-btn" onclick="switchTab('storesTab', this)">📍 พิกัดร้าน</button>
+        <button class="nav-tab-btn" onclick="switchTab('logsTab', this)">📜 รายงาน / ล็อก</button>
+      </div>
+
+      <button class="logout-btn" onclick="logoutAdmin()">ออกจากระบบ</button>
+    </nav>
+
+    <div class="main-content">
+      
+      <!-- ==================== TAB: DASHBOARD ==================== -->
+      <div id="dashboardTab" class="tab-content active">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 class="page-title">ยินดีต้อนรับ ผู้ดูแลระบบ</h2>
+            <p class="page-subtitle">ภาพรวมการทำงานในระบบทั้งหมดที่เชื่อมต่อกับ NocoDB</p>
+          </div>
+          <div class="form-group" style="min-width: 200px;">
+            <label for="dashboardDeptSelect" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">กรองตามแผนก:</label>
+            <select id="dashboardDeptSelect" class="form-select" onchange="loadDashboardStats()" style="width: 100%; padding: 0.5rem 1rem; font-size: 0.9rem; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff;">
+              <option value="all">แผนกทั้งหมด</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statEmployees">0</span>
+              <span class="stat-label">พนักงานทั้งหมด</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statTodayCheckins">0</span>
+              <span class="stat-label">เช็คอินแล้ววันนี้</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">📈</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statCheckInRate">0%</span>
+              <span class="stat-label">อัตราการเช็คอิน</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">⏳</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statRemaining">0</span>
+              <span class="stat-label">ยังไม่ได้เช็คอิน</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red" style="background: var(--error-light); color: var(--error);">❌</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statAbsentToday">0</span>
+              <span class="stat-label">ขาดงานวันนี้</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">📝</div>
+            <div class="stat-info">
+              <span class="stat-value" id="statOnLeaveToday">0</span>
+              <span class="stat-label">ลาหยุดวันนี้</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-layout">
+          <!-- Column 1: Attendance Breakdown Chart -->
+          <div class="chart-card">
+            <h3 class="form-title" style="margin-bottom: 0;">📊 แผนภูมิวิเคราะห์เช็คอินวันนี้</h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">อัตราส่วนประเภทการเช็คอินและการขาดงาน</p>
+            <div class="chart-container">
+              <canvas id="attendancePieChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Column 2: Detail Accordions -->
+          <div class="details-accordion">
+            <!-- Accordion: Checked In -->
+            <div class="accordion-item" id="accCheckedInItem">
+              <div class="accordion-header" onclick="toggleAccordion('accCheckedInItem')">
+                <span>🟢 พนักงานที่เช็คอินแล้ว (<span id="accCheckedInCount">0</span>)</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="accordion-content">
+                <div class="accordion-list" id="accCheckedInList">
+                  <div style="text-align: center; color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion: Not Checked In -->
+            <div class="accordion-item" id="accNotCheckedInItem">
+              <div class="accordion-header" onclick="toggleAccordion('accNotCheckedInItem')">
+                <span>🟡 พนักงานยังไม่เข้างาน (<span id="accNotCheckedInCount">0</span>)</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="accordion-content">
+                <div class="accordion-list" id="accNotCheckedInList">
+                  <div style="text-align: center; color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion: Absent -->
+            <div class="accordion-item" id="accAbsentItem">
+              <div class="accordion-header" onclick="toggleAccordion('accAbsentItem')">
+                <span>🔴 พนักงานที่ขาดงานวันนี้ (<span id="accAbsentCount">0</span>)</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="accordion-content">
+                <div class="accordion-list" id="accAbsentList">
+                  <div style="text-align: center; color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion: On Leave -->
+            <div class="accordion-item" id="accLeaveItem">
+              <div class="accordion-header" onclick="toggleAccordion('accLeaveItem')">
+                <span>🔵 พนักงานที่ลางานวันนี้ (<span id="accLeaveCount">0</span>)</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="accordion-content">
+                <div class="accordion-list" id="accLeaveList">
+                  <div style="text-align: center; color: var(--text-secondary);">ไม่มีข้อมูล</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-panel" style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);">
+          <h3 class="form-title">⚡ ทางลัดด่วน (Quick Links)</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            คุณสามารถเปิดลิงก์เหล่านี้ในแท็บใหม่เพื่อดำเนินการหรือทดสอบระบบได้ทันที
+          </p>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="index.html" target="_blank" class="form-btn" style="text-decoration: none; background: #475569;">📊 ดูบอร์ดผลงานหลัก</a>
+            <a href="attendance.html" target="_blank" class="form-btn" style="text-decoration: none;">🕒 เปิดหน้าลงเวลาเข้า-ออก</a>
+            <a href="leave.html" target="_blank" class="form-btn" style="text-decoration: none; background: #10B981;">📝 เปิดหน้าแจ้งลางาน</a>
+            <a href="history.html" target="_blank" class="form-btn" style="text-decoration: none; background: #D97706;">📜 เปิดหน้าตรวจประวัติส่วนตัว</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: PAYROLL ==================== -->
+      <div id="payrollTab" class="tab-content">
+        <div class="page-header">
+          <h2 class="page-title">ระบบสรุปเวลางานและคำนวณเงินเดือน</h2>
+          <p class="page-subtitle">จัดการรายงานเวลาทำงานรายเดือน สรุปขาด ลา มาสาย และประวัติเข้างานแบบปฏิทิน</p>
+        </div>
+
+        <!-- Filters Form -->
+        <div class="form-panel">
+          <h3 class="form-title">🔍 ตัวกรองข้อมูลเงินเดือน</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="payrollFilterDept">เลือกแผนก</label>
+              <select id="payrollFilterDept" class="form-select">
+                <option value="">ทุกแผนก...</option>
+                <option value="บัญชาประดับยนต์ สามชุก">บัญชาประดับยนต์ สามชุก</option>
+                <option value="วิริยะเซอร์วิส">วิริยะเซอร์วิส</option>
+                <option value="ศูนย์รวมประกันภัย">ศูนย์รวมประกันภัย</option>
+                <option value="บัญชาประดับยนต์ เมือง">บัญชาประดับยนต์ เมือง</option>
+                <option value="ตรอ วิริยะเซอร์วิส">ตรอ วิริยะเซอร์วิส</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="payrollMonth">ประจำเดือน</label>
+              <input type="month" id="payrollMonth" class="form-input">
+            </div>
+            
+            <button class="form-btn" onclick="fetchPayrollReport()">⚡ โหลดข้อมูลรายงาน</button>
+          </div>
+        </div>
+
+        <!-- Payroll Layout -->
+        <div class="payroll-layout">
+          <!-- Column 1: Monthly Summary Table -->
+          <div class="panel-card payroll-summary-card">
+            <div class="panel-header">
+              <h3 style="font-size: 1rem; font-weight:600;">สรุปสถิติประจำเดือน (<span id="payrollHeaderMonth">-</span>)</h3>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="payroll-summary-table">
+                <thead>
+                  <tr>
+                    <th>ชื่อพนักงาน</th>
+                    <th style="text-align: center;">วันเต็ม</th>
+                    <th style="text-align: center;">ครึ่งวัน</th>
+                    <th style="text-align: center; background: rgba(255,255,255,0.03);">รวมวันทำ</th>
+                    <th style="text-align: center;">เบี้ยขยันเช้า</th>
+                    <th style="text-align: center;">OT (หลัง 18:00)</th>
+                    <th style="text-align: center;">ลาหยุด</th>
+                    <th style="text-align: center;">ขาดงาน</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollTableBody">
+                  <tr><td colspan="8" style="text-align: center;">กรุณาคลิก "โหลดข้อมูลรายงาน" เพื่อเริ่มการตรวจสอบ</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="padding: 1.5rem 2rem; display: flex; gap: 1rem; justify-content: flex-end; border-top: 1px solid var(--border); background: rgba(0,0,0,0.1);">
+              <button class="form-btn" style="background: #475569;" onclick="exportPayrollCSV()">📥 ส่งออกไฟล์ CSV</button>
+              <button class="form-btn" style="background: #0284C7;" onclick="printPayrollPDF()">🖨️ พิมพ์รายงาน (PDF)</button>
+            </div>
+          </div>
+
+          <!-- Column 2: Interactive Calendar Grid -->
+          <div class="calendar-container">
+            <div class="calendar-header">
+              <div class="calendar-employee-name" id="calEmpName">กรุณาเลือกพนักงาน</div>
+              <div class="calendar-employee-dept" id="calEmpDept">เพื่อตรวจสอบปฏิทินเข้างานรายบุคคล</div>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid">
+              <!-- Grid Header: Days of the week -->
+              <div class="calendar-day-label">อา</div>
+              <div class="calendar-day-label">จ</div>
+              <div class="calendar-day-label">อ</div>
+              <div class="calendar-day-label">พ</div>
+              <div class="calendar-day-label">พฤ</div>
+              <div class="calendar-day-label">ศ</div>
+              <div class="calendar-day-label">ส</div>
+              
+              <!-- Days Cells will be populated dynamically -->
+            </div>
+
+            <div class="calendar-legend">
+              <div class="legend-item">
+                <div class="legend-color worked" style="background: rgba(37, 99, 235, 0.25); border: 1px solid var(--primary);"></div>
+                <span>มาทำงาน (เต็ม)</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color half" style="background: rgba(245, 158, 11, 0.25); border: 1px solid var(--warning);"></div>
+                <span>ครึ่งวัน (ขาดลงออก)</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color leave" style="background: rgba(16, 185, 129, 0.25); border: 1px solid var(--success);"></div>
+                <span>วันลางาน</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color absent" style="background: rgba(239, 68, 68, 0.25); border: 1px solid var(--error);"></div>
+                <span>ขาดงาน</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: EMPLOYEES ==================== -->
+      <div id="employeesTab" class="tab-content">
+        <div class="page-header">
+          <h2 class="page-title">จัดการรายชื่อพนักงาน</h2>
+          <p class="page-subtitle">เพิ่ม ลบ รายชื่อและแผนกพนักงานในฐานข้อมูล NocoDB</p>
+        </div>
+
+        <!-- Add Employee Form -->
+        <div class="form-panel">
+          <h3 class="form-title">➕ เพิ่มพนักงานใหม่</h3>
+          <form id="addEmployeeForm" onsubmit="submitAddEmployee(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="newEmpName">ชื่อ-นามสกุล (และชื่อเล่น)</label>
+                <input type="text" id="newEmpName" class="form-input" placeholder="ตัวอย่าง: เอกพงษ์ มีอนันต์ (นุ่ม)" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="newEmpDept">แผนก</label>
+                <select id="newEmpDept" class="form-select" onchange="toggleCustomDept(this.value)" required>
+                  <option value="">เลือกแผนกหลัก...</option>
+                  <option value="บัญชาประดับยนต์ สามชุก">บัญชาประดับยนต์ สามชุก</option>
+                  <option value="วิริยะเซอร์วิส">วิริยะเซอร์วิส</option>
+                  <option value="ศูนย์รวมประกันภัย">ศูนย์รวมประกันภัย</option>
+                  <option value="บัญชาประดับยนต์ เมือง">บัญชาประดับยนต์ เมือง</option>
+                  <option value="ตรอ วิริยะเซอร์วิส">ตรอ วิริยะเซอร์วิส</option>
+                  <option value="CUSTOM_DEPT">+ สร้างแผนกใหม่...</option>
+                </select>
+                
+                <div class="custom-dept-wrapper" id="customDeptWrapper">
+                  <input type="text" id="newEmpDeptCustom" class="form-input" placeholder="พิมพ์ชื่อแผนกใหม่">
+                </div>
+              </div>
+              
+              <button type="submit" class="form-btn">บันทึกข้อมูลพนักงาน</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Employees List Table -->
+        <div class="panel-card">
+          <div class="panel-header" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <h3 style="font-size: 1rem; font-weight:600; margin-right: auto;">รายชื่อทั้งหมด</h3>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <select id="empFilterDept" class="form-select" onchange="filterEmployees()" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); width: 200px; color: #fff; border-radius: var(--radius-sm);">
+                <option value="all">แผนกทั้งหมด</option>
+              </select>
+              <input type="text" id="searchEmp" class="search-input" placeholder="ค้นหาชื่อพนักงาน..." onkeyup="filterEmployees()" style="margin: 0;">
+            </div>
+          </div>
+          
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 10%;">ID</th>
+                  <th style="width: 45%;">ชื่อ-นามสกุล</th>
+                  <th style="width: 30%;">แผนก</th>
+                  <th style="width: 15%; text-align: center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="employeesTableBody">
+                <tr><td colspan="4" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Department Telegram Routing -->
+        <div class="form-panel">
+          <h3 class="form-title">Telegram routing by department</h3>
+          <form id="telegramConfigForm" onsubmit="submitTelegramConfig(event)">
+            <input type="hidden" id="telegramConfigId">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="telegramConfigDept">Department</label>
+                <input type="text" id="telegramConfigDept" class="form-input" list="telegramDepartmentOptions" placeholder="Select or type department" onchange="prefillTelegramConfigFromDepartment()" oninput="prefillTelegramConfigFromDepartment()" required>
+                <datalist id="telegramDepartmentOptions"></datalist>
+              </div>
+              <div class="form-group">
+                <label for="telegramConfigChatId">Telegram chat ID</label>
+                <input type="text" id="telegramConfigChatId" class="form-input" placeholder="-100xxxxxxxxxx" required>
+              </div>
+              <div class="form-group">
+                <label for="telegramConfigThreadId">Check-in/out topic ID</label>
+                <input type="number" id="telegramConfigThreadId" class="form-input" placeholder="Optional">
+              </div>
+              <div class="form-group">
+                <label for="telegramConfigLeaveThreadId">Leave topic ID</label>
+                <input type="number" id="telegramConfigLeaveThreadId" class="form-input" placeholder="Optional">
+              </div>
+              <button type="submit" class="form-btn" id="telegramConfigSubmitBtn">Save routing</button>
+              <button type="button" class="secondary-btn" onclick="resetTelegramConfigForm()">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 style="font-size: 1rem; font-weight:600;">Active Telegram routing</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Department</th>
+                  <th style="width: 24%;">Chat ID</th>
+                  <th style="width: 16%;">Check-in/out topic</th>
+                  <th style="width: 16%;">Leave topic</th>
+                  <th style="width: 16%; text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="telegramConfigsTableBody">
+                <tr><td colspan="5" style="text-align: center;">Loading routing...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: STORES ==================== -->
+      <div id="storesTab" class="tab-content">
+        <div class="page-header">
+          <h2 class="page-title">กำหนดพิกัดและขอบเขตพื้นที่ร้าน (Geofencing)</h2>
+          <p class="page-subtitle">เพิ่มหรือลบพิกัดเพื่อตรวจหาการลงเวลาพนักงาน</p>
+        </div>
+
+        <!-- Add Store Form -->
+        <div class="form-panel">
+          <h3 class="form-title">📍 เพิ่มพิกัดร้านค้าใหม่</h3>
+          <form id="addStoreForm" onsubmit="submitAddStore(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="newStoreName">ชื่อร้าน/สาขา</label>
+                <input type="text" id="newStoreName" class="form-input" placeholder="ตัวอย่าง: วิริยะเซอร์วิส สาขาหลัก" required>
+              </div>
+              <div class="form-group">
+                <label for="newStoreLat">Latitude (ละติจูด)</label>
+                <input type="number" step="any" id="newStoreLat" class="form-input" placeholder="เช่น: 14.75704" required>
+              </div>
+              <div class="form-group">
+                <label for="newStoreLon">Longitude (ลองจิจูด)</label>
+                <input type="number" step="any" id="newStoreLon" class="form-input" placeholder="เช่น: 100.11728" required>
+              </div>
+              <div class="form-group">
+                <label for="newStoreRad">รัศมีตรวจจับ (เมตร)</label>
+                <input type="number" id="newStoreRad" class="form-input" value="200" placeholder="เช่น: 200" required>
+              </div>
+              
+              <button type="submit" class="form-btn">บันทึกพิกัด</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Stores List Table -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3 style="font-size: 1rem; font-weight:600;">รายชื่อร้านค้า</h3>
+          </div>
+          
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 10%;">ID</th>
+                  <th style="width: 35%;">ชื่อร้าน / สาขา</th>
+                  <th style="width: 20%;">Latitude</th>
+                  <th style="width: 20%;">Longitude</th>
+                  <th style="width: 15%;">รัศมี (เมตร)</th>
+                  <th style="width: 10%; text-align: center;">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="storesTableBody">
+                <tr><td colspan="6" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB: LOGS ==================== -->
+      <div id="logsTab" class="tab-content">
+        <div class="page-header">
+          <h2 class="page-title">ล็อกกิจกรรมและรายงานประวัติ</h2>
+          <p class="page-subtitle">แสดงรายการเช็คอิน ลางาน และระบบบันทึกความผิดพลาด (Audit Logs)</p>
+        </div>
+
+        <div class="log-filter-bar">
+          <button class="log-filter-btn active" id="btnFilterCheck" onclick="switchLogView('check')">⏰ ประวัติลงเวลาเข้า-ออก</button>
+          <button class="log-filter-btn" id="btnFilterLeave" onclick="switchLogView('leave')">📝 คำขอลางานทั้งหมด</button>
+          <button class="log-filter-btn" id="btnFilterSystem" onclick="switchLogView('system')">⚙️ ล็อกระบบ (System Logs)</button>
+        </div>
+
+        <!-- Logs Panels -->
+        <div class="panel-card" id="checkLogsPanel">
+          <div class="panel-header">
+            <h3 style="font-size: 1rem; font-weight:600;">ประวัติการเข้างาน (150 ล่าสุด)</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>เวลา</th>
+                  <th>ชื่อพนักงาน</th>
+                  <th>แผนก</th>
+                  <th>ประเภท</th>
+                  <th>จุดลงเวลา</th>
+                  <th>บันทึกโดย</th>
+                </tr>
+              </thead>
+              <tbody id="checkLogsTableBody">
+                <tr><td colspan="6" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel-card" id="leaveLogsPanel" style="display:none;">
+          <div class="panel-header">
+            <h3 style="font-size: 1rem; font-weight:600;">ล็อกการลาพนักงาน (150 ล่าสุด)</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>วันส่ง</th>
+                  <th>ชื่อพนักงาน</th>
+                  <th>แผนก</th>
+                  <th>วันเริ่ม - สิ้นสุด</th>
+                  <th>จำนวนวัน</th>
+                  <th>ประเภทการลา</th>
+                  <th>เหตุผลเพิ่มเติม</th>
+                </tr>
+              </thead>
+              <tbody id="leaveLogsTableBody">
+                <tr><td colspan="7" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel-card" id="systemLogsPanel" style="display:none;">
+          <div class="panel-header">
+            <h3 style="font-size: 1rem; font-weight:600;">ระบบการบันทึกข้อผิดพลาด (150 ล่าสุด)</h3>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>เวลา</th>
+                  <th>แผนก</th>
+                  <th>Chat ID</th>
+                  <th>สถานะ/หัวข้อ</th>
+                  <th>รายละเอียดข้อมูล</th>
+                </tr>
+              </thead>
+              <tbody id="systemLogsTableBody">
+                <tr><td colspan="5" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="editCheckLogModal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>Edit check-in/out record</h3>
+        <button class="modal-close" type="button" onclick="closeEditCheckLogModal()">×</button>
+      </div>
+      <form class="modal-body" id="editCheckLogForm" onsubmit="submitEditCheckLog(event)">
+        <input type="hidden" id="editCheckLogId">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editCheckLogDate">Date</label>
+            <input class="form-input" type="date" id="editCheckLogDate" required>
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogTime">Time</label>
+            <input class="form-input" type="time" id="editCheckLogTime" step="1" required>
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogName">Employee name</label>
+            <input class="form-input" type="text" id="editCheckLogName" required>
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogDept">Department</label>
+            <input class="form-input" type="text" id="editCheckLogDept" required>
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogType">Type</label>
+            <select class="form-select" id="editCheckLogType" required>
+              <option value="IN">Check in</option>
+              <option value="OUT">Check out</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogStore">Store / location</label>
+            <input class="form-input" type="text" id="editCheckLogStore">
+          </div>
+          <div class="form-group">
+            <label for="editCheckLogLoggedBy">Logged by</label>
+            <select class="form-select" id="editCheckLogLoggedBy">
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" type="button" onclick="closeEditCheckLogModal()">Cancel</button>
+          <button class="form-btn" type="submit">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Configurations
+    // ═══════════════════════════════════════════════════════════════════════════
+    const API = '/api';
+    const ADMIN_PIN = '280612';
+    
+    // Globals
+    let allEmployees = [];
+    let allStores = [];
+    let allCheckLogs = [];
+    let telegramConfigs = [];
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Gateway Lock Authentication
+    // ═══════════════════════════════════════════════════════════════════════════
+    function moveFocus(current, nextId) {
+      if (current.value.length >= 1) {
+        document.getElementById(nextId).focus();
+      }
+    }
+    
+    function submitPin(e) {
+      if (e.key === 'Enter' || document.getElementById('pin6').value.length >= 1) {
+        validateAdminPin();
+      }
+    }
+
+    function validateAdminPin() {
+      const pin = 
+        document.getElementById('pin1').value +
+        document.getElementById('pin2').value +
+        document.getElementById('pin3').value +
+        document.getElementById('pin4').value +
+        document.getElementById('pin5').value +
+        document.getElementById('pin6').value;
+        
+      if (pin === ADMIN_PIN) {
+        if (document.getElementById('rememberAdmin').checked) {
+          localStorage.setItem('admin_auth', 'true');
+        } else {
+          sessionStorage.setItem('admin_auth', 'true');
+        }
+        showToast('ยินดีต้อนรับผู้ดูแลระบบ!', 'success');
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'flex';
+        initAdminPanel();
+      } else {
+        showToast('รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่', 'error');
+        // Reset boxes
+        for (let i = 1; i <= 6; i++) {
+          document.getElementById('pin' + i).value = '';
+        }
+        document.getElementById('pin1').focus();
+      }
+    }
+
+    // Custom Numpad Helper Functions
+    function pressNum(num) {
+      for (let i = 1; i <= 6; i++) {
+        const box = document.getElementById('pin' + i);
+        if (box.value === '') {
+          box.value = num;
+          if (i < 6) {
+            document.getElementById('pin' + (i + 1)).focus();
+          } else {
+            validateAdminPin();
+          }
+          break;
+        }
+      }
+    }
+
+    function pressBackspace() {
+      for (let i = 6; i >= 1; i--) {
+        const box = document.getElementById('pin' + i);
+        if (box.value !== '') {
+          box.value = '';
+          if (i > 1) {
+            document.getElementById('pin' + (i - 1)).focus();
+          }
+          break;
+        }
+      }
+    }
+
+    function pressClear() {
+      for (let i = 1; i <= 6; i++) {
+        document.getElementById('pin' + i).value = '';
+      }
+      document.getElementById('pin1').focus();
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('admin_auth');
+      localStorage.removeItem('admin_auth');
+      window.location.reload();
+    }
+
+    // Auto check if already authed
+    window.addEventListener('load', () => {
+      if (sessionStorage.getItem('admin_auth') === 'true' || localStorage.getItem('admin_auth') === 'true') {
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'flex';
+        initAdminPanel();
+      } else {
+        document.getElementById('pin1').focus();
+      }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Toast Notification system
+    // ═══════════════════════════════════════════════════════════════════════════
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️'
+      };
+      
+      toast.innerHTML = `
+        <span>${icons[type] || icons.info}</span>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Page Tab Management
+    // ═══════════════════════════════════════════════════════════════════════════
+    function switchTab(tabId, btn) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(el => el.classList.remove('active'));
+      
+      // Show tab
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleCustomDept(val) {
+      const wrapper = document.getElementById('customDeptWrapper');
+      if (val === 'CUSTOM_DEPT') {
+        wrapper.classList.add('show');
+        document.getElementById('newEmpDeptCustom').required = true;
+      } else {
+        wrapper.classList.remove('show');
+        document.getElementById('newEmpDeptCustom').required = false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Fetch Data Methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Globals for Payroll & Chart
+    let attendancePieChart = null;
+    let activePayrollData = null;
+    let activeEmployee = null;
+    let activePayrollCalculations = {};
+
+    async function initAdminPanel() {
+      // Pre-populate month selector
+      const now = new Date();
+      const yearStr = now.getFullYear();
+      const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+      document.getElementById('payrollMonth').value = `${yearStr}-${monthStr}`;
+
+      // Dynamically populate both dropdowns
+      try {
+        const res = await fetch(`${API}?action=getDepartments`);
+        const depts = await res.json();
+        
+        // Populate dashboard select
+        const dashSelect = document.getElementById('dashboardDeptSelect');
+        if (dashSelect) {
+          dashSelect.innerHTML = '<option value="all">แผนกทั้งหมด</option>';
+          depts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            dashSelect.appendChild(opt);
+          });
+        }
+
+        // Populate employee list filter select
+        const empSelect = document.getElementById('empFilterDept');
+        if (empSelect) {
+          empSelect.innerHTML = '<option value="all">แผนกทั้งหมด</option>';
+          depts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            empSelect.appendChild(opt);
+          });
+        }
+
+        // Populate department suggestions for Telegram routing
+        const telegramDeptList = document.getElementById('telegramDepartmentOptions');
+        if (telegramDeptList) {
+          telegramDeptList.innerHTML = '';
+          depts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            telegramDeptList.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load departments during init:', err);
+      }
+
+      await loadDashboardStats();
+      await loadEmployees();
+      await loadTelegramConfigs();
+      await loadStores();
+      await loadLogs('check');
+      await loadLogs('leave');
+      await loadLogs('system');
+    }
+
+    // Timezone Helper Functions
+    function parseTimestampLocal(ts) {
+      if (!ts) return new Date();
+      const cleanTs = ts.substring(0, 19).replace(' ', 'T');
+      return new Date(cleanTs);
+    }
+
+    function formatTime(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    
+    function formatDate(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function normalizePayrollText(value) {
+      let val = String(value || '');
+      val = val.replace(/ช่า\uFFFD+/g, 'ช่าง');
+      val = val.replace(/ช่า\uFFFD*ฟ/g, 'ช่างฟ');
+      val = val.replace(/ช่า\uFFFD*ส/g, 'ช่างส');
+      val = val.replace(/\uFFFD/g, '');
+      return val.trim().normalize('NFC');
+    }
+
+    function getPayrollNameTokens(value) {
+      return normalizePayrollText(value)
+        .replace(/[()]/g, ' ')
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(token => token.length >= 3);
+    }
+
+    function isSamePayrollPerson(logName, employeeName) {
+      const cleanLogName = normalizePayrollText(logName);
+      const cleanEmployeeName = normalizePayrollText(employeeName);
+      if (!cleanLogName || !cleanEmployeeName) return false;
+      if (cleanLogName === cleanEmployeeName) return true;
+
+      const logTokens = getPayrollNameTokens(cleanLogName);
+      const employeeTokens = getPayrollNameTokens(cleanEmployeeName);
+      const matches = logTokens.filter(token => employeeTokens.includes(token));
+      return matches.length >= 2 || matches.some(token => token.length >= 5);
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const deptSelect = document.getElementById('dashboardDeptSelect');
+        const dept = deptSelect ? deptSelect.value : 'all';
+        const res = await fetch(`${API}?action=getAdminDashboardData&dept=${encodeURIComponent(dept)}`);
+        const data = await res.json();
+
+        // Set KPI metrics
+        document.getElementById('statEmployees').textContent = data.totalEmployees || 0;
+        document.getElementById('statTodayCheckins').textContent = data.checkedInCount || 0;
+        document.getElementById('statCheckInRate').textContent = (data.checkInRate || 0) + '%';
+        document.getElementById('statRemaining').textContent = data.notCheckedInCount || 0;
+        document.getElementById('statAbsentToday').textContent = data.absentCount || 0;
+        document.getElementById('statOnLeaveToday').textContent = data.onLeaveCount || 0;
+
+        // Update Accordion Lists Counts
+        document.getElementById('accCheckedInCount').textContent = data.checkedIn.length;
+        document.getElementById('accNotCheckedInCount').textContent = data.notCheckedIn.length;
+        document.getElementById('accAbsentCount').textContent = data.absent.length;
+        document.getElementById('accLeaveCount').textContent = data.onLeave.length;
+
+        // Populate Accordion Lists
+        populateAccordionList('accCheckedInList', data.checkedIn, item => `
+          <div class="name">${item.name} <span style="font-size:0.75rem; color:var(--success); font-weight:normal; margin-left:0.5rem;">🕒 ${item.time}</span></div>
+          <div class="dept">${item.department}</div>
+        `);
+
+        populateAccordionList('accNotCheckedInList', data.notCheckedIn, item => `
+          <div class="name">${item.name}</div>
+          <div class="dept">${item.department}</div>
+        `);
+
+        populateAccordionList('accAbsentList', data.absent, item => `
+          <div class="name" style="color:var(--error);">${item.name}</div>
+          <div class="dept">${item.department}</div>
+        `);
+
+        populateAccordionList('accLeaveList', data.onLeave, item => `
+          <div class="name" style="color:var(--success);">${item.name} <span style="font-size:0.75rem; background:var(--success-light); color:var(--success); padding:0.1rem 0.3rem; border-radius:4px; margin-left:0.5rem;">${item.leaveType}</span></div>
+          <div class="dept">${item.department} ${item.reason ? `(${item.reason})` : ''}</div>
+        `);
+
+        // Render or Update Pie Chart
+        renderAttendanceChart(data.checkedInCount, data.onLeaveCount, data.absentCount, data.notCheckedInCount - data.onLeaveCount - data.absentCount);
+
+      } catch (err) {
+        console.error('Failed to load dashboard metrics:', err);
+        showToast('ไม่สามารถดึงข้อมูลสถานะแดชบอร์ดได้', 'error');
+      }
+    }
+
+    function populateAccordionList(elementId, items, htmlFormatter) {
+      const listEl = document.getElementById(elementId);
+      if (!items || items.length === 0) {
+        listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size:0.85rem;">ไม่มีข้อมูลพนักงานกลุ่มนี้</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'accordion-list-item';
+        div.innerHTML = htmlFormatter(item);
+        listEl.appendChild(div);
+      });
+    }
+
+    function toggleAccordion(elementId) {
+      const item = document.getElementById(elementId);
+      const isOpen = item.classList.contains('open');
+      
+      // Close other items
+      document.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('open'));
+      
+      if (!isOpen) {
+        item.classList.add('open');
+      }
+    }
+
+    function renderAttendanceChart(checkedIn, onLeave, absent, remaining) {
+      const ctx = document.getElementById('attendancePieChart').getContext('2d');
+      
+      if (attendancePieChart) {
+        attendancePieChart.destroy();
+      }
+
+      attendancePieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['เช็คอินแล้ว', 'ลางาน', 'ขาดงาน', 'ยังไม่เช็คอิน'],
+          datasets: [{
+            data: [checkedIn, onLeave, absent, Math.max(0, remaining)],
+            backgroundColor: [
+              '#10B981', // green
+              '#3B82F6', // blue
+              '#EF4444', // red
+              '#F59E0B'  // orange
+            ],
+            borderColor: 'rgba(30, 41, 59, 0.8)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#F8FAFC',
+                font: {
+                  family: 'Inter',
+                  size: 11
+                },
+                padding: 10
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Payroll Calculation & Calendar Methods
+    // ═══════════════════════════════════════════════════════════════════════════
+    async function fetchPayrollReport() {
+      const dept = document.getElementById('payrollFilterDept').value;
+      const month = document.getElementById('payrollMonth').value;
+
+      if (!month) {
+        showToast('กรุณาระบุปี-เดือนที่ต้องการค้นหา', 'error');
+        return;
+      }
+
+      document.getElementById('payrollHeaderMonth').textContent = month;
+      const tbody = document.getElementById('payrollTableBody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">กำลังดึงข้อมูลรายงานเงินเดือน...</td></tr>';
+      
+      try {
+        const res = await fetch(`${API}?action=getPayrollData&month=${month}&dept=${encodeURIComponent(dept)}`);
+        activePayrollData = await res.json();
+        
+        calculateAllPayroll();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color:var(--error);">❌ ดึงข้อมูลไม่สำเร็จ</td></tr>';
+        showToast('เกิดข้อผิดพลาดในการโหลดรายงาน', 'error');
+      }
+    }
+
+    function calculateEmployeePayroll(emp, year, monthInt, checkLogs, leaveLogs) {
+      const daysInMonth = new Date(year, monthInt + 1, 0).getDate();
+      const today = new Date();
+      const isCurrentMonth = (today.getFullYear() === year && today.getMonth() === monthInt);
+      const maxDayToProcess = isCurrentMonth ? today.getDate() : daysInMonth;
+
+      let regularDays = 0;
+      let halfDays = 0;
+      let morningBonuses = 0;
+      let otDays = 0;
+      let leaveDays = 0;
+      let absentDays = 0;
+
+      const dayDetails = {};
+
+      const empDept = normalizePayrollText(emp.Department);
+      const empCheckLogs = checkLogs.filter(l => {
+        const sameDept = !l.Department || String(l.Department).includes('\uFFFD') || normalizePayrollText(l.Department) === empDept;
+        return sameDept && isSamePayrollPerson(l.Name, emp.Name);
+      });
+      const empLeaveLogs = leaveLogs.filter(l => {
+        const sameDept = !l.Department || String(l.Department).includes('\uFFFD') || normalizePayrollText(l.Department) === empDept;
+        return sameDept && isSamePayrollPerson(l.Name, emp.Name);
+      });
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(monthInt + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const activeLeave = empLeaveLogs.find(leave => {
+          return leave.StartDate && leave.EndDate && 
+                 dateStr >= leave.StartDate && 
+                 dateStr <= leave.EndDate;
+        });
+
+        const dayLogs = empCheckLogs.filter(log => {
+          return log.Timestamp && log.Timestamp.startsWith(dateStr);
+        });
+
+        const inLog = dayLogs.find(l => l.Type === 'IN');
+        const outLog = dayLogs.find(l => l.Type === 'OUT');
+
+        if (day > maxDayToProcess) {
+          dayDetails[day] = { status: 'future', logs: dayLogs, inTime: '', outTime: '' };
+          continue;
+        }
+
+        if (activeLeave) {
+          leaveDays += activeLeave.TotalDays || 1;
+          dayDetails[day] = { 
+            status: 'leave', 
+            leaveType: activeLeave.LeaveType || 'ลา',
+            reason: activeLeave.Reason || '',
+            inTime: '', 
+            outTime: '' 
+          };
+          continue;
+        }
+
+        if (inLog) {
+          const inTime = parseTimestampLocal(inLog.Timestamp);
+          const inTimeStr = formatTime(inTime).substring(0, 5);
+          
+          if (inTime.getHours() < 7 || (inTime.getHours() === 7 && inTime.getMinutes() <= 45)) {
+            morningBonuses++;
+          }
+
+          let outTimeStr = '';
+          let isHalf = true;
+
+          if (outLog) {
+            const outTime = parseTimestampLocal(outLog.Timestamp);
+            outTimeStr = formatTime(outTime).substring(0, 5);
+            isHalf = false;
+
+            const outMins = outTime.getHours() * 60 + outTime.getMinutes();
+            if (outMins >= 1080) { // 18:00 is 18 * 60 = 1080
+              const diffMins = outMins - 1080;
+              otDays += 0.5 + Math.floor(diffMins / 30) * 0.5;
+            }
+
+            regularDays++;
+          } else {
+            halfDays++;
+          }
+
+          dayDetails[day] = {
+            status: isHalf ? 'half' : 'worked',
+            inTime: inTimeStr,
+            outTime: outTimeStr,
+            store: inLog.Store || ''
+          };
+        } else {
+          const dateObj = new Date(year, monthInt, day);
+          const isSunday = dateObj.getDay() === 0;
+
+          if (isSunday) {
+            dayDetails[day] = {
+              status: 'sunday',
+              inTime: '',
+              outTime: ''
+            };
+          } else {
+            absentDays++;
+            dayDetails[day] = {
+              status: 'absent',
+              inTime: '',
+              outTime: ''
+            };
+          }
+        }
+      }
+
+      const totalWorked = regularDays + halfDays;
+
+      return {
+        regularDays,
+        halfDays,
+        totalWorked,
+        morningBonuses,
+        otDays,
+        leaveDays,
+        absentDays,
+        dayDetails
+      };
+    }
+
+    function calculateAllPayroll() {
+      const tbody = document.getElementById('payrollTableBody');
+      const employees = activePayrollData.employees || [];
+      const checkLogs = activePayrollData.checkLogs || [];
+      const leaveLogs = activePayrollData.leaveLogs || [];
+      const monthStr = activePayrollData.month;
+
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">ไม่พบพนักงานในแผนกที่เลือก</td></tr>';
+        return;
+      }
+
+      const [year, monthZeroIndexed] = monthStr.split('-').map(Number);
+      const monthInt = monthZeroIndexed - 1;
+
+      tbody.innerHTML = '';
+      activePayrollCalculations = {};
+
+      employees.forEach(emp => {
+        const calcs = calculateEmployeePayroll(emp, year, monthInt, checkLogs, leaveLogs);
+        activePayrollCalculations[emp.Name] = calcs;
+
+        const tr = document.createElement('tr');
+        tr.className = 'payroll-table-row';
+        tr.id = `payroll-row-${emp.Name.replace(/\s+/g, '-')}`;
+        tr.onclick = () => selectEmployeeForCalendar(emp);
+
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${emp.Name}</td>
+          <td style="text-align: center; color: var(--success); font-weight:600;">${calcs.regularDays}</td>
+          <td style="text-align: center; color: var(--warning); font-weight:600;">${calcs.halfDays}</td>
+          <td style="text-align: center; font-weight: 700; background: rgba(255,255,255,0.02);">${calcs.totalWorked} วัน</td>
+          <td style="text-align: center; color: #34D399; font-weight:600;">${calcs.morningBonuses}</td>
+          <td style="text-align: center; color: #A78BFA; font-weight:600;">${calcs.otDays.toFixed(1)} ชม.</td>
+          <td style="text-align: center; color: var(--primary); font-weight:600;">${calcs.leaveDays}</td>
+          <td style="text-align: center; color: var(--error); font-weight:600;">${calcs.absentDays}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (employees.length > 0) {
+        selectEmployeeForCalendar(employees[0]);
+      }
+    }
+
+    function selectEmployeeForCalendar(emp) {
+      activeEmployee = emp;
+
+      document.querySelectorAll('.payroll-table-row').forEach(row => row.classList.remove('selected'));
+      const selectedRow = document.getElementById(`payroll-row-${emp.Name.replace(/\s+/g, '-')}`);
+      if (selectedRow) {
+        selectedRow.classList.add('selected');
+      }
+
+      document.getElementById('calEmpName').textContent = emp.Name;
+      document.getElementById('calEmpDept').textContent = emp.Department;
+
+      renderCalendarGrid(emp);
+    }
+
+    function renderCalendarGrid(emp) {
+      const grid = document.getElementById('calendarGrid');
+      
+      const labels = Array.from(grid.querySelectorAll('.calendar-day-label'));
+      grid.innerHTML = '';
+      labels.forEach(l => grid.appendChild(l));
+
+      const monthStr = activePayrollData.month;
+      const [year, monthZeroIndexed] = monthStr.split('-').map(Number);
+      const monthInt = monthZeroIndexed - 1;
+
+      const daysInMonth = new Date(year, monthInt + 1, 0).getDate();
+      const firstDayOfWeek = new Date(year, monthInt, 1).getDay();
+
+      const calcs = activePayrollCalculations[emp.Name];
+      if (!calcs) return;
+
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell empty';
+        grid.appendChild(cell);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        const details = calcs.dayDetails[day];
+        
+        cell.className = `calendar-cell ${details.status}`;
+        
+        let statusText = '';
+        let timeTip = '';
+
+        if (details.status === 'worked') {
+          statusText = 'มาทำงาน';
+          timeTip = `${details.inTime} - ${details.outTime}`;
+        } else if (details.status === 'half') {
+          statusText = 'ครึ่งวัน';
+          timeTip = `${details.inTime} - ?`;
+        } else if (details.status === 'leave') {
+          statusText = details.leaveType;
+          timeTip = details.reason ? details.reason : 'ลางาน';
+        } else if (details.status === 'absent') {
+          statusText = 'ขาดงาน';
+          timeTip = 'ไม่ได้เข้างาน';
+        } else if (details.status === 'sunday') {
+          statusText = 'วันหยุด';
+          timeTip = 'วันอาทิตย์';
+        }
+
+        cell.title = timeTip;
+
+        cell.innerHTML = `
+          <span class="day-num">${day}</span>
+          ${timeTip && details.status !== 'absent' ? `<span style="font-size:0.55rem; color:var(--text-secondary); white-space:nowrap; margin-top:2px;">${timeTip}</span>` : ''}
+          <span class="status-indicator">${statusText}</span>
+        `;
+        grid.appendChild(cell);
+      }
+    }
+
+    function exportPayrollCSV() {
+      if (!activePayrollData || !activePayrollCalculations) {
+        showToast('กรุณาดึงข้อมูลรายงานเงินเดือนก่อนส่งออก', 'error');
+        return;
+      }
+
+      const month = activePayrollData.month;
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "ชื่อพนักงาน,วันทำงานเต็ม,ครึ่งวัน,รวมวันทำงาน,เบี้ยขยันมาเช้า,OT (หลัง 18:00),ลางาน,ขาดงาน\n";
+
+      Object.keys(activePayrollCalculations).forEach(name => {
+        const cal = activePayrollCalculations[name];
+        csvContent += `"${name}",${cal.regularDays},${cal.halfDays},${cal.totalWorked},${cal.morningBonuses},${cal.otDays},${cal.leaveDays},${cal.absentDays}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Bancha_HR_Payroll_${month}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('ดาวน์โหลดไฟล์ CSV สำเร็จ', 'success');
+    }
+
+    function printPayrollPDF() {
+      window.print();
+    }
+
+
+
+    // --- Tab: Employees ---
+    async function loadEmployees() {
+      const tbody = document.getElementById('employeesTableBody');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>';
+      
+      try {
+        const res = await fetch(`${API}?action=getEmployees`);
+        allEmployees = await res.json();
+        renderEmployees(allEmployees);
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--error);">❌ ดึงข้อมูลไม่สำเร็จ</td></tr>';
+      }
+    }
+
+    function renderEmployees(list) {
+      const tbody = document.getElementById('employeesTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">ไม่มีรายชื่อพนักงานในระบบ</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      list.forEach((e, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${e.Id || idx + 1}</td>
+          <td style="font-weight: 600;">${e.Name}</td>
+          <td>${e.Department}</td>
+          <td style="text-align: center;">
+            <button class="delete-action-btn" onclick="deleteEmployee('${e.Id}', '${e.Name}')">ลบ</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterEmployees() {
+      const query = document.getElementById('searchEmp').value.toLowerCase();
+      const deptSelect = document.getElementById('empFilterDept');
+      const selectedDept = deptSelect ? deptSelect.value : 'all';
+      
+      const filtered = allEmployees.filter(e => {
+        const matchesSearch = !query || 
+          (e.Name && e.Name.toLowerCase().includes(query)) || 
+          (e.Department && e.Department.toLowerCase().includes(query));
+          
+        const matchesDept = selectedDept === 'all' || 
+          (e.Department && e.Department === selectedDept);
+          
+        return matchesSearch && matchesDept;
+      });
+      renderEmployees(filtered);
+    }
+
+    async function submitAddEmployee(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('newEmpName').value.trim();
+      const deptSel = document.getElementById('newEmpDept').value;
+      const dept = deptSel === 'CUSTOM_DEPT' ? document.getElementById('newEmpDeptCustom').value.trim() : deptSel;
+
+      if (!name || !dept) {
+        showToast('กรุณากรอกข้อมูลพนักงานให้ครบถ้วน', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}?action=addEmployee`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, department: dept })
+        });
+        const result = await res.json();
+        
+        if (result.status === 'success') {
+          showToast(`เพิ่มพนักงาน "${name}" สำเร็จแล้ว`, 'success');
+          document.getElementById('addEmployeeForm').reset();
+          document.getElementById('customDeptWrapper').classList.remove('show');
+          
+          await loadEmployees();
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+        }
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+      }
+    }
+
+    async function deleteEmployee(id, name) {
+      if (!confirm(`คุณต้องการลบพนักงาน "${name}" ออกจากระบบใช่หรือไม่?`)) return;
+
+      try {
+        const res = await fetch(`${API}?action=deleteEmployee`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id })
+        });
+        const result = await res.json();
+        
+        if (result.status === 'success') {
+          showToast(`ลบพนักงาน "${name}" สำเร็จ`, 'success');
+          await loadEmployees();
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'ลบไม่สำเร็จ', 'error');
+        }
+      } catch (err) {
+        showToast('ลบล้มเหลวเนื่องจากการเชื่อมต่อ', 'error');
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function loadTelegramConfigs() {
+      const tbody = document.getElementById('telegramConfigsTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading routing...</td></tr>';
+
+      try {
+        const res = await fetch(`${API}?action=getTelegramConfigs`);
+        telegramConfigs = await res.json();
+        renderTelegramConfigs();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Could not load Telegram routing</td></tr>';
+      }
+    }
+
+    function renderTelegramConfigs() {
+      const tbody = document.getElementById('telegramConfigsTableBody');
+      if (!tbody) return;
+
+      if (!telegramConfigs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No custom routing yet. The app will use the default built-in routing.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      telegramConfigs.forEach((cfg, idx) => {
+        const sourceLabel = cfg.IsDefault ? 'Default' : 'Custom';
+        const removeButton = cfg.IsDefault
+          ? `<span style="display:inline-block; padding:0.35rem 0.7rem; font-size:0.75rem; color:var(--text-secondary);">${sourceLabel}</span>`
+          : `<button class="delete-action-btn" onclick="deleteTelegramConfig(${idx})" style="margin-left: 0.35rem;">Remove</button>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${escapeHtml(cfg.Department)}</td>
+          <td><code>${escapeHtml(cfg.ChatID)}</code></td>
+          <td>${escapeHtml(cfg.ThreadID) || '-'}</td>
+          <td>${escapeHtml(cfg.LeaveThreadID) || '-'}</td>
+          <td style="text-align: center;">
+            <button class="edit-action-btn" onclick="editTelegramConfig(${idx})">Edit</button>
+            ${removeButton}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function resetTelegramConfigForm() {
+      const form = document.getElementById('telegramConfigForm');
+      if (form) form.reset();
+      document.getElementById('telegramConfigId').value = '';
+      document.getElementById('telegramConfigSubmitBtn').textContent = 'Save routing';
+    }
+
+    function prefillTelegramConfigFromDepartment() {
+      const department = document.getElementById('telegramConfigDept').value.trim();
+      const cfg = telegramConfigs.find(item => item.Department === department);
+      if (!cfg) return;
+
+      document.getElementById('telegramConfigId').value = cfg.IsDefault ? '' : (cfg.Id || '');
+      document.getElementById('telegramConfigChatId').value = cfg.ChatID || '';
+      document.getElementById('telegramConfigThreadId').value = cfg.ThreadID || '';
+      document.getElementById('telegramConfigLeaveThreadId').value = cfg.LeaveThreadID || '';
+      document.getElementById('telegramConfigSubmitBtn').textContent = cfg.IsDefault ? 'Save override' : 'Save update';
+    }
+
+    function editTelegramConfig(index) {
+      const cfg = telegramConfigs[index];
+      if (!cfg) return;
+
+      document.getElementById('telegramConfigId').value = cfg.IsDefault ? '' : (cfg.Id || '');
+      document.getElementById('telegramConfigDept').value = cfg.Department || '';
+      document.getElementById('telegramConfigChatId').value = cfg.ChatID || '';
+      document.getElementById('telegramConfigThreadId').value = cfg.ThreadID || '';
+      document.getElementById('telegramConfigLeaveThreadId').value = cfg.LeaveThreadID || '';
+      document.getElementById('telegramConfigSubmitBtn').textContent = cfg.IsDefault ? 'Save override' : 'Save update';
+      document.getElementById('telegramConfigDept').focus();
+    }
+
+    async function submitTelegramConfig(e) {
+      e.preventDefault();
+
+      const previousId = document.getElementById('telegramConfigId').value;
+      const department = document.getElementById('telegramConfigDept').value.trim();
+      const chatId = document.getElementById('telegramConfigChatId').value.trim();
+      const threadId = document.getElementById('telegramConfigThreadId').value.trim();
+      const leaveThreadId = document.getElementById('telegramConfigLeaveThreadId').value.trim();
+
+      if (!department || !chatId) {
+        showToast('Please enter department and Telegram chat ID', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}?action=saveTelegramConfig`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ department, chatId, threadId, leaveThreadId })
+        });
+        const result = await res.json();
+
+        if (result.status !== 'success') {
+          showToast(result.message || 'Could not save Telegram routing', 'error');
+          return;
+        }
+
+        if (previousId) {
+          await fetch(`${API}?action=deleteTelegramConfig`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: previousId })
+          });
+        }
+
+        showToast('Telegram routing saved', 'success');
+        resetTelegramConfigForm();
+        await loadTelegramConfigs();
+      } catch (err) {
+        showToast('Could not save Telegram routing', 'error');
+      }
+    }
+
+    async function deleteTelegramConfig(index) {
+      const cfg = telegramConfigs[index];
+      if (!cfg || !cfg.Id) return;
+      if (cfg.IsDefault) {
+        showToast('Default routing cannot be removed. Save an override instead.', 'info');
+        return;
+      }
+      if (!confirm(`Remove Telegram routing for "${cfg.Department}"?`)) return;
+
+      try {
+        const res = await fetch(`${API}?action=deleteTelegramConfig`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: cfg.Id })
+        });
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          showToast('Telegram routing removed', 'success');
+          if (document.getElementById('telegramConfigId').value === String(cfg.Id)) {
+            resetTelegramConfigForm();
+          }
+          await loadTelegramConfigs();
+        } else {
+          showToast(result.message || 'Could not remove Telegram routing', 'error');
+        }
+      } catch (err) {
+        showToast('Could not remove Telegram routing', 'error');
+      }
+    }
+
+    // --- Tab: Stores ---
+    async function loadStores() {
+      const tbody = document.getElementById('storesTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">กำลังโหลดข้อมูล...</td></tr>';
+      
+      try {
+        const res = await fetch(`${API}?action=getStores`);
+        allStores = await res.json();
+        renderStores(allStores);
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--error);">❌ ดึงข้อมูลพิกัดร้านไม่สำเร็จ</td></tr>';
+      }
+    }
+
+    function renderStores(list) {
+      const tbody = document.getElementById('storesTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่มีรายชื่อพิกัดร้านในระบบ</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      list.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.Id || idx + 1}</td>
+          <td style="font-weight: 600;">${s.Store}</td>
+          <td><code>${s.Latitude}</code></td>
+          <td><code>${s.Longitude}</code></td>
+          <td>${s.Radius} ม.</td>
+          <td style="text-align: center;">
+            <button class="delete-action-btn" onclick="deleteStore('${s.Id}', '${s.Store}')">ลบ</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function submitAddStore(e) {
+      e.preventDefault();
+      
+      const store = document.getElementById('newStoreName').value.trim();
+      const lat = document.getElementById('newStoreLat').value;
+      const lon = document.getElementById('newStoreLon').value;
+      const radius = document.getElementById('newStoreRad').value;
+
+      if (!store || !lat || !lon) {
+        showToast('กรุณากรอกข้อมูลพิกัดให้ครบถ้วน', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}?action=addStore`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ store, lat, lon, radius })
+        });
+        const result = await res.json();
+        
+        if (result.status === 'success') {
+          showToast(`เพิ่มพิกัดร้าน "${store}" เรียบร้อย`, 'success');
+          document.getElementById('addStoreForm').reset();
+          document.getElementById('newStoreRad').value = 200;
+          
+          await loadStores();
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'บันทึกพิกัดไม่สำเร็จ', 'error');
+        }
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการส่งข้อมูลพิกัด', 'error');
+      }
+    }
+
+    async function deleteStore(id, name) {
+      if (!confirm(`คุณต้องการลบพิกัดร้าน "${name}" หรือไม่?`)) return;
+
+      try {
+        const res = await fetch(`${API}?action=deleteStore`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id })
+        });
+        const result = await res.json();
+        
+        if (result.status === 'success') {
+          showToast(`ลบพิกัดร้าน "${name}" สำเร็จ`, 'success');
+          await loadStores();
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'ลบไม่สำเร็จ', 'error');
+        }
+      } catch (err) {
+        showToast('ลบพิกัดล้มเหลว', 'error');
+      }
+    }
+
+    // --- Tab: Logs ---
+    function switchLogView(type) {
+      // Buttons active switch
+      document.getElementById('btnFilterCheck').classList.toggle('active', type === 'check');
+      document.getElementById('btnFilterLeave').classList.toggle('active', type === 'leave');
+      document.getElementById('btnFilterSystem').classList.toggle('active', type === 'system');
+
+      // Panels toggle
+      document.getElementById('checkLogsPanel').style.display = type === 'check' ? 'block' : 'none';
+      document.getElementById('leaveLogsPanel').style.display = type === 'leave' ? 'block' : 'none';
+      document.getElementById('systemLogsPanel').style.display = type === 'system' ? 'block' : 'none';
+    }
+
+    function splitTimestampForInput(timestamp) {
+      const raw = String(timestamp || '').replace('T', ' ').substring(0, 19);
+      const parts = raw.split(' ');
+      return {
+        date: parts[0] || '',
+        time: (parts[1] || '00:00:00').substring(0, 8)
+      };
+    }
+
+    function openEditCheckLogModal(index) {
+      const log = allCheckLogs[index];
+      if (!log || !log.Id) {
+        showToast('Cannot edit this record because it has no record ID', 'error');
+        return;
+      }
+
+      const ts = splitTimestampForInput(log.Timestamp);
+      document.getElementById('editCheckLogId').value = log.Id;
+      document.getElementById('editCheckLogDate').value = ts.date;
+      document.getElementById('editCheckLogTime').value = ts.time;
+      document.getElementById('editCheckLogName').value = log.Name || '';
+      document.getElementById('editCheckLogDept').value = log.Department || '';
+      document.getElementById('editCheckLogType').value = log.Type === 'OUT' ? 'OUT' : 'IN';
+      document.getElementById('editCheckLogStore').value = log.Store || '';
+      document.getElementById('editCheckLogLoggedBy').value = log.LoggedBy === 'employee' ? 'employee' : 'admin';
+      document.getElementById('editCheckLogModal').classList.add('show');
+    }
+
+    function closeEditCheckLogModal() {
+      document.getElementById('editCheckLogModal').classList.remove('show');
+    }
+
+    async function submitEditCheckLog(event) {
+      event.preventDefault();
+
+      const date = document.getElementById('editCheckLogDate').value;
+      const time = document.getElementById('editCheckLogTime').value;
+      const payload = {
+        id: document.getElementById('editCheckLogId').value,
+        timestamp: `${date} ${time.length === 5 ? `${time}:00` : time}`,
+        name: document.getElementById('editCheckLogName').value.trim(),
+        department: document.getElementById('editCheckLogDept').value.trim(),
+        type: document.getElementById('editCheckLogType').value,
+        store: document.getElementById('editCheckLogStore').value.trim(),
+        loggedBy: document.getElementById('editCheckLogLoggedBy').value
+      };
+
+      if (!payload.id || !date || !time || !payload.name || !payload.department || !payload.type) {
+        showToast('Please fill all required fields before saving', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}?action=updateCheckLog`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          showToast('Check-in/out record updated', 'success');
+          closeEditCheckLogModal();
+          await loadLogs('check');
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'Update failed', 'error');
+        }
+      } catch (err) {
+        showToast('Update failed because the server request failed', 'error');
+      }
+    }
+
+    async function deleteCheckLog(index) {
+      const log = allCheckLogs[index];
+      if (!log || !log.Id) {
+        showToast('Cannot remove this record because it has no record ID', 'error');
+        return;
+      }
+
+      const label = `${log.Name || ''} ${log.Type || ''} ${log.Timestamp || ''}`.trim();
+      if (!confirm(`Remove this check-in/out record?\n\n${label}`)) return;
+
+      try {
+        const res = await fetch(`${API}?action=deleteCheckLog`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: log.Id })
+        });
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          showToast('Check-in/out record removed', 'success');
+          await loadLogs('check');
+          await loadDashboardStats();
+        } else {
+          showToast(result.message || 'Remove failed', 'error');
+        }
+      } catch (err) {
+        showToast('Remove failed because the server request failed', 'error');
+      }
+    }
+
+    async function loadLogs(type) {
+      if (type === 'check') {
+        const tbody = document.getElementById('checkLogsTableBody');
+        const headerRow = document.querySelector('#checkLogsPanel thead tr');
+        if (headerRow && !headerRow.dataset.editColumn) {
+          const th = document.createElement('th');
+          th.textContent = 'Manage';
+          th.style.textAlign = 'center';
+          headerRow.appendChild(th);
+          headerRow.dataset.editColumn = 'true';
+        }
+        try {
+          const res = await fetch(`${API}?action=getCheckLogs`);
+          const list = await res.json();
+          allCheckLogs = Array.isArray(list) ? list : [];
+          
+          if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">ไม่มีบันทึกเวลาเข้างานในระบบ</td></tr>';
+            return;
+          }
+          
+          tbody.innerHTML = '';
+          list.forEach((log, idx) => {
+            const tr = document.createElement('tr');
+            const typeBadge = log.Type === 'IN' ? '<span class="badge in">เข้างาน</span>' : '<span class="badge out">ออกงาน</span>';
+            const logByBadge = log.LoggedBy === 'admin' ? '<span class="badge admin">แอดมิน</span>' : '<span class="badge employee">พนักงาน</span>';
+            
+            tr.innerHTML = `
+              <td><code>${log.Timestamp || ''}</code></td>
+              <td style="font-weight:600;">${log.Name || ''}</td>
+              <td>${log.Department || ''}</td>
+              <td>${typeBadge}</td>
+              <td>${log.Store || 'ไม่ระบุพิกัด'}</td>
+              <td>${logByBadge}</td>
+              <td style="text-align: center; white-space: nowrap;">
+                <button class="edit-action-btn" onclick="openEditCheckLogModal(${idx})">Edit</button>
+                <button class="delete-action-btn" onclick="deleteCheckLog(${idx})" style="margin-left: 0.35rem;">Remove</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--error);">❌ ดึงล็อกการเช็คอินไม่สำเร็จ</td></tr>';
+        }
+      } 
+      
+      else if (type === 'leave') {
+        const tbody = document.getElementById('leaveLogsTableBody');
+        try {
+          const res = await fetch(`${API}?action=getLeaveLogs`);
+          const list = await res.json();
+          
+          if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">ไม่มีล็อกใบลางานในระบบ</td></tr>';
+            return;
+          }
+          
+          tbody.innerHTML = '';
+          list.forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><code>${log.Timestamp || ''}</code></td>
+              <td style="font-weight:600;">${log.Name || ''}</td>
+              <td>${log.Department || ''}</td>
+              <td>${log.StartDate || ''} ถึง ${log.EndDate || ''}</td>
+              <td style="text-align:center; font-weight:700; color:var(--primary);">${log.TotalDays || 1} วัน</td>
+              <td><span class="badge info" style="background: rgba(37,99,235,0.15); color: var(--primary);">${log.LeaveType || ''}</span></td>
+              <td style="font-size:0.85rem; color:var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.Reason || ''}">${log.Reason || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--error);">❌ ดึงล็อกวันลาไม่สำเร็จ</td></tr>';
+        }
+      } 
+      
+      else if (type === 'system') {
+        const tbody = document.getElementById('systemLogsTableBody');
+        try {
+          const res = await fetch(`${API}?action=getSystemLogs`);
+          const list = await res.json();
+          
+          if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">ไม่มีบันทึกประวัติการทำงานของระบบ</td></tr>';
+            return;
+          }
+          
+          tbody.innerHTML = '';
+          list.forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><code>${log.Timestamp || ''}</code></td>
+              <td>${log.Department || '-'}</td>
+              <td><code>${log.ChatID || '-'}</code></td>
+              <td style="font-weight:600; color:var(--warning);">${log.Status || ''}</td>
+              <td style="font-size:0.85rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.Info || ''}">${log.Info || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">❌ ดึงระบบล็อกของแอปไม่สำเร็จ</td></tr>';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

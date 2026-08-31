@@ -5,10 +5,16 @@
 import { createAutocomplete, calcVat, showToast } from '../components/ui.js'
 import { getProductsWithStock, getState } from './job-state.js'
 import { isStockTrackedProduct, isServiceLikeProduct } from '../utils/stock-rules.js'
+import { getProductTrackingType, parseMetadata } from '../utils/inventory-domain.js'
 
 const parseNum = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
 const formatNum = (val) => parseNum(val).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const formatInt = (val) => parseNum(val).toLocaleString('th-TH');
+
+function trackingValue(record, key, fallback = '') {
+    const metadata = parseMetadata(record)
+    return record?.[key] ?? metadata[key] ?? fallback
+}
 
 /** Add a line row to the job items table (v2: supports adhoc toggle) */
 export function addJobLineRow(panel, data = null, index = 1) {
@@ -45,6 +51,7 @@ export function addJobLineRow(panel, data = null, index = 1) {
                 <option value="labor" ${data?.product_type === 'labor' ? 'selected' : ''}>ค่าแรง</option>
                 <option value="other" ${data?.product_type === 'other' ? 'selected' : ''}>อื่นๆ</option>
             </select>
+            <div class="line-tracking-panel job-tracking-panel" style="display:none;"></div>
         </td>
         <td data-label="จำนวน"><input type="text" class="form-control item-qty" value="${data ? formatInt(data.qty) : 1}" style="width:72px;"></td>
         <td data-label="ราคา/หน่วย">
@@ -66,6 +73,66 @@ export function addJobLineRow(panel, data = null, index = 1) {
     const adhocType = tr.querySelector('.item-product-type')
     const typeLabel = typeBtn.nextElementSibling
 
+    function renderTrackingPanel(type = tr.dataset.trackingType || 'NONE') {
+        const panelEl = tr.querySelector('.job-tracking-panel')
+        if (!panelEl) return
+        const trackingType = String(type || 'NONE').toUpperCase()
+        const meta = {
+            SERIALIZED: {
+                badge: 'Serialized',
+                hint: 'Enter one serial per unit used on this job.'
+            },
+            BATCH: {
+                badge: 'Batch/Lot',
+                hint: 'Enter the lot number consumed by this job.'
+            },
+            DIMENSION: {
+                badge: 'Dimension/Roll',
+                hint: 'Record the roll number and consumed length or quantity.'
+            }
+        }[trackingType]
+        panelEl.style.display = trackingType === 'NONE' || typeBtn.dataset.type === 'adhoc' ? 'none' : 'grid'
+        if (trackingType === 'SERIALIZED') {
+            panelEl.innerHTML = `
+                <div class="traceability-header">
+                    <span class="traceability-badge">${meta.badge}</span>
+                    <span class="traceability-hint">${meta.hint}</span>
+                </div>
+                <label class="traceability-field traceability-field-wide">
+                    <span>Serial numbers</span>
+                    <textarea class="form-control item-serials" rows="2" placeholder="SN001, SN002">${escapeForAttr(trackingValue(data, 'serial_numbers') || trackingValue(data, 'serial_no'))}</textarea>
+                </label>`
+        } else if (trackingType === 'BATCH') {
+            panelEl.innerHTML = `
+                <div class="traceability-header">
+                    <span class="traceability-badge">${meta.badge}</span>
+                    <span class="traceability-hint">${meta.hint}</span>
+                </div>
+                <label class="traceability-field">
+                    <span>Batch/Lot no.</span>
+                    <input class="form-control item-batch" placeholder="LOT-2026-001" value="${escapeForAttr(trackingValue(data, 'batch_no'))}">
+                </label>
+                <label class="traceability-field">
+                    <span>Expiry date</span>
+                    <input type="date" class="form-control item-expiry" value="${escapeForAttr(String(trackingValue(data, 'expiry_date')).slice(0, 10))}">
+                </label>`
+        } else if (trackingType === 'DIMENSION') {
+            panelEl.innerHTML = `
+                <div class="traceability-header">
+                    <span class="traceability-badge">${meta.badge}</span>
+                    <span class="traceability-hint">${meta.hint}</span>
+                </div>
+                <label class="traceability-field">
+                    <span>Roll no.</span>
+                    <input class="form-control item-roll" placeholder="ROLL-001" value="${escapeForAttr(trackingValue(data, 'roll_no'))}">
+                </label>
+                <label class="traceability-field">
+                    <span>Length/qty</span>
+                    <input type="number" step="0.001" class="form-control item-dimension-qty" placeholder="0.000" value="${escapeForAttr(trackingValue(data, 'dimension_qty') || data?.qty || '')}">
+                </label>`
+        }
+    }
+
     typeBtn.addEventListener('click', () => {
         const nowAdhoc = typeBtn.dataset.type !== 'adhoc'
         typeBtn.dataset.type = nowAdhoc ? 'adhoc' : 'product'
@@ -78,6 +145,8 @@ export function addJobLineRow(panel, data = null, index = 1) {
         adhocType.style.display = nowAdhoc ? '' : 'none'
         tr.querySelector('.adhoc-cost-wrapper').style.display = nowAdhoc ? '' : 'none'
         tr.dataset.trackStock = nowAdhoc ? 'false' : ''
+        if (nowAdhoc) tr.dataset.trackingType = 'NONE'
+        renderTrackingPanel(tr.dataset.trackingType || 'NONE')
         currentStock = null
         recalcTotals(panel)
     })
@@ -107,6 +176,8 @@ export function addJobLineRow(panel, data = null, index = 1) {
             const trackStock = isStockTrackedProduct(item._raw)
             tr.dataset.trackStock = trackStock ? 'true' : 'false'
             tr.dataset.productType = item._raw.type || ''
+            tr.dataset.trackingType = trackStock ? getProductTrackingType(item._raw) : 'NONE'
+            renderTrackingPanel(tr.dataset.trackingType)
             currentStock = trackStock ? item.stock : null
             
             // Initial check
@@ -130,9 +201,12 @@ export function addJobLineRow(panel, data = null, index = 1) {
             const trackStock = prod ? isStockTrackedProduct(prod) : data.is_track_stock !== false
             tr.dataset.trackStock = trackStock ? 'true' : 'false'
             tr.dataset.productType = prod?.type || data.product_type || ''
+            tr.dataset.trackingType = trackingValue(data, 'tracking_type', prod ? getProductTrackingType(prod) : 'NONE')
+            renderTrackingPanel(tr.dataset.trackingType)
             currentStock = trackStock ? (stockMap[data.product_id] || 0) : null
         })
     }
+    renderTrackingPanel(trackingValue(data, 'tracking_type', 'NONE'))
 
     tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', (e) => {
         if (e.target.classList.contains('item-qty') && typeBtn.dataset.type !== 'adhoc' && tr.dataset.trackStock !== 'false' && currentStock !== null) {

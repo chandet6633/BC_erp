@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Portal - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            --user-bg: #f4f7fb;
+            --user-panel: #ffffff;
+            --user-ink: #172033;
+            --user-muted: #64748b;
+            --user-line: #d9e2ef;
+            --user-blue: #2563eb;
+            --user-green: #059669;
+            --user-red: #dc2626;
+            color-scheme: light;
+        }
+
+        * { box-sizing: border-box; }
+
+        body.user-admin {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--user-bg);
+            color: var(--user-ink);
+            font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
+        }
+
+        .shell {
+            width: min(100% - 32px, 1180px);
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: clamp(1.45rem, 3vw, 2rem);
+            letter-spacing: 0;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--user-muted);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .segmented, .btn, .icon-btn {
+            min-height: 42px;
+            border: 1px solid var(--user-line);
+            border-radius: 8px;
+            background: white;
+            color: var(--user-ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 0 13px;
+        }
+
+        .btn.primary {
+            border-color: var(--user-blue);
+            background: var(--user-blue);
+            color: white;
+        }
+
+        .btn.danger {
+            border-color: #fecaca;
+            color: var(--user-red);
+        }
+
+        .btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .segmented {
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .segmented button {
+            min-width: 42px;
+            min-height: 36px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--user-muted);
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .segmented button.active {
+            background: #eaf2ff;
+            color: var(--user-blue);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .stat, .panel {
+            background: var(--user-panel);
+            border: 1px solid var(--user-line);
+            border-radius: 8px;
+        }
+
+        .stat {
+            padding: 14px;
+        }
+
+        .stat-value {
+            font-size: 1.45rem;
+            font-weight: 850;
+        }
+
+        .stat-label {
+            margin-top: 3px;
+            color: var(--user-muted);
+            font-size: .78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .panel {
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--user-line);
+            background: #fbfcfe;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 860px;
+            border-collapse: collapse;
+            font-size: .9rem;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #edf1f6;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #fbfcfe;
+            color: var(--user-muted);
+            font-size: .74rem;
+            font-weight: 850;
+            text-transform: uppercase;
+        }
+
+        .muted {
+            color: var(--user-muted);
+            font-size: .82rem;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: .76rem;
+            font-weight: 850;
+            background: #eef4ff;
+            color: #1d4ed8;
+            white-space: nowrap;
+        }
+
+        .pill.role {
+            background: #ecfdf5;
+            color: #047857;
+            text-transform: capitalize;
+        }
+
+        .pill.inactive {
+            background: #fee2e2;
+            color: var(--user-red);
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 7px;
+            justify-content: flex-end;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+        }
+
+        .notice {
+            display: none;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            border: 1px solid var(--user-line);
+            border-radius: 8px;
+            background: white;
+            color: var(--user-muted);
+            font-weight: 750;
+        }
+
+        .notice.active { display: block; }
+        .notice.error { border-color: #fecaca; background: #fff7f7; color: #991b1b; }
+        .notice.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, .48);
+            z-index: 50;
+        }
+
+        .modal.active { display: flex; }
+
+        .dialog {
+            width: min(100%, 620px);
+            max-height: 92vh;
+            overflow: auto;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--user-line);
+            box-shadow: 0 30px 80px rgba(15, 23, 42, .26);
+        }
+
+        .dialog-head, .dialog-foot {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--user-line);
+            background: #fbfcfe;
+        }
+
+        .dialog-foot {
+            border-top: 1px solid var(--user-line);
+            border-bottom: 0;
+            justify-content: flex-end;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .form {
+            padding: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .field.full { grid-column: 1 / -1; }
+
+        label {
+            color: #475569;
+            font-size: .8rem;
+            font-weight: 850;
+        }
+
+        input, select {
+            min-height: 42px;
+            width: 100%;
+            border: 1px solid var(--user-line);
+            border-radius: 8px;
+            padding: 10px 11px;
+            font: inherit;
+            background: white;
+            color: var(--user-ink);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--user-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+        }
+
+        @media (max-width: 760px) {
+            .shell { width: min(100% - 20px, 1180px); padding-top: 18px; }
+            .topbar { flex-direction: column; }
+            .actions { width: 100%; justify-content: flex-start; }
+            .btn { flex: 1 1 auto; }
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .form { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="user-admin">
+    <main class="shell">
+        <header class="topbar">
+            <div>
+                <h1><span class="material-icons-outlined">manage_accounts</span><span data-i18n="title">จัดการผู้ใช้</span></h1>
+                <p class="subtitle" data-i18n="subtitle">จัดการบัญชี บทบาท และสาขาจากข้อมูลกลาง</p>
+            </div>
+            <div class="actions">
+                <div class="segmented" aria-label="Language">
+                    <button type="button" id="langTh">TH</button>
+                    <button type="button" id="langEn">EN</button>
+                </div>
+                <a class="btn" href="index.html"><span class="material-icons-outlined">arrow_back</span><span data-i18n="back">กลับ</span></a>
+                <button class="btn primary" type="button" id="addBtn"><span class="material-icons-outlined">person_add</span><span data-i18n="addUser">เพิ่มผู้ใช้</span></button>
+            </div>
+        </header>
+
+        <div id="notice" class="notice"></div>
+
+        <section class="stats">
+            <div class="stat"><div class="stat-value" id="totalUsers">-</div><div class="stat-label" data-i18n="total">ทั้งหมด</div></div>
+            <div class="stat"><div class="stat-value" id="activeUsers">-</div><div class="stat-label" data-i18n="active">ใช้งาน</div></div>
+            <div class="stat"><div class="stat-value" id="adminUsers">-</div><div class="stat-label">Admin / Owner</div></div>
+            <div class="stat"><div class="stat-value" id="branchUsers">-</div><div class="stat-label" data-i18n="branchScoped">มีสาขา</div></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <strong data-i18n="directory">รายชื่อผู้ใช้</strong>
+                <button class="btn" type="button" id="refreshBtn"><span class="material-icons-outlined">refresh</span><span data-i18n="refresh">รีเฟรช</span></button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="status">สถานะ</th>
+                            <th data-i18n="user">ผู้ใช้</th>
+                            <th data-i18n="role">บทบาท</th>
+                            <th data-i18n="branch">สาขา</th>
+                            <th data-i18n="credentials">ข้อมูลเข้าใช้</th>
+                            <th style="text-align:right" data-i18n="actions">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userBody">
+                        <tr><td colspan="6" class="muted" data-i18n="loading">กำลังโหลด...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="dialog">
+            <div class="dialog-head">
+                <strong id="modalTitle" data-i18n="addUser">เพิ่มผู้ใช้</strong>
+                <button class="icon-btn" type="button" id="closeBtn" aria-label="Close"><span class="material-icons-outlined">close</span></button>
+            </div>
+            <form id="userForm">
+                <div class="form">
+                    <input type="hidden" id="userId" />
+                    <div class="field">
+                        <label for="name" data-i18n="name">ชื่อ</label>
+                        <input id="name" autocomplete="name" required />
+                    </div>
+                    <div class="field">
+                        <label for="username" data-i18n="username">Username</label>
+                        <input id="username" autocomplete="username" required />
+                    </div>
+                    <div class="field">
+                        <label for="email" data-i18n="email">อีเมล</label>
+                        <input id="email" type="email" autocomplete="email" />
+                    </div>
+                    <div class="field">
+                        <label for="role" data-i18n="role">บทบาท</label>
+                        <select id="role" required></select>
+                    </div>
+                    <div class="field">
+                        <label for="branch" data-i18n="branch">สาขา</label>
+                        <select id="branch" required></select>
+                    </div>
+                    <div class="field">
+                        <label for="pin">PIN</label>
+                        <input id="pin" inputmode="numeric" pattern="[0-9]{4,6}" placeholder="4-6 digits" />
+                    </div>
+                    <div class="field full">
+                        <label for="password" data-i18n="password">รหัสผ่าน</label>
+                        <input id="password" type="password" autocomplete="new-password" />
+                        <span class="muted" data-i18n="passwordHint">กรอกเมื่อสร้างผู้ใช้ใหม่ หรือเมื่อต้องการเปลี่ยนรหัสผ่าน</span>
+                    </div>
+                    <div class="field full">
+                        <label>
+                            <input id="active" type="checkbox" style="width:auto;min-height:auto" checked />
+                            <span data-i18n="isActive">เปิดใช้งาน</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="dialog-foot">
+                    <button class="btn" type="button" id="cancelBtn" data-i18n="cancel">ยกเลิก</button>
+                    <button class="btn primary" type="submit"><span class="material-icons-outlined">save</span><span data-i18n="save">บันทึก</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { AuthService } from '../../services/authService.js';
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+
+        if (!AuthService.hasRole(['admin', 'owner'])) {
+            AuthService.requireRole(['admin', 'owner']);
+        }
+
+        const LANG_KEY = 'app.session.language';
+        const i18n = {
+            th: {
+                title: 'จัดการผู้ใช้',
+                subtitle: 'จัดการบัญชี บทบาท และสาขาจากข้อมูลกลาง',
+                back: 'กลับ',
+                addUser: 'เพิ่มผู้ใช้',
+                editUser: 'แก้ไขผู้ใช้',
+                total: 'ทั้งหมด',
+                active: 'ใช้งาน',
+                branchScoped: 'มีสาขา',
+                directory: 'รายชื่อผู้ใช้',
+                refresh: 'รีเฟรช',
+                status: 'สถานะ',
+                user: 'ผู้ใช้',
+                role: 'บทบาท',
+                branch: 'สาขา',
+                credentials: 'ข้อมูลเข้าใช้',
+                actions: 'จัดการ',
+                loading: 'กำลังโหลด...',
+                empty: 'ยังไม่มีผู้ใช้',
+                name: 'ชื่อ',
+                username: 'Username',
+                email: 'อีเมล',
+                password: 'รหัสผ่าน',
+                passwordHint: 'กรอกเมื่อสร้างผู้ใช้ใหม่ หรือเมื่อต้องการเปลี่ยนรหัสผ่าน',
+                isActive: 'เปิดใช้งาน',
+                cancel: 'ยกเลิก',
+                save: 'บันทึก',
+                enabled: 'ใช้งาน',
+                disabled: 'ปิดใช้งาน',
+                saved: 'บันทึกผู้ใช้แล้ว',
+                deleted: 'ลบผู้ใช้แล้ว',
+                saveFailed: error => `บันทึกไม่สำเร็จ: ${error}`,
+                loadFailed: error => `โหลดข้อมูลไม่สำเร็จ: ${error}`,
+                confirmDelete: name => `ลบผู้ใช้ "${name}" หรือไม่?`
+            },
+            en: {
+                title: 'User Portal',
+                subtitle: 'Manage accounts, roles, and branches from shared metadata',
+                back: 'Back',
+                addUser: 'Add user',
+                editUser: 'Edit user',
+                total: 'Total',
+                active: 'Active',
+                branchScoped: 'Branch scoped',
+                directory: 'User directory',
+                refresh: 'Refresh',
+                status: 'Status',
+                user: 'User',
+                role: 'Role',
+                branch: 'Branch',
+                credentials: 'Credentials',
+                actions: 'Actions',
+                loading: 'Loading...',
+                empty: 'No users yet',
+                name: 'Name',
+                username: 'Username',
+                email: 'Email',
+                password: 'Password',
+                passwordHint: 'Required for new users; fill only when changing password',
+                isActive: 'Active',
+                cancel: 'Cancel',
+                save: 'Save',
+                enabled: 'Active',
+                disabled: 'Inactive',
+                saved: 'User saved',
+                deleted: 'User deleted',
+                saveFailed: error => `Could not save: ${error}`,
+                loadFailed: error => `Could not load users: ${error}`,
+                confirmDelete: name => `Delete user "${name}"?`
+            }
+        };
+
+        let lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th';
+        let state = { users: [], roles: [], branches: [] };
+
+        const els = {
+            notice: document.getElementById('notice'),
+            body: document.getElementById('userBody'),
+            modal: document.getElementById('modal'),
+            form: document.getElementById('userForm'),
+            modalTitle: document.getElementById('modalTitle')
+        };
+
+        function t(key, ...args) {
+            const value = i18n[lang][key] ?? i18n.en[key] ?? key;
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        function authHeaders() {
+            const token = getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || '';
+            if (token) return { Authorization: `Bearer ${token}` };
+            return {
+                'x-bcauto-dev-auth': localStorage.getItem('app.session.devAuth') === '1' ? '1' : '',
+                'x-bcauto-dev-role': localStorage.getItem('app.session.role') || '',
+                'x-bcauto-dev-user-id': localStorage.getItem('app.session.userId') || '',
+                'x-bcauto-dev-user-name': encodeURIComponent(localStorage.getItem('app.session.userName') || ''),
+                'x-bcauto-dev-branch': localStorage.getItem('app.session.branchId') || ''
+            };
+        }
+
+        async function api(path, options = {}) {
+            const res = await fetch(path, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authHeaders(),
+                    ...(options.headers || {})
+                }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            return data;
+        }
+
+        function setNotice(message = '', type = '') {
+            els.notice.textContent = message;
+            els.notice.className = `notice ${message ? 'active' : ''} ${type}`;
+        }
+
+        function branchName(branchId) {
+            const branch = state.branches.find(row => row.branch_id === branchId || row.code === branchId);
+            if (!branch) return branchId || '-';
+            return lang === 'en' ? (branch.display_name_en || branch.display_name || branch.branch_name) : (branch.display_name || branch.branch_name);
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = lang;
+            localStorage.setItem(LANG_KEY, lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+            document.getElementById('langTh').classList.toggle('active', lang === 'th');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            render();
+        }
+
+        function populateSelects() {
+            const roleSelect = document.getElementById('role');
+            const branchSelect = document.getElementById('branch');
+            roleSelect.innerHTML = state.roles.map(role => `<option value="${esc(role.role)}">${esc(role.name || role.role)}</option>`).join('');
+            branchSelect.innerHTML = state.branches.map(branch => {
+                const name = lang === 'en' ? (branch.display_name_en || branch.display_name) : (branch.display_name || branch.branch_name);
+                return `<option value="${esc(branch.branch_id)}">${esc(name)}</option>`;
+            }).join('');
+        }
+
+        function render() {
+            populateSelects();
+            document.getElementById('totalUsers').textContent = String(state.users.length);
+            document.getElementById('activeUsers').textContent = String(state.users.filter(user => user.active).length);
+            document.getElementById('adminUsers').textContent = String(state.users.filter(user => ['admin', 'owner'].includes(user.role)).length);
+            document.getElementById('branchUsers').textContent = String(state.users.filter(user => user.branch_id && user.branch_id !== 'all').length);
+
+            if (!state.users.length) {
+                els.body.innerHTML = `<tr><td colspan="6" class="muted">${esc(t('empty'))}</td></tr>`;
+                return;
+            }
+
+            els.body.innerHTML = state.users.map(user => `
+                <tr>
+                    <td><span class="pill ${user.active ? '' : 'inactive'}">${esc(user.active ? t('enabled') : t('disabled'))}</span></td>
+                    <td>
+                        <strong>${esc(user.name || user.username)}</strong>
+                        <div class="muted">${esc(user.username)}${user.email ? ` · ${esc(user.email)}` : ''}</div>
+                    </td>
+                    <td><span class="pill role">${esc(user.role || '-')}</span></td>
+                    <td><span class="pill">${esc(branchName(user.branch_id))}</span></td>
+                    <td class="muted">PIN: ${user.has_pin ? 'OK' : '-'} · Password: ${user.has_password ? 'OK' : '-'}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="icon-btn" type="button" data-action="edit" data-id="${esc(user.id)}" title="${esc(t('editUser'))}"><span class="material-icons-outlined">edit</span></button>
+                            <button class="icon-btn" type="button" data-action="toggle" data-id="${esc(user.id)}" title="${esc(user.active ? t('disabled') : t('enabled'))}"><span class="material-icons-outlined">${user.active ? 'block' : 'check_circle'}</span></button>
+                            <button class="icon-btn" type="button" data-action="delete" data-id="${esc(user.id)}" title="Delete"><span class="material-icons-outlined">delete</span></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadUsers() {
+            setNotice('');
+            els.body.innerHTML = `<tr><td colspan="6" class="muted">${esc(t('loading'))}</td></tr>`;
+            try {
+                const data = await api('/api/data/custom/admin/users');
+                state = {
+                    users: data.users || [],
+                    roles: data.roles || [],
+                    branches: data.branches || []
+                };
+                render();
+            } catch (err) {
+                setNotice(t('loadFailed', err.message), 'error');
+                els.body.innerHTML = `<tr><td colspan="6" class="muted">${esc(err.message)}</td></tr>`;
+            }
+        }
+
+        function openModal(user = null) {
+            els.form.reset();
+            document.getElementById('userId').value = user?.id || '';
+            document.getElementById('name').value = user?.name || '';
+            document.getElementById('username').value = user?.username || '';
+            document.getElementById('email').value = user?.email || '';
+            document.getElementById('role').value = user?.role || 'sa';
+            document.getElementById('branch').value = user?.branch_id || state.branches[0]?.branch_id || '';
+            document.getElementById('active').checked = user?.active !== false;
+            document.getElementById('pin').value = '';
+            document.getElementById('password').value = '';
+            els.modalTitle.textContent = t(user ? 'editUser' : 'addUser');
+            els.modal.classList.add('active');
+        }
+
+        function closeModal() {
+            els.modal.classList.remove('active');
+        }
+
+        async function saveUser(event) {
+            event.preventDefault();
+            const id = document.getElementById('userId').value;
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                role: document.getElementById('role').value,
+                branch_id: document.getElementById('branch').value,
+                branch: document.getElementById('branch').value,
+                active: document.getElementById('active').checked
+            };
+            const pin = document.getElementById('pin').value.trim();
+            const password = document.getElementById('password').value;
+            if (pin) payload.pin = pin;
+            if (password) payload.password = password;
+            try {
+                await api(id ? `/api/data/custom/admin/users/${encodeURIComponent(id)}` : '/api/data/custom/admin/users', {
+                    method: id ? 'PATCH' : 'POST',
+                    body: JSON.stringify(payload)
+                });
+                setNotice(t('saved'), 'success');
+                closeModal();
+                await loadUsers();
+            } catch (err) {
+                setNotice(t('saveFailed', err.message), 'error');
+            }
+        }
+
+        async function toggleUser(user) {
+            try {
+                await api(`/api/data/custom/admin/users/${encodeURIComponent(user.id)}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ ...user, active: !user.active })
+                });
+                await loadUsers();
+            } catch (err) {
+                setNotice(t('saveFailed', err.message), 'error');
+            }
+        }
+
+        async function deleteUser(user) {
+            if (!confirm(t('confirmDelete', user.name || user.username))) return;
+            try {
+                await api(`/api/data/custom/admin/users/${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+                setNotice(t('deleted'), 'success');
+                await loadUsers();
+            } catch (err) {
+                setNotice(t('saveFailed', err.message), 'error');
+            }
+        }
+
+        document.getElementById('langTh').addEventListener('click', () => { lang = 'th'; applyLanguage(); });
+        document.getElementById('langEn').addEventListener('click', () => { lang = 'en'; applyLanguage(); });
+        document.getElementById('addBtn').addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn').addEventListener('click', loadUsers);
+        document.getElementById('closeBtn').addEventListener('click', closeModal);
+        document.getElementById('cancelBtn').addEventListener('click', closeModal);
+        els.modal.addEventListener('click', event => { if (event.target === els.modal) closeModal(); });
+        els.form.addEventListener('submit', saveUser);
+        els.body.addEventListener('click', event => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const user = state.users.find(row => row.id === button.dataset.id);
+            if (!user) return;
+            if (button.dataset.action === 'edit') openModal(user);
+            if (button.dataset.action === 'toggle') toggleUser(user);
+            if (button.dataset.action === 'delete') deleteUser(user);
+        });
+
+        applyLanguage();
+        loadUsers();
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

@@ -80,7 +80,7 @@ Add responsive breakpoints and utility classes to the shared design system, and 
     4. Verify no other files import from master-branch.js:
        Search for "master-branch" across MungkhudShop/src/ — should return 0 results after cleanup.
     
-    DO NOT remove the branches table or API routes — branch management still exists in the Management portal.
+    DO NOT remove the branches table or API routes — branch management still exists in the Portal.
   </action>
   <verify>
     $routeCheck = Select-String -Path "webapp/MungkhudShop/src/app.js" -Pattern "master-branch" | Measure-Object | Select-Object -ExpandProperty Count;

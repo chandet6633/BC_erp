@@ -1,9 +1,9 @@
 /**
  * Stock List page — inventory overview with filters.
  */
-import { formatCurrency, renderDataGrid, showToast } from '../components/ui.js'
+import { formatCurrency, renderDataGrid, showToast, showConfirm } from '../components/ui.js'
 import { fetchFullList } from '../services/pb.js'
-import { getBranch } from '../services/auth.js'
+import { getApiAuthHeaders, getBranch } from '../services/auth.js'
 import { getStockStatus, isStockTrackedProduct } from '../utils/stock-rules.js'
 
 export function initStockListPage(container) {
@@ -15,6 +15,7 @@ export function initStockListPage(container) {
             </div>
             <div class="toolbar-actions">
                 <button class="btn btn-outline" id="btnExportExcel"><span class="material-icons-outlined">download</span> ส่งออก Excel</button>
+                <button class="btn btn-danger" id="btnClearStockLedger"><span class="material-icons-outlined">delete_sweep</span> ล้างข้อมูลคลัง</button>
             </div>
         </div>
         <div class="card" style="margin-bottom:var(--sp-4);">
@@ -88,7 +89,9 @@ export function initStockListPage(container) {
         { key: 'type', label: 'ประเภท' },
         { key: 'group_name', label: 'กลุ่ม' },
         { key: 'unit', label: 'หน่วย' },
-        { key: 'qty', label: 'คงเหลือ' },
+        { key: 'on_hand', label: 'On hand' },
+        { key: 'in_transit', label: 'In transit' },
+        { key: 'available', label: 'Available' },
         { key: 'min_qty', label: 'Min', render: r => getStockStatus(r, r.qty).minQty },
         { key: 'max_qty', label: 'Max', render: r => getStockStatus(r, r.qty).maxQty ?? '-' },
         { key: 'cost', label: 'ต้นทุนเฉลี่ย', render: r => formatCurrency(r.cost) },
@@ -141,7 +144,7 @@ export function initStockListPage(container) {
             
             let stockMap = {}
             const res = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+                headers: getApiAuthHeaders()
             })
             if (isDestroyed()) return
             if (res.ok) {
@@ -158,16 +161,21 @@ export function initStockListPage(container) {
                 if (group && p.group_id !== group) continue
                 if (search && !((p.code || '').toLowerCase().includes(search) || (p.name || '').toLowerCase().includes(search))) continue
 
-                const sm = stockMap[p.id] || { qty: 0, total_value: 0 }
-                const stockQty = typeof sm === 'number' ? sm : (sm.qty || 0)
+                const sm = stockMap[p.id] || { qty: 0, on_hand: 0, in_transit: 0, available: 0, total_value: 0 }
+                const stockQty = typeof sm === 'number' ? sm : (sm.available ?? sm.qty ?? 0)
+                const onHandQty = typeof sm === 'number' ? sm : (sm.on_hand ?? stockQty)
+                const inTransitQty = typeof sm === 'number' ? 0 : (sm.in_transit || 0)
                 const stockVal = typeof sm === 'number' ? 0 : (sm.total_value || 0)
 
-                const cost = p.cost || (stockQty > 0 ? (stockVal / stockQty) : 0)
-                const totalValue = stockQty * cost
+                const cost = p.cost || (onHandQty > 0 ? (stockVal / onHandQty) : 0)
+                const totalValue = onHandQty * cost
 
                 const item = {
                     ...p,
                     qty: stockQty,
+                    on_hand: onHandQty,
+                    in_transit: inTransitQty,
+                    available: stockQty,
                     cost: cost,
                     total_value: totalValue,
                     group_name: groupMapCache[p.group_id] || p.group_id || '-'
@@ -223,6 +231,24 @@ export function initStockListPage(container) {
         a.download = `stock_list_${new Date().toISOString().slice(0, 10)}.csv`
         a.click()
         URL.revokeObjectURL(a.href)
+    })
+
+    container.querySelector('#btnClearStockLedger')?.addEventListener('click', async () => {
+        if (!await showConfirm('ยืนยันล้างข้อมูลคลัง', 'ต้องการล้างรายการเคลื่อนไหวสต็อกทั้งหมดใช่หรือไม่? รายการสินค้าแม่แบบจะไม่ถูกลบ')) return
+        try {
+            const res = await fetch('/api/dev/clear-data', {
+                method: 'POST',
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ action: 'table', table: 'stock_ledgers' })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Request failed')
+            showToast(data.message || 'ล้างข้อมูลคลังเรียบร้อย', 'success')
+            loadData()
+        } catch (e) {
+            console.error(e)
+            showToast('Error: ' + e.message, 'error')
+        }
     })
 
     loadGroupFilter()

@@ -109,7 +109,7 @@ test.describe('MungkhudShop Payment & Daily Summary Flow', () => {
 function jwtSignForTest() {
   const jwt = require('jsonwebtoken');
   return jwt.sign(
-    { id: 'test-admin', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' },
+    { id: 'test-admin', username: 'admin', name: 'Admin', role: 'admin', branch: 'bc-auto-service' },
     process.env.JWT_SECRET || 'bcauto_jwt_secret_2026_change_in_production',
     { expiresIn: '24h' }
   );

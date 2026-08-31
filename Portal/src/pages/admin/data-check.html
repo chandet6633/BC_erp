@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Integrity Check - BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/page-header.css" />
+    <link href="../../assets/css/style.css?v=3" rel="stylesheet" />
+    <style>
+        .check-card { background: white; border-radius: var(--radius-lg); padding: var(--space-4); border: 1px solid var(--surface-200); margin-bottom: var(--space-3); }
+        .check-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .check-header h3 { font-size: var(--text-sm); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .count-badge { padding: 2px 10px; border-radius: 99px; font-size: var(--text-xs); font-weight: 700; }
+        .count-badge.ok { background: #dcfce7; color: #166534; }
+        .count-badge.warn { background: #fef3c7; color: #92400e; }
+        .count-badge.error { background: #fee2e2; color: #991b1b; }
+        .check-detail { display: none; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--surface-100); font-size: var(--text-xs); color: var(--surface-600); max-height: 300px; overflow-y: auto; }
+        .check-detail.open { display: block; }
+        .detail-row { padding: 6px 0; border-bottom: 1px solid var(--surface-50); display: flex; justify-content: space-between; align-items: center; }
+        .run-btn { width: 100%; padding: var(--space-3); font-size: 1rem; font-weight: 700; margin-bottom: var(--space-4); }
+    </style>
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+</head>
+<body class="page-bg">
+    <div class="container" style="max-width: 700px; padding: 20px;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title"><span class="material-icons-outlined" style="font-size:1.6rem;vertical-align:bottom">fact_check</span> ตรวจสอบข้อมูล</h1>
+                <p class="page-subtitle">Data Integrity Diagnostics</p>
+            </div>
+            <div class="page-actions">
+                <a href="index.html" class="page-back-btn">← กลับ</a>
+            </div>
+        </div>
+
+        <button class="btn btn-primary run-btn" id="runBtn">
+            <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">play_arrow</span> เริ่มตรวจสอบ
+        </button>
+
+        <div id="results">
+            <div class="check-card" id="card-no-branch">
+                <div class="check-header" onclick="toggleDetail('no-branch')">
+                    <h3><span class="material-icons-outlined" style="font-size:1rem">person_off</span> ผู้ใช้ไม่มีสาขา</h3>
+                    <span class="count-badge ok" id="badge-no-branch">—</span>
+                </div>
+                <div class="check-detail" id="detail-no-branch"></div>
+            </div>
+            <div class="check-card" id="card-orphan-att">
+                <div class="check-header" onclick="toggleDetail('orphan-att')">
+                    <h3><span class="material-icons-outlined" style="font-size:1rem">schedule</span> ข้อมูลลงเวลาไม่มีผู้ใช้</h3>
+                    <span class="count-badge ok" id="badge-orphan-att">—</span>
+                </div>
+                <div class="check-detail" id="detail-orphan-att"></div>
+            </div>
+            <div class="check-card" id="card-orphan-leave">
+                <div class="check-header" onclick="toggleDetail('orphan-leave')">
+                    <h3><span class="material-icons-outlined" style="font-size:1rem">event_busy</span> ใบลาไม่มีผู้ใช้ตรงกัน</h3>
+                    <span class="count-badge ok" id="badge-orphan-leave">—</span>
+                </div>
+                <div class="check-detail" id="detail-orphan-leave"></div>
+            </div>
+            <div class="check-card" id="card-dup-checkin">
+                <div class="check-header" onclick="toggleDetail('dup-checkin')">
+                    <h3><span class="material-icons-outlined" style="font-size:1rem">content_copy</span> ลงเวลาซ้ำในวันเดียวกัน</h3>
+                    <span class="count-badge ok" id="badge-dup-checkin">—</span>
+                </div>
+                <div class="check-detail" id="detail-dup-checkin"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pb } from '../../services/pocketbase.js';
+        import { AuthService } from '../../services/authService.js';
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+
+        if (!AuthService.hasRole(['admin', 'owner'])) {
+            AuthService.requireRole(['admin', 'owner']);
+        }
+
+        window.toggleDetail = (id) => {
+            document.getElementById('detail-' + id).classList.toggle('open');
+        };
+
+        function authHeaders() {
+            const token = getAuthToken()
+                || localStorage.getItem('bcauto_jwt')
+                || sessionStorage.getItem('bcauto_jwt')
+                || '';
+            if (token) return { Authorization: `Bearer ${token}` };
+            return {
+                'x-bcauto-dev-auth': localStorage.getItem('app.session.devAuth') === '1' ? '1' : '',
+                'x-bcauto-dev-role': localStorage.getItem('app.session.role') || '',
+                'x-bcauto-dev-user-id': localStorage.getItem('app.session.userId') || '',
+                'x-bcauto-dev-user-name': encodeURIComponent(localStorage.getItem('app.session.userName') || ''),
+                'x-bcauto-dev-branch': localStorage.getItem('app.session.branchId') || ''
+            };
+        }
+
+        async function adminUsers() {
+            const res = await fetch('/api/data/custom/admin/users', { headers: authHeaders() });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            return data.users || [];
+        }
+
+        function setBadge(id, count) {
+            const el = document.getElementById('badge-' + id);
+            el.textContent = count;
+            el.className = 'count-badge ' + (count === 0 ? 'ok' : count <= 5 ? 'warn' : 'error');
+        }
+
+        document.getElementById('runBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            btn.textContent = 'กำลังตรวจสอบ...';
+
+            try {
+                const [users, attendance, leaves] = await Promise.all([
+                    adminUsers(),
+                    pb.collection('hr_attendance').getFullList(),
+                    pb.collection('hr_leaves').getFullList()
+                ]);
+
+                const userNames = new Set(users.map(u => u.username).concat(users.map(u => u.display_name || u.name)));
+
+                // 1. Users without branch
+                const noBranch = users.filter(u => !u.branch || u.branch.trim() === '');
+                setBadge('no-branch', noBranch.length);
+                document.getElementById('detail-no-branch').innerHTML = noBranch.length === 0
+                    ? '<p style="color:var(--success-600)">✅ ไม่มีปัญหา</p>'
+                    : noBranch.map(u => `<div class="detail-row"><span>${u.name || u.display_name || u.username} (${u.role || '-'})</span><span style="color:var(--danger)">ไม่มีสาขา</span></div>`).join('');
+
+                // 2. Orphaned attendance
+                const orphanAtt = attendance.filter(a => !userNames.has(a.employee_id));
+                setBadge('orphan-att', orphanAtt.length);
+                document.getElementById('detail-orphan-att').innerHTML = orphanAtt.length === 0
+                    ? '<p style="color:var(--success-600)">✅ ไม่มีปัญหา</p>'
+                    : orphanAtt.slice(0, 50).map(a => `<div class="detail-row"><span>${a.employee_id} — ${(a.timestamp||'').slice(0,10)}</span><span style="color:var(--danger)">ไม่พบผู้ใช้</span></div>`).join('');
+
+                // 3. Orphaned leaves
+                const orphanLeave = leaves.filter(l => !userNames.has(l.employee_id) && !userNames.has(l.name));
+                setBadge('orphan-leave', orphanLeave.length);
+                document.getElementById('detail-orphan-leave').innerHTML = orphanLeave.length === 0
+                    ? '<p style="color:var(--success-600)">✅ ไม่มีปัญหา</p>'
+                    : orphanLeave.slice(0, 50).map(l => `<div class="detail-row"><span>${l.name||l.employee_id} — ${l.start_date}</span><span style="color:var(--danger)">ไม่พบผู้ใช้</span></div>`).join('');
+
+                // 4. Duplicate check-ins (same employee, same day, multiple IN)
+                const dayMap = {};
+                attendance.filter(a => a.type === 'IN').forEach(a => {
+                    const day = (a.timestamp || '').slice(0, 10);
+                    const key = `${a.employee_id}_${day}`;
+                    dayMap[key] = (dayMap[key] || 0) + 1;
+                });
+                const dups = Object.entries(dayMap).filter(([, c]) => c > 1);
+                setBadge('dup-checkin', dups.length);
+                document.getElementById('detail-dup-checkin').innerHTML = dups.length === 0
+                    ? '<p style="color:var(--success-600)">✅ ไม่มีปัญหา</p>'
+                    : dups.slice(0, 50).map(([k, c]) => {
+                        const [emp, day] = k.split('_');
+                        return `<div class="detail-row"><span>${emp} — ${day}</span><span style="color:var(--danger)">${c} ครั้ง</span></div>`;
+                    }).join('');
+
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom">play_arrow</span> เริ่มตรวจสอบ';
+            }
+        });
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

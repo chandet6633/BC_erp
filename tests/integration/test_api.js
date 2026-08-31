@@ -11,7 +11,7 @@ function createToken(payload) {
 async function testApi() {
     console.log('--- STARTING EMPIRICAL VALIDATION ---');
 
-    const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' });
+    const adminToken = createToken({ id: 'admin1', username: 'admin', name: 'Admin', role: 'admin', branch: 'bc-auto-service' });
     const saToken = createToken({ id: 'sa1', username: 'test_sa', name: 'Test SA', role: 'sa', branch: 'BranchA' });
 
     console.log('Admin creating Job A (BranchA) and Job B (BranchB)...');

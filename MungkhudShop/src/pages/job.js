@@ -5,7 +5,7 @@
  */
 import { createTabs, showToast, showConfirm, generateDocId, createAutocomplete, createVatToggle } from '../components/ui.js'
 import { fetchFullList, updateRecord } from '../services/pb.js'
-import { postToStockLedger } from '../services/inventory.js'
+import { getApiAuthHeaders } from '../services/auth.js'
 import { notifyJobCompleted } from '../services/telegram.js'
 import { sanitizeFilter, escapeHtml } from '../utils/sanitize.js'
 
@@ -84,13 +84,9 @@ function renderSearchTab(panel, mainContainer) {
     panel.querySelector('#btnClearAllJobs').addEventListener('click', async () => {
         if (await showConfirm('ยืนยันการลบใบงานทั้งหมด?', 'ต้องการลบใบงานทั้งหมดในระบบใช่หรือไม่? (การกระทำนี้จะลบข้อมูลออกจากระบบอย่างถาวร)')) {
             try {
-                const token = localStorage.getItem('mungkhud_jwt')
                 const res = await fetch('/api/dev/clear-data', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ action: 'jobs' })
                 })
                 const data = await res.json()

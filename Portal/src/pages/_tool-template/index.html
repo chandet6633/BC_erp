@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>TOOL_TITLE | BC Auto</title>
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/glass-ui.css" />
+
+    <!-- Tool-specific styles (optional, keep minimal) -->
+    <link rel="stylesheet" href="./styles.css" />
+\n    <link rel="stylesheet" href="../../assets/css/app-shell.css" />\n</head>
+
+<body class="bg-transparent">
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container" style="padding-top: var(--space-4); padding-bottom: var(--space-8)">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-xl text-gradient">🔧 TOOL_TITLE</h1>
+                <p class="text-sub">TOOL_DESCRIPTION</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="../main/index.html" class="btn btn-outline btn-sm">← เมนูหลัก</a>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content">
+            <p class="text-sub">กำลังโหลด...</p>
+        </div>
+    </div>
+
+    <!-- Standard imports: pb, auth, ui, helpers, then tool logic -->
+    <script type="module">
+        import '../../services/pocketbase.js';
+        import '../../services/authService.js';
+        import '../../components/ui.js';
+        import '../../utils/helpers.js';
+        import './logic.js';
+    </script>
+\n    <script type="module" src="../../assets/js/app-shell.js"></script>\n</body>
+
+</html>

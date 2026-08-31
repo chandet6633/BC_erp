@@ -9,7 +9,7 @@
 import { formatCurrency, renderDataGrid } from '../components/ui.js'
 import { fetchFullList } from '../services/pb.js'
 import { exportSingleSheet } from '../services/excel-export.js'
-import { getBranch } from '../services/auth.js'
+import { getApiAuthHeaders, getBranch } from '../services/auth.js'
 import { getStockStatus, isLowStock, isStockTrackedProduct } from '../utils/stock-rules.js'
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js'
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend)
@@ -115,7 +115,7 @@ export function initReportInventoryPage(container) {
 
             if (type === 'stock_valuation' || type === 'low_stock') {
                 const res = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+                    headers: getApiAuthHeaders()
                 })
                 if (res.ok) stockMap = await res.json()
             } else {

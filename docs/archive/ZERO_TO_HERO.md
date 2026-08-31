@@ -7,7 +7,7 @@
 
 ## 1. What This Project Does
 
-BC Auto Xperience is a **Thai-language ERP platform for auto repair shops**. It has two apps: **Management** (revenue tracking, P&L analysis, HR, audit) and **MungkhudShop** (job management, inventory, purchasing, documents). Both run on PocketBase + Vite + Vanilla JS, deployed via Docker.
+BC Auto Xperience is a **Thai-language ERP platform for auto repair shops**. It has two apps: **Portal** (revenue tracking, P&L analysis, HR, audit) and **MungkhudShop** (job management, inventory, purchasing, documents). Both run on PocketBase + Vite + Vanilla JS, deployed via Docker.
 
 ---
 
@@ -35,8 +35,8 @@ Optional:
 git clone <repo-url>
 cd ERP
 
-# Install Management dependencies
-cd Management
+# Install Portal dependencies
+cd Portal
 npm install
 
 # Install MungkhudShop dependencies
@@ -47,8 +47,8 @@ cd ..
 
 ### Step 2: Start PocketBase (Database)
 ```bash
-# Terminal 1 — Management Database
-cd Management
+# Terminal 1 — Portal Database
+cd Portal
 .\pocketbase.exe serve --http=0.0.0.0:8092
 # Expected output:
 # > Server started at http://0.0.0.0:8092
@@ -63,8 +63,8 @@ cd MungkhudShop
 
 ### Step 3: Start Dev Servers
 ```bash
-# Terminal 3 — Management Dev Server
-cd Management
+# Terminal 3 — Portal Dev Server
+cd Portal
 npm run dev
 # Expected output:
 # > Local: http://localhost:3000/pages/main/index.html
@@ -91,7 +91,7 @@ node scripts/setup-auth.js
 ```
 
 ### Step 5: Verify
-- Management: `http://localhost:3000/pages/main/index.html` — Should show login screen
+- Portal: `http://localhost:3000/pages/main/index.html` — Should show login screen
 - MungkhudShop: `http://localhost:4000` — Should show login screen
 - PB Admin: `http://localhost:8092/_/` — Should show PocketBase admin
 
@@ -101,7 +101,7 @@ node scripts/setup-auth.js
 
 ```
 ERP/
-├── Management/                    # 🏢 Back-office analytics
+├── Portal/                    # 🏢 Back-office analytics
 │   ├── src/
 │   │   ├── registry.js            # ★ Source of truth: all tools listed here
 │   │   ├── assets/
@@ -161,17 +161,17 @@ ERP/
 
 ---
 
-## 5. Your First Task: Adding a New Tool to Management
+## 5. Your First Task: Adding a New Tool to Portal
 
-Let's walk through adding a "Kanban Board" tool to the Management app.
+Let's walk through adding a "Kanban Board" tool to the Portal app.
 
 ### Step 1: Copy the Template
 ```bash
-cp -r Management/src/pages/_tool-template Management/src/pages/kanban
+cp -r Portal/src/pages/_tool-template Portal/src/pages/kanban
 ```
 
 ### Step 2: Register in `registry.js`
-Open `Management/src/registry.js` and add to the `TOOLS` array:
+Open `Portal/src/registry.js` and add to the `TOOLS` array:
 ```javascript
 {
     id: 'kanban',
@@ -185,13 +185,13 @@ Open `Management/src/registry.js` and add to the `TOOLS` array:
 ```
 
 ### Step 3: Add to `vite.config.js`
-Open `Management/vite.config.js` and add to `build.rollupOptions.input`:
+Open `Portal/vite.config.js` and add to `build.rollupOptions.input`:
 ```javascript
 kanban: resolve(__dirname, 'src/pages/kanban/index.html'),
 ```
 
 ### Step 4: Write Your Logic
-Edit `Management/src/pages/kanban/logic.js`:
+Edit `Portal/src/pages/kanban/logic.js`:
 ```javascript
 // Available globals after app-shell.js loads:
 // window.pb, window.AuthService, window.showToast()
@@ -205,7 +205,7 @@ const records = await window.pb.collection('your_collection').getFullList({ filt
 
 ### Step 5: Build and Test
 ```bash
-cd Management
+cd Portal
 npm run build
 # Then access: http://localhost:8092/pages/kanban/index.html
 ```
@@ -254,14 +254,14 @@ python tests/test_mungkhudshop.py
 
 # Expected output:
 # ═══════════════════════════════════════════
-#   MungkhudShop + Management Test Suite
+#   MungkhudShop + Portal Test Suite
 # ═══════════════════════════════════════════
 # 🏪 MungkhudShop Tests:
 #   ✅ Login
 #   ✅ Dashboard
 #   ✅ Navigation
 #   ...
-# 📊 Management Tests:
+# 📊 Portal Tests:
 #   ✅ Login Page
 #   ✅ SSO/API Access
 # Results: 10/10 passed, 0 failed
@@ -307,7 +307,7 @@ This is handled automatically. The global proxy in `pocketbase.js` dynamically i
 ### Branch Isolation
 Every data record is scoped to a branch (`BC Auto Service`, `suphanburi`, `samchuk`). Use `getBranchFilter()` in all PocketBase queries. Admin/owner users see all branches.
 
-### Tool Registry (Management)
+### Tool Registry (Portal)
 The `registry.js` file is the single source of truth for all tools. The main menu reads this to render tool cards. RBAC is enforced by the `roles` array per tool.
 
 ### Factory Pattern (MungkhudShop)
@@ -335,7 +335,7 @@ All PocketBase `create`, `update`, `delete` operations are automatically logged 
 4. Add Thai help in `components/help.js`
 5. Add route to roles in `system_roles.allowed_menus`
 
-### "I want to add a new service to Management"
+### "I want to add a new service to Portal"
 1. Create `src/services/myService.js`
 2. Export the service object
 3. Attach to `window.MyService = MyService` for global access
@@ -343,7 +343,7 @@ All PocketBase `create`, `update`, `delete` operations are automatically logged 
 
 ### "I want to query PocketBase with branch filtering"
 ```javascript
-// Management
+// Portal
 const filter = window.getBranchFilter();
 const records = await window.pb.collection('transactions').getFullList({
     filter: `open_date >= '2026-01-01' && ${filter}`
@@ -381,7 +381,7 @@ const records = await fetchFullList('jobs', {
 ## 12. Where to Get Help
 
 - **PocketBase Admin UI**: `http://localhost:8092/_/` — View/edit data, check collection schemas
-- **Documentation**: `Management/Docs/` and `MungkhudShop/docs/`
+- **Documentation**: `Portal/Docs/` and `MungkhudShop/docs/`
 - **Code Comments**: Services are well-documented with JSDoc comments
 - **Conversation History**: Check previous AI conversation summaries for context on recent changes
 
@@ -391,11 +391,11 @@ const records = await fetchFullList('jobs', {
 
 | Term | Meaning |
 |------|---------|
-| **Tool** | A feature/page in Management (registered in `registry.js`) |
+| **Tool** | A feature/page in Portal (registered in `registry.js`) |
 | **Branch** | A physical shop location (BC Auto Service, เมืองสุพรรณ, สามชุก) |
 | **SA** | Service Advisor — front-desk employee role (formerly `employee`) |
 | **Poka-Yoke** | Error-proofing design — prevents invalid states by design |
-| **App Shell** | The sidebar + top nav wrapper around Management pages |
+| **App Shell** | The sidebar + top nav wrapper around Portal pages |
 | **Factory** | A function that generates a complete page UI from a config object |
 | **Ledger** | Stock movement journal — balance = `SUM(qty)` of all entries |
 | **PB** | PocketBase — the backend database/API server |
@@ -407,7 +407,7 @@ const records = await fetchFullList('jobs', {
 
 ## 14. Quick Reference Card
 
-### Management URLs
+### Portal URLs
 | Resource | URL |
 |----------|-----|
 | Dev Server | `http://localhost:3000/pages/main/index.html` |
@@ -424,9 +424,9 @@ const records = await fetchFullList('jobs', {
 ### Key Files
 | File | What It Controls |
 |------|-----------------|
-| `Management/src/registry.js` | All tools + RBAC |
-| `Management/vite.config.js` | Build entry points |
-| `Management/src/services/authService.js` | Auth + branches |
+| `Portal/src/registry.js` | All tools + RBAC |
+| `Portal/vite.config.js` | Build entry points |
+| `Portal/src/services/authService.js` | Auth + branches |
 | `MungkhudShop/src/app.js` | Routes + auth guard |
 | `MungkhudShop/src/pages/document-factory.js` | 14 doc types |
 | `docker-compose.yml` | Container config |

@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Role Permissions | BC Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f8fb;
+            --panel: #ffffff;
+            --ink: #172033;
+            --muted: #64748b;
+            --line: #d9e2ef;
+            --blue: #2563eb;
+            --green: #059669;
+            --amber: #b45309;
+            --red: #dc2626;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: Inter, "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+        }
+        .role-shell {
+            width: min(1240px, 100%);
+            margin: 0 auto;
+            padding: 18px;
+        }
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+        .title-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: var(--blue);
+            background: #e8f0ff;
+            border: 1px solid #c8d7fb;
+            border-radius: 8px;
+            flex: 0 0 auto;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            line-height: 1.2;
+        }
+        .subtitle {
+            margin: 3px 0 0;
+            color: var(--muted);
+            font-size: .88rem;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .btn, .control, .back-link {
+            min-height: 40px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            color: var(--ink);
+            font: inherit;
+        }
+        .btn, .back-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 12px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 800;
+        }
+        .btn.primary {
+            border-color: var(--blue);
+            background: var(--blue);
+            color: white;
+        }
+        .btn:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+        .control {
+            padding: 0 10px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .summary-card, .notice, .role-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        .summary-card {
+            padding: 12px;
+        }
+        .summary-label {
+            color: var(--muted);
+            font-size: .76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .summary-value {
+            margin-top: 5px;
+            font-size: 1.35rem;
+            font-weight: 850;
+        }
+        .notice {
+            display: none;
+            padding: 12px;
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: .9rem;
+        }
+        .notice.active { display: block; }
+        .notice.error {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+        .notice.success {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            align-items: start;
+        }
+        .role-card {
+            min-width: 0;
+            overflow: hidden;
+        }
+        .role-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px;
+            border-bottom: 1px solid var(--line);
+        }
+        .role-title {
+            margin: 0;
+            font-size: 1rem;
+            text-transform: capitalize;
+        }
+        .role-meta {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: .78rem;
+        }
+        .role-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .mini-btn {
+            min-height: 30px;
+            padding: 0 9px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            background: #f8fafc;
+            cursor: pointer;
+            font-size: .75rem;
+            font-weight: 800;
+        }
+        .tool-list {
+            max-height: 440px;
+            overflow: auto;
+            padding: 10px;
+            display: grid;
+            gap: 7px;
+        }
+        .tool-item {
+            display: grid;
+            grid-template-columns: 22px minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+            min-height: 58px;
+            padding: 10px;
+            border: 1px solid #edf2f7;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .tool-item:hover {
+            border-color: #bfdbfe;
+            background: #f8fbff;
+        }
+        .tool-item input {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: var(--blue);
+        }
+        .tool-title {
+            font-size: .88rem;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+        .tool-desc {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: .74rem;
+            line-height: 1.35;
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 8px;
+            border-radius: 6px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: .7rem;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+        .loading {
+            display: grid;
+            place-items: center;
+            min-height: 220px;
+            color: var(--muted);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-weight: 800;
+        }
+        @media (max-width: 860px) {
+            .topbar { grid-template-columns: 1fr; }
+            .actions { justify-content: stretch; }
+            .actions > * { flex: 1 1 auto; }
+            .summary { grid-template-columns: 1fr; }
+            .role-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 520px) {
+            .role-shell { padding: 12px; }
+            .role-head { display: grid; }
+            .role-actions { justify-content: stretch; }
+            .mini-btn { flex: 1; }
+            .tool-item { grid-template-columns: 22px minmax(0, 1fr); }
+            .tool-item .tag { grid-column: 2; width: max-content; }
+        }
+    </style>
+</head>
+<body>
+    <main class="role-shell">
+        <header class="topbar">
+            <div class="title-row">
+                <span class="title-icon"><span class="material-icons-outlined">policy</span></span>
+                <div>
+                    <h1 id="pageTitle">Role Permissions</h1>
+                    <p class="subtitle" id="pageSubtitle">Manage module access from database metadata</p>
+                </div>
+            </div>
+            <div class="actions">
+                <select class="control" id="langSelect" aria-label="Language">
+                    <option value="th">TH</option>
+                    <option value="en">EN</option>
+                </select>
+                <button type="button" class="btn" id="seedBtn">
+                    <span class="material-icons-outlined">auto_fix_high</span>
+                    <span data-i18n="seedDefaults">Seed defaults</span>
+                </button>
+                <button type="button" class="btn primary" id="saveBtn">
+                    <span class="material-icons-outlined">save</span>
+                    <span data-i18n="save">Save</span>
+                </button>
+                <a href="index.html" class="back-link">
+                    <span class="material-icons-outlined">arrow_back</span>
+                    <span data-i18n="back">Admin</span>
+                </a>
+            </div>
+        </header>
+
+        <section class="summary" aria-label="Role metadata summary">
+            <article class="summary-card">
+                <div class="summary-label" data-i18n="roles">Roles</div>
+                <div class="summary-value" id="roleCount">-</div>
+            </article>
+            <article class="summary-card">
+                <div class="summary-label" data-i18n="tools">Tools</div>
+                <div class="summary-value" id="toolCount">-</div>
+            </article>
+            <article class="summary-card">
+                <div class="summary-label" data-i18n="metadata">Metadata rows</div>
+                <div class="summary-value" id="metadataCount">-</div>
+            </article>
+        </section>
+
+        <div class="notice" id="notice"></div>
+        <div class="loading" id="loading">
+            <span data-i18n="loading">Loading role metadata...</span>
+        </div>
+        <section class="role-grid" id="roleGrid" aria-live="polite"></section>
+    </main>
+
+    <script type="module">
+        import { AuthService } from '../../services/authService.js';
+        import { TOOLS } from '../../registry.js';
+        import { getAuthToken } from '@shared/nocodb-adapter.js';
+
+        const LANG_KEY = 'app.session.language';
+        const i18n = {
+            th: {
+                title: 'สิทธิ์การเข้าถึงตามบทบาท',
+                subtitle: 'จัดการโมดูลจาก metadata ในฐานข้อมูล',
+                seedDefaults: 'เติมค่าเริ่มต้น',
+                save: 'บันทึก',
+                back: 'Admin',
+                roles: 'บทบาท',
+                tools: 'เครื่องมือ',
+                metadata: 'แถว Metadata',
+                loading: 'กำลังโหลด role metadata...',
+                defaultSet: 'ค่าเริ่มต้น',
+                clear: 'ล้าง',
+                selected: count => `${count} รายการที่เลือก`,
+                noTools: 'ยังไม่มีเครื่องมือใน registry',
+                saved: 'บันทึก role metadata แล้ว',
+                seeded: 'เติมค่าเริ่มต้นให้ role ที่ยังว่างแล้ว กดบันทึกเพื่อเขียนลงฐานข้อมูล',
+                loadFailed: error => `โหลดข้อมูลไม่สำเร็จ: ${error}`,
+                saveFailed: error => `บันทึกไม่สำเร็จ: ${error}`
+            },
+            en: {
+                title: 'Role Permissions',
+                subtitle: 'Manage module access from database metadata',
+                seedDefaults: 'Seed defaults',
+                save: 'Save',
+                back: 'Admin',
+                roles: 'Roles',
+                tools: 'Tools',
+                metadata: 'Metadata rows',
+                loading: 'Loading role metadata...',
+                defaultSet: 'Default',
+                clear: 'Clear',
+                selected: count => `${count} selected`,
+                noTools: 'No tools in registry yet',
+                saved: 'Role metadata saved',
+                seeded: 'Seeded defaults for empty roles. Save to write them to the database.',
+                loadFailed: error => `Could not load role metadata: ${error}`,
+                saveFailed: error => `Could not save: ${error}`
+            }
+        };
+
+        let lang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th';
+        let roles = [];
+        let rolePermissions = {};
+
+        const els = {
+            lang: document.getElementById('langSelect'),
+            seed: document.getElementById('seedBtn'),
+            save: document.getElementById('saveBtn'),
+            loading: document.getElementById('loading'),
+            grid: document.getElementById('roleGrid'),
+            notice: document.getElementById('notice'),
+            roleCount: document.getElementById('roleCount'),
+            toolCount: document.getElementById('toolCount'),
+            metadataCount: document.getElementById('metadataCount')
+        };
+
+        function t(key, ...args) {
+            const value = i18n[lang][key] ?? i18n.en[key] ?? key;
+            return typeof value === 'function' ? value(...args) : value;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+
+        function authHeaders() {
+            const token = getAuthToken();
+            if (token) return { Authorization: `Bearer ${token}` };
+            if (localStorage.getItem('app.session.devAuth') !== '1') return {};
+            return {
+                'X-BCAuto-Dev-Auth': '1',
+                'X-BCAuto-Dev-Role': localStorage.getItem('app.session.role') || '',
+                'X-BCAuto-Dev-Branch': localStorage.getItem('app.session.branchId') || '',
+                'X-BCAuto-Dev-User-Name': localStorage.getItem('app.session.userName') || '',
+                'X-BCAuto-Dev-User-Id': localStorage.getItem('app.session.userId') || ''
+            };
+        }
+
+        function registryDefaults(role) {
+            return TOOLS
+                .filter(tool => Array.isArray(tool.roles) && tool.roles.includes(role))
+                .map(tool => tool.id);
+        }
+
+        function normalizePermissions(role, permissions = [], hasMetadata = false) {
+            const validToolIds = new Set(TOOLS.map(tool => tool.id));
+            const filtered = permissions.filter(toolId => validToolIds.has(toolId));
+            return filtered.length || hasMetadata ? filtered : registryDefaults(role);
+        }
+
+        function setNotice(message = '', type = '') {
+            els.notice.textContent = message;
+            els.notice.className = `notice ${message ? 'active' : ''} ${type}`;
+        }
+
+        function applyLanguage() {
+            document.documentElement.lang = lang;
+            localStorage.setItem(LANG_KEY, lang);
+            document.getElementById('pageTitle').textContent = t('title');
+            document.getElementById('pageSubtitle').textContent = t('subtitle');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.dataset.i18n);
+            });
+            els.lang.value = lang;
+            render();
+        }
+
+        async function fetchRoles() {
+            const res = await fetch('/api/data/custom/admin/roles', { headers: authHeaders() });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            roles = data.roles || [];
+            rolePermissions = {};
+            roles.forEach(role => {
+                rolePermissions[role.role] = normalizePermissions(role.role, role.allowed_tools || [], !!role.id);
+            });
+        }
+
+        function render() {
+            els.roleCount.textContent = String(roles.length);
+            els.toolCount.textContent = String(TOOLS.length);
+            els.metadataCount.textContent = String(roles.filter(role => role.id).length);
+
+            if (!roles.length) {
+                els.grid.innerHTML = '';
+                return;
+            }
+
+            els.grid.innerHTML = roles.map(role => {
+                const selected = rolePermissions[role.role] || [];
+                return `
+                    <article class="role-card">
+                        <div class="role-head">
+                            <div>
+                                <h2 class="role-title">${escapeHtml(role.name || role.role)}</h2>
+                                <div class="role-meta">${escapeHtml(t('selected', selected.length))}</div>
+                            </div>
+                            <div class="role-actions">
+                                <button type="button" class="mini-btn" data-action="default" data-role="${escapeHtml(role.role)}">${escapeHtml(t('defaultSet'))}</button>
+                                <button type="button" class="mini-btn" data-action="clear" data-role="${escapeHtml(role.role)}">${escapeHtml(t('clear'))}</button>
+                            </div>
+                        </div>
+                        <div class="tool-list">
+                            ${TOOLS.length ? TOOLS.map(tool => `
+                                <label class="tool-item">
+                                    <input type="checkbox" data-role="${escapeHtml(role.role)}" data-tool="${escapeHtml(tool.id)}" ${selected.includes(tool.id) ? 'checked' : ''}>
+                                    <span>
+                                        <span class="tool-title">${escapeHtml(tool.title || tool.id)}</span>
+                                        <span class="tool-desc">${escapeHtml(tool.description || tool.path || tool.id)}</span>
+                                    </span>
+                                    <span class="tag">${escapeHtml(tool.group || 'tool')}</span>
+                                </label>
+                            `).join('') : `<div class="tool-desc">${escapeHtml(t('noTools'))}</div>`}
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function updatePermission(role, toolId, checked) {
+            const current = new Set(rolePermissions[role] || []);
+            if (checked) current.add(toolId);
+            else current.delete(toolId);
+            rolePermissions[role] = [...current];
+            render();
+        }
+
+        async function saveRoles() {
+            els.save.disabled = true;
+            setNotice('');
+            try {
+                const payload = {
+                    roles: roles.map(role => ({
+                        role: role.role,
+                        allowed_tools: rolePermissions[role.role] || []
+                    }))
+                };
+                const res = await fetch('/api/data/custom/admin/roles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                roles = data.roles || roles;
+                localStorage.removeItem('bc_rolePermissions');
+                setNotice(t('saved'), 'success');
+                await fetchRoles();
+                render();
+            } catch (error) {
+                setNotice(t('saveFailed', error.message), 'error');
+            } finally {
+                els.save.disabled = false;
+            }
+        }
+
+        function seedEmptyRoles() {
+            roles.forEach(role => {
+                if (!(rolePermissions[role.role] || []).length) {
+                    rolePermissions[role.role] = registryDefaults(role.role);
+                }
+            });
+            setNotice(t('seeded'), 'success');
+            render();
+        }
+
+        async function init() {
+            if (!AuthService.requireRole(['admin', 'owner'])) return;
+            els.lang.value = lang;
+            applyLanguage();
+            try {
+                await fetchRoles();
+                els.loading.style.display = 'none';
+                render();
+            } catch (error) {
+                els.loading.style.display = 'none';
+                setNotice(t('loadFailed', error.message), 'error');
+            }
+        }
+
+        els.lang.addEventListener('change', () => {
+            lang = els.lang.value === 'en' ? 'en' : 'th';
+            applyLanguage();
+        });
+        els.seed.addEventListener('click', seedEmptyRoles);
+        els.save.addEventListener('click', saveRoles);
+        els.grid.addEventListener('change', event => {
+            const input = event.target.closest('input[type="checkbox"][data-role][data-tool]');
+            if (!input) return;
+            updatePermission(input.dataset.role, input.dataset.tool, input.checked);
+        });
+        els.grid.addEventListener('click', event => {
+            const button = event.target.closest('button[data-action][data-role]');
+            if (!button) return;
+            if (button.dataset.action === 'default') {
+                rolePermissions[button.dataset.role] = registryDefaults(button.dataset.role);
+            }
+            if (button.dataset.action === 'clear') {
+                rolePermissions[button.dataset.role] = [];
+            }
+            render();
+        });
+
+        init();
+    </script>
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+</body>
+</html>

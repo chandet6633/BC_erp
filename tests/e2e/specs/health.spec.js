@@ -18,16 +18,16 @@ test.describe('Health Checks', () => {
     await expect(usernameInput).toBeVisible({ timeout: 10000 });
   });
 
-  test('Management Portal login page loads', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'Management', 'Only runs in Management project');
+  test('Portal login page loads', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'Portal', 'Only runs in Portal project');
     
-    // Management Portal is usually at /index.html
+    // Portal is usually at /index.html
     await page.goto('/index.html');
     
     // Basic health check: Page loads, title exists
     const title = await page.title();
     expect(title).not.toBe('');
-    console.log(`[Management] Title: ${title}`);
+    console.log(`[Portal] Title: ${title}`);
     
     // Check if the page contains a login form or username field
     const usernameInput = page.locator('input[type="text"], input[name="username"]').first();

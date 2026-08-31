@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const logicFile = 'Management/src/pages/mechanic/logic.js';
+const logicFile = 'Portal/src/pages/mechanic/logic.js';
 let original = fs.readFileSync(logicFile, 'utf8');
 
 const buildJobCardTop = `function buildJobCard(job, myId, canApproveQC) {

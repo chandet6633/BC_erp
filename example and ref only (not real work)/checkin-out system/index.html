@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta property="og:title" content="Bancha HR System – ลงเวลาเข้า-ออก & ขอลางาน" />
+  <meta property="og:description" content="ระบบจัดการพนักงาน ลงเวลาเข้า-ออก แจ้งลางาน ง่าย ๆ ผ่านเว็บแอป" />
+  <meta property="og:image" content="https://banchagroup.netlify.app/preview.png" />
+  <meta property="og:url" content="https://banchagroup.netlify.app/" />
+  <title>ระบบจัดการพนักงาน Bancha Group</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #1565C0;
+      --primary-light: #1E88E5;
+      --primary-dark: #0D47A1;
+      --primary-gradient: linear-gradient(135deg, #1976D2 0%, #1565C0 50%, #0D47A1 100%);
+      --bg: #F0F4F8;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text: #1A202C;
+      --text-secondary: #4A5568;
+      --muted: #718096;
+      --success: #38A169;
+      --gold: #D69E2E;
+      --silver: #A0AEC0;
+      --bronze: #C77C3C;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.15);
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(21, 101, 192, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(56, 161, 105, 0.08) 0%, transparent 50%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .header {
+      margin-bottom: 1.5rem;
+      padding-top: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Navigation buttons */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: all var(--transition);
+    }
+
+    .nav-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3);
+    }
+
+    .nav-btn-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-btn.secondary {
+      background: #fff;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .nav-btn.secondary:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .nav-btn.secondary.admin-nav {
+      color: var(--warning);
+      border: 2px solid var(--warning);
+    }
+
+    .nav-btn.secondary.admin-nav:hover {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    /* Top Performers */
+    .performer-list {
+      list-style: none;
+    }
+
+    .performer-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #EDF2F7;
+    }
+
+    .performer-item:last-child {
+      border-bottom: none;
+    }
+
+    .performer-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-right: 0.75rem;
+    }
+
+    .rank-1 {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #fff;
+    }
+
+    .rank-2 {
+      background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+      color: #fff;
+    }
+
+    .rank-3 {
+      background: linear-gradient(135deg, #CD7F32 0%, #A0522D 100%);
+      color: #fff;
+    }
+
+    .rank-other {
+      background: #EDF2F7;
+      color: var(--muted);
+    }
+
+    .performer-info {
+      flex: 1;
+    }
+
+    .performer-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .performer-dept {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .performer-stats {
+      text-align: right;
+    }
+
+    .performer-rate {
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .performer-days {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Show More Button */
+    .show-more-container {
+      text-align: center;
+      padding-top: 1rem;
+      border-top: 1px solid #EDF2F7;
+    }
+
+    .show-more-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+
+    .show-more-btn:hover {
+      background: rgba(21, 101, 192, 0.05);
+    }
+
+    .performer-streak {
+      font-size: 0.75rem;
+      color: var(--bronze);
+      font-weight: 600;
+      margin-left: 0.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* Department Ranking */
+    .dept-list {
+      list-style: none;
+    }
+
+    .dept-item {
+      display: flex;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #EDF2F7;
+    }
+
+    .dept-item:last-child {
+      border-bottom: none;
+    }
+
+    .dept-rank {
+      font-size: 1.25rem;
+      margin-right: 0.75rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .dept-info {
+      flex: 1;
+    }
+
+    .dept-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .dept-bar {
+      height: 6px;
+      background: #EDF2F7;
+      border-radius: 3px;
+      margin-top: 0.25rem;
+      overflow: hidden;
+    }
+
+    .dept-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--primary-gradient);
+      transition: width 0.5s ease;
+    }
+
+    .dept-rate {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--primary);
+      margin-left: 0.75rem;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* Company logos */
+    .company-logos {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .company-logos img {
+      height: 36px;
+      border-radius: 6px;
+      opacity: 0.7;
+      transition: all var(--transition);
+    }
+
+    .company-logos img:hover {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+
+    footer {
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .loading-shimmer {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      height: 20px;
+      border-radius: 4px;
+      margin: 0.5rem 0;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .nav-grid {
+        gap: 0.5rem;
+      }
+
+      .nav-btn {
+        padding: 0.75rem 0.25rem;
+        font-size: 0.7rem;
+      }
+
+      .nav-btn-icon {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.write(`
+        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;font-family:-apple-system,sans-serif;color:#fff;text-align:center;">
+          <div style="max-width:400px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.1);padding:2.5rem;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+            <div style="font-size:3.5rem;margin-bottom:1rem;">⚠️</div>
+            <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem;color:#EF4444;">กรุณาใช้งานผ่าน Local Server</h2>
+            <p style="font-size:0.95rem;color:#94A3B8;line-height:1.6;margin-bottom:1.5rem;">
+              ตรวจพบว่าคุณเปิดไฟล์ HTML นี้โดยตรง (file:///) ทำให้เบราว์เซอร์บล็อกการเรียกใช้งานข้อมูลจาก API
+            </p>
+            <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);padding:1rem;border-radius:8px;margin-bottom:1.5rem;">
+              <a href="http://localhost:3005" style="color:#60A5FA;text-decoration:none;font-weight:700;font-size:1.1rem;word-break:break-all;">http://localhost:3005</a>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  </script>
+  <div class="container">
+    <div class="header">
+      <div class="logo-icon">🏢</div>
+      <h1>Bancha HR System</h1>
+      <p>ระบบลงเวลาเข้า-ออก และขอวันลา<br>สำหรับพนักงาน Bancha Group</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-grid">
+      <a href="attendance.html" class="nav-btn">
+        <span class="nav-btn-icon">⏰</span>
+        <span>ลงเวลา</span>
+      </a>
+      <a href="leave.html" class="nav-btn secondary">
+        <span class="nav-btn-icon">📝</span>
+        <span>ขอวันลา</span>
+      </a>
+      <a href="history.html" class="nav-btn secondary">
+        <span class="nav-btn-icon">📋</span>
+        <span>ประวัติ</span>
+      </a>
+      <a href="admin.html" class="nav-btn secondary admin-nav">
+        <span class="nav-btn-icon">⚙️</span>
+        <span>จัดการระบบ</span>
+      </a>
+    </div>
+
+    <!-- Top Performers -->
+    <div class="card">
+      <div class="card-title">⏰ มาตรงเวลาประจำเดือน</div>
+      <div style="font-size: 0.7rem; color: var(--muted); margin-bottom: 0.75rem; line-height: 1.4;">
+        ✅ <strong>โบนัส</strong> (ก่อน 7:35) = <strong>+10 คะแนน</strong><br>
+        ✅ <strong>ตรงเวลา</strong> (ก่อน 7:50) = <strong>+5 คะแนน</strong><br>
+        ⚠️ <strong>มาสาย</strong> (หลัง 8:00) = <strong>-5 คะแนน</strong><br>
+        🔥 <strong>Streak</strong> = +2 คะแนน (ทุก 3 วันติด)
+      </div>
+      <ul class="performer-list" id="performerList">
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+      </ul>
+      <div id="performerShowMore" class="show-more-container" style="display: none;">
+        <button class="show-more-btn" onclick="togglePerformers()">
+          👇 ดูเพิ่มเติม
+        </button>
+      </div>
+    </div>
+
+    <!-- Department Ranking -->
+    <div class="card">
+      <div class="card-title">🏅 อันดับแผนก</div>
+      <div style="font-size: 0.7rem; color: var(--muted); margin-bottom: 0.75rem;">
+        % ตรงเวลา = (เข้าก่อน 8:00 ÷ เข้างานทั้งหมด) ของเดือนนี้
+      </div>
+      <ul class="dept-list" id="deptList">
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+        <li>
+          <div class="loading-shimmer"></div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Company Logos -->
+    <div class="card" style="text-align: center;">
+      <div class="company-logos">
+        <img src="images/logo-tro.png" alt="ตรอ.">
+        <img src="images/logo-bancha-autoglass.jpeg" alt="Bancha Autoglass">
+        <img src="images/logo-insurance-center.jpeg" alt="ศูนย์รวมประกันภัย">
+        <img src="images/logo-viriyah-service.jpg" alt="Viriyah Service">
+      </div>
+    </div>
+
+    <footer>
+      &copy; 2025 Bancha Group. All rights reserved.
+    </footer>
+  </div>
+
+  <script>
+    const API = '/api';
+    const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+    // Simple cache helper
+    const cache = {
+      get(key) {
+        try {
+          const item = JSON.parse(localStorage.getItem('main_' + key));
+          if (item && Date.now() - item.ts < CACHE_TTL) return item.data;
+        } catch { }
+        return null;
+      },
+      set(key, data) {
+        try {
+          localStorage.setItem('main_' + key, JSON.stringify({ ts: Date.now(), data }));
+        } catch { }
+      }
+    };
+
+    async function fetchAPI(action) {
+      try {
+        const res = await fetch(`${API}?action=${action}`);
+        return await res.json();
+      } catch (e) {
+        console.error('API Error:', e);
+        return null;
+      }
+    }
+
+    let allPerformers = [];
+    let isPerformersExpanded = false;
+
+    function renderPerformers(data, expand = false) {
+      if (!data) return; // Guard clause
+      allPerformers = data;
+      isPerformersExpanded = expand;
+
+      const list = document.getElementById('performerList');
+      const showMoreContainer = document.getElementById('performerShowMore');
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<li style="text-align:center;color:var(--muted);padding:1rem;">ยังไม่มีข้อมูล</li>';
+        showMoreContainer.style.display = 'none';
+        return;
+      }
+
+      const displayCount = expand ? data.length : 5;
+      const displayData = data.slice(0, displayCount);
+
+      list.innerHTML = displayData.map((p, i) => {
+        const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+        
+        let streakHtml = '';
+        if (p.streak > 0) {
+          streakHtml = `<span class="performer-streak" title="ต่อเนื่อง ${p.streak} วัน">🔥 ${p.streak}</span>`;
+        }
+
+        return `
+          <li class="performer-item">
+            <div class="performer-rank ${rankClass}">${typeof medal === 'number' ? medal : ''}</div>
+            ${typeof medal === 'string' ? `<span style="font-size:1.25rem;margin-right:0.5rem">${medal}</span>` : ''}
+            <div class="performer-info">
+              <div class="performer-name">
+                ${p.name}
+              </div>
+              <div class="performer-dept">${p.dept}</div>
+            </div>
+            <div class="performer-stats">
+              <div class="performer-rate">
+                ${p.score} pt
+                ${streakHtml}
+              </div>
+              <div class="performer-days">⏰ ${p.avgTime || '-'}</div>
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      // Show/Hide "Show More" button
+      if (data.length > 5) {
+        showMoreContainer.style.display = 'block';
+        const btn = showMoreContainer.querySelector('button');
+        if (expand) {
+          btn.innerHTML = '👆 ย่อรายการ';
+        } else {
+          btn.innerHTML = '👇 ดูเพิ่มเติม (' + (data.length - 5) + ')';
+        }
+      } else {
+        showMoreContainer.style.display = 'none';
+      }
+    }
+
+    function togglePerformers() {
+      renderPerformers(allPerformers, !isPerformersExpanded);
+    }
+
+    function renderDeptRanking(data) {
+      const list = document.getElementById('deptList');
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        list.innerHTML = '<li style="text-align:center;color:var(--muted);padding:1rem;">ยังไม่มีข้อมูล</li>';
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+      list.innerHTML = data.slice(0, 5).map((d, i) => `
+        <li class="dept-item">
+          <div class="dept-rank">${medals[i] || (i + 1)}</div>
+          <div class="dept-info">
+            <div class="dept-name">${d.dept}</div>
+            <div class="dept-bar">
+              <div class="dept-bar-fill" style="width: ${d.onTimeRate}%"></div>
+            </div>
+          </div>
+          <div class="dept-rate">${d.onTimeRate}%</div>
+        </li>
+      `).join('');
+    }
+
+    // Load data with cache-first strategy
+    async function loadData() {
+      // Show cached data immediately (if available)
+      const cachedPerformers = cache.get('performers');
+      const cachedDepts = cache.get('depts');
+
+      if (cachedPerformers) renderPerformers(cachedPerformers);
+      if (cachedDepts) renderDeptRanking(cachedDepts);
+
+      // Fetch fresh data in parallel
+      const [performers, depts] = await Promise.all([
+        fetchAPI('getTopPerformers'),
+        fetchAPI('getDeptRanking')
+      ]);
+
+      // Update cache and UI with fresh data
+      if (performers && Array.isArray(performers)) {
+        cache.set('performers', performers);
+        renderPerformers(performers);
+      }
+      if (depts && Array.isArray(depts)) {
+        cache.set('depts', depts);
+        renderDeptRanking(depts);
+      }
+    }
+
+    // Start loading immediately
+    loadData();
+  </script>
+</body>
+
+</html>

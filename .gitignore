@@ -13,6 +13,10 @@ pb_data/
 # Build output
 */dist/
 
+# Playwright generated reports
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+
 # OS files
 .DS_Store
 Thumbs.db

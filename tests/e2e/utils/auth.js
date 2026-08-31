@@ -14,46 +14,81 @@ const ROLE_MENUS = {
   technician: '#/mechanic-kpi'
 };
 const TEST_USERS = {
-  admin: { id: 'test-admin', username: 'admin', name: 'Admin', role: 'admin', branch: 'all' },
-  manager1: { id: 'test-manager', username: 'manager1', name: 'Manager', role: 'manager', branch: 'all' },
-  somchai: { id: 'test-mechanic', username: 'somchai', name: 'Somchai', role: 'mechanic', branch: 'samchuk' },
-  sa1: { id: 'test-sa', username: 'sa1', name: 'Service Advisor', role: 'sa', branch: 'samchuk' }
+  admin: { id: 'test-admin', username: 'admin', name: 'Admin', role: 'admin', branch: 'bc-auto-service' },
+  manager1: { id: 'test-manager', username: 'manager1', name: 'Manager', role: 'manager', branch: 'bc-auto-service' },
+  somchai: { id: '2', username: 'somchai', name: 'Somchai', role: 'mechanic', branch: 'bc-auto-samchuk' },
+  sa1: { id: 'test-sa', username: 'sa1', name: 'Service Advisor', role: 'sa', branch: 'bc-auto-samchuk' }
 };
 
 async function loginMungkhudShop(page, username, password) {
-  const { token, user } = await apiLogin(page, username, password);
+  const { user } = await apiLogin(page, username, password);
   const allowedMenus = user.allowed_menus || ROLE_MENUS[user.role] || '';
+  const ssoToken = createPortalSsoToken(user);
 
-  await page.addInitScript(({ token, user, allowedMenus }) => {
-    const session = {
+  await page.addInitScript(({ user, allowedMenus }) => {
+    localStorage.setItem('mungkhud_changelog_version', '2.3.0');
+    localStorage.setItem('app.session.devAuth', '1');
+    localStorage.setItem('app.session.branchId', user.branch || 'bc-auto-service');
+    localStorage.setItem('app.session.branchLocked', 'true');
+    localStorage.setItem('app.session.role', user.role || '');
+    localStorage.setItem('app.session.userId', user.id || '');
+    localStorage.setItem('app.session.userName', user.name || user.display_name || user.username || 'Dev User');
+    localStorage.setItem('app.session.authModel', JSON.stringify({
       id: user.id,
       username: user.username || user.name,
       display_name: user.name || user.display_name || user.username,
       role: user.role,
+      branch_id: user.branch || 'bc-auto-service',
       allowed_menus: allowedMenus,
-      branch_id: user.branch || '',
-      permissions: '{}',
-      sso_source: 'api_jwt',
-      _expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-    };
-    localStorage.setItem('mungkhud_auth', JSON.stringify(session));
-    localStorage.setItem('mungkhud_jwt', token);
-    localStorage.setItem('bcauto_jwt', token);
-    localStorage.setItem('mungkhud_changelog_version', '2.3.0');
-    if (!sessionStorage.getItem('mungkhud_test_logged_in')) {
-      sessionStorage.setItem('mungkhud_test_logged_in', 'true');
-      if (user.branch && user.branch !== 'all') {
-        localStorage.setItem('mungkhud_branch', user.branch);
-      } else {
-        localStorage.removeItem('mungkhud_branch');
-      }
-    }
-  }, { token, user, allowedMenus });
+      dev_mode: true,
+      portal_source: 'app.portal'
+    }));
+  }, { user, allowedMenus });
 
-  await page.goto('/index.html#/dashboard');
-  await page.waitForFunction(() => window.location.hash.includes('dashboard'), { timeout: 15000 });
+  await page.goto(`/?sso_token=${encodeURIComponent(ssoToken)}#/dashboard`);
+  await page.waitForFunction(() => {
+    const auth = localStorage.getItem('mungkhud_auth');
+    if (!auth || !window.location.hash.includes('dashboard')) return false;
+    try {
+        return ['portal', 'app.portal'].includes(JSON.parse(auth).sso_source);
+    } catch {
+      return false;
+    }
+  }, { timeout: 15000 });
   await page.keyboard.press('Escape');
   await page.waitForTimeout(500);
+}
+
+function createPortalSsoToken(user) {
+  const payload = {
+    id: user.id,
+    username: user.username || user.name,
+    display_name: user.name || user.display_name || user.username,
+    role: user.role,
+    branch_id: user.branch || 'bc-auto-service',
+    branch_locked: true,
+    portal_source: 'app.portal',
+    issued_at: Date.now()
+  };
+  return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
+}
+
+function getDevPortalHeaders(role = 'admin', branch = 'bc-auto-service', user = {}) {
+  const testUser = {
+    id: user.id || `test-${role}`,
+    username: user.username || role,
+    name: user.name || role,
+    role,
+    branch
+  };
+  return {
+    'Content-Type': 'application/json',
+    'x-bcauto-dev-auth': '1',
+    'x-bcauto-dev-role': testUser.role,
+    'x-bcauto-dev-user-id': testUser.id,
+    'x-bcauto-dev-user-name': encodeURIComponent(testUser.name || testUser.username),
+    'x-bcauto-dev-branch': testUser.branch || 'bc-auto-service'
+  };
 }
 
 async function gotoMungkhudRoute(page, route, readySelector) {
@@ -68,16 +103,17 @@ async function gotoMungkhudRoute(page, route, readySelector) {
   }
 }
 
-async function loginManagement(page, username, password) {
+async function loginPortal(page, username, password) {
   const { token, user } = await apiLogin(page, username, password);
 
   await page.addInitScript(({ token, user }) => {
-    sessionStorage.setItem('bcauto_role', user.role || 'admin');
-    sessionStorage.setItem('bcauto_user_name', user.name || user.username || 'Admin');
-    sessionStorage.setItem('bcauto_user_id', user.id);
+    localStorage.setItem('app.session.role', user.role || 'admin');
+    localStorage.setItem('app.session.userName', user.name || user.username || 'Admin');
+    localStorage.setItem('app.session.userId', user.id);
+    localStorage.setItem('app.session.branchLocked', 'true');
     localStorage.setItem('bcauto_jwt', token);
     localStorage.setItem('mungkhud_jwt', token);
-    localStorage.setItem('bcauto_branch', user.branch === 'main' ? 'BC Auto Service' : (user.branch || 'BC Auto Service'));
+    localStorage.setItem('app.session.branchId', user.branch === 'main' ? 'bc-auto-service' : (user.branch || 'bc-auto-service'));
   }, { token, user });
 
   await page.goto('/pages/main/index.html');
@@ -120,5 +156,5 @@ async function apiLogin(page, username, password) {
   throw new Error(`API login failed for ${username}: ${lastError || 'unknown error'}`);
 }
 
-module.exports = { loginMungkhudShop, loginManagement, gotoMungkhudRoute };
+module.exports = { loginMungkhudShop, loginPortal, gotoMungkhudRoute, getDevPortalHeaders };
 

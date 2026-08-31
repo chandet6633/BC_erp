@@ -1,5 +1,6 @@
 import { createMasterPage } from './master-factory.js'
 import { fetchFullList } from '../services/pb.js'
+import { UOM_OPTIONS, TRACKING_TYPE_OPTIONS, formatTrackingType, getProductTrackingType, parseMetadata } from '../utils/inventory-domain.js'
 
 const UNIT_OPTIONS = ['ชิ้น', 'ลิตร', 'กล่อง', 'ชุด', 'งาน', 'ครั้ง', 'อัน', 'คู่', 'ม้วน', 'อื่นๆ']
 
@@ -69,6 +70,11 @@ const baseMasterPage = createMasterPage({
             fetchOptions: async () => (await getGroups()).filter(g => g.is_active !== false && g.is_active !== 'false').map(g => ({ value: g.id, label: `${g.code ? g.code + ' - ' : ''}${g.name}` }))
         },
         { key: 'unit', label: 'หน่วยนับ', type: 'select', options: UNIT_OPTIONS },
+        { key: 'base_uom', label: 'Base UOM', type: 'select', options: UOM_OPTIONS },
+        { key: 'purchase_uom', label: 'Purchase UOM', type: 'select', options: UOM_OPTIONS },
+        { key: 'sales_uom', label: 'Sales UOM', type: 'select', options: UOM_OPTIONS },
+        { key: 'uom_conversion_factor', label: 'Purchase to Base Factor', type: 'number', placeholder: 'e.g. barrel to liter = 200' },
+        { key: 'tracking_type', label: 'Stock Tracking', type: 'select', options: TRACKING_TYPE_OPTIONS, getValue: item => getProductTrackingType(item) },
         { key: 'cost', label: 'ราคาทุน', type: 'number' },
         { key: 'price', label: 'ราคาขาย', type: 'number' },
         { key: 'min_qty', label: 'จุดสั่งซื้อ (Min)', type: 'number' },
@@ -95,12 +101,14 @@ const baseMasterPage = createMasterPage({
         { key: 'brand_id', label: 'ยี่ห้อ', render: r => r._brandName || r.brand_id || '-' },
         { key: 'group_id', label: 'กลุ่ม', render: r => r._groupName || r.group_id || '-' },
         { key: 'unit', label: 'หน่วย' },
+        { key: 'base_uom', label: 'Base UOM', render: r => r.base_uom || r.unit || '-' },
+        { key: 'tracking_type', label: 'Tracking', render: r => formatTrackingType(getProductTrackingType(r)) },
         { key: 'cost', label: 'ราคาทุน' },
         { key: 'price', label: 'ราคาขาย' },
         { key: 'min_qty', label: 'Min', render: r => r.min_qty ?? r.min_stock ?? 0 },
         { key: 'max_qty', label: 'Max', render: r => r.max_qty ?? '-' },
     ],
-    beforeSave: async (data, editingId) => {
+    beforeSave: async (data, editingId, currentItem) => {
         if (!editingId && (!data.code || data.code.trim() === '')) {
             data.code = await nextProductCode(data)
         }
@@ -110,6 +118,13 @@ const baseMasterPage = createMasterPage({
         if (data.is_track_stock === undefined || data.is_track_stock === null) {
             data.is_track_stock = 'true'
         }
+        data.base_uom = data.base_uom || data.unit || 'piece'
+        data.purchase_uom = data.purchase_uom || data.base_uom
+        data.sales_uom = data.sales_uom || data.base_uom
+        data.tracking_type = data.is_track_stock === 'false' ? 'NONE' : (data.tracking_type || 'NONE')
+        const metadata = { ...parseMetadata(currentItem), tracking_type: data.tracking_type }
+        data.metadata_json = JSON.stringify(metadata)
+        if (!data.uom_conversion_factor) data.uom_conversion_factor = 1
         if (data.min_qty == null) data.min_qty = 0
         return data
     },
@@ -129,6 +144,7 @@ export function initMasterProductPage(container) {
 
     const fieldType = container.querySelector('#field_type')
     const fieldTrack = container.querySelector('#field_is_track_stock')
+    const fieldTrackingType = container.querySelector('#field_tracking_type')
     
     if (fieldType && fieldTrack) {
         // Create service info note
@@ -141,7 +157,15 @@ export function initMasterProductPage(container) {
         infoNote.textContent = '💡 บริการ/ค่าแรง จะไม่นับสต็อกโดยอัตโนมัติ'
         fieldTrack.parentNode.appendChild(infoNote)
 
-        const updateTrackStock = () => {
+        const updateTrackingTypeState = () => {
+            if (!fieldTrackingType) return
+            const trackStock = String(fieldTrack.value) !== 'false'
+            fieldTrackingType.disabled = !trackStock
+            if (!trackStock) fieldTrackingType.value = 'NONE'
+            if (trackStock && !fieldTrackingType.value) fieldTrackingType.value = 'NONE'
+        }
+
+        const updateTrackStock = ({ resetForNew = false } = {}) => {
             const val = fieldType.value
             const isService = ['service', 'labor', 'labour'].includes(val)
             if (isService) {
@@ -149,13 +173,15 @@ export function initMasterProductPage(container) {
                 fieldTrack.disabled = true
                 infoNote.style.display = 'block'
             } else {
-                fieldTrack.value = 'true'
+                if (fieldTrack.disabled || resetForNew || !fieldTrack.value) fieldTrack.value = 'true'
                 fieldTrack.disabled = false
                 infoNote.style.display = 'none'
             }
+            updateTrackingTypeState()
         }
 
-        fieldType.addEventListener('change', updateTrackStock)
+        fieldType.addEventListener('change', () => updateTrackStock())
+        fieldTrack.addEventListener('change', updateTrackingTypeState)
 
         // Event delegation for edit buttons to update the disabled state
         container.addEventListener('click', (e) => {
@@ -166,12 +192,12 @@ export function initMasterProductPage(container) {
             }
             if (e.target.closest('#btnClearMaster')) {
                 setTimeout(() => {
-                    updateTrackStock()
+                    updateTrackStock({ resetForNew: true })
                 }, 50)
             }
         })
 
         // Run initially
-        updateTrackStock()
+        updateTrackStock({ resetForNew: true })
     }
 }

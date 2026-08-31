@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>S.A. Database and Documentation | BC Auto</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: "IBM Plex Sans Thai", Tahoma, sans-serif; }
+        body { background: #f8fafc; color: #172033; }
+        .module-page { max-width: 1120px; margin: 0 auto; padding: 24px; }
+        .module-hero { background: #fff; border: 1px solid #cfd7e3; border-radius: 8px; padding: clamp(18px, 4vw, 30px); display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; box-shadow: 0 14px 30px rgba(23, 32, 51, 0.08); }
+        .kicker { margin: 0 0 10px; color: #0b6f68; font-weight: 800; font-size: 15px; letter-spacing: 0; }
+        h1 { margin: 0; font-family: "IBM Plex Sans Thai Looped", "IBM Plex Sans Thai", Tahoma, sans-serif; font-size: clamp(34px, 5vw, 56px); line-height: 1.04; letter-spacing: 0; }
+        .lead { margin: 14px 0 0; color: #4b5a70; line-height: 1.72; max-width: 780px; font-size: 17px; }
+        .lang-toggle { display: inline-grid; grid-template-columns: 1fr 1fr; border: 1px solid #d8dee8; background: #fff; border-radius: 10px; padding: 3px; gap: 3px; }
+        .lang-toggle button { min-height: 34px; border: 0; border-radius: 8px; background: transparent; padding: 0 12px; font-weight: 800; cursor: pointer; color: #4b5a70; }
+        .lang-toggle button.active { background: #223047; color: #fff; }
+        .content-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+        .info-card { background: #fff; border: 1px solid #cfd7e3; border-radius: 8px; padding: 18px; min-height: 170px; display: grid; gap: 10px; align-content: start; }
+        .info-card .material-icons-outlined { color: #0b6f68; font-size: 32px; }
+        .info-card h2 { margin: 0; font-family: "IBM Plex Sans Thai Looped", "IBM Plex Sans Thai", Tahoma, sans-serif; font-size: 21px; letter-spacing: 0; }
+        .info-card p { margin: 0; color: #4b5a70; line-height: 1.62; font-size: 15px; }
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: #0f766e; font-weight: 800; text-decoration: none; margin-top: 18px; }
+        @media (max-width: 860px) { .module-hero { grid-template-columns: 1fr; } .content-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 520px) { .module-page { padding: 14px; } .module-hero, .info-card { padding: 16px; } }
+    </style>
+</head>
+
+<body>
+    <main class="module-page">
+        <section class="module-hero">
+            <div>
+                <p class="kicker" data-i18n="kicker">กำลังพัฒนา</p>
+                <h1 data-i18n="title">ฐานข้อมูลและเอกสาร S.A.</h1>
+                <p class="lead" data-i18n="lead">พื้นที่สำหรับทีม S.A. และผู้จัดการในการบันทึกราคาซัพพลายเออร์ เอกสารบริการ และข้อมูลอ้างอิงที่ใช้ซ้ำ</p>
+            </div>
+            <div class="lang-toggle" aria-label="Language">
+                <button type="button" data-lang="th">TH</button>
+                <button type="button" data-lang="en">EN</button>
+            </div>
+        </section>
+
+        <section class="content-grid">
+            <article class="info-card">
+                <span class="material-icons-outlined">sell</span>
+                <h2 data-i18n="supplierTitle">ราคาซัพพลายเออร์</h2>
+                <p data-i18n="supplierDesc">บันทึกราคาซื้อ เงื่อนไข และแหล่งจัดหาที่ทีมใช้เปรียบเทียบได้</p>
+            </article>
+            <article class="info-card">
+                <span class="material-icons-outlined">description</span>
+                <h2 data-i18n="docsTitle">เอกสารบริการ</h2>
+                <p data-i18n="docsDesc">รวมเอกสาร ขั้นตอน และแบบฟอร์มที่เกี่ยวข้องกับงานบริการลูกค้า</p>
+            </article>
+            <article class="info-card">
+                <span class="material-icons-outlined">fact_check</span>
+                <h2 data-i18n="recordsTitle">บันทึกอ้างอิง</h2>
+                <p data-i18n="recordsDesc">เก็บข้อมูลที่ S.A. และผู้จัดการต้องใช้ซ้ำในงานประจำวัน</p>
+            </article>
+        </section>
+
+        <a class="back-link" href="/pages/main/index.html">
+            <span class="material-icons-outlined">arrow_back</span>
+            <span data-i18n="back">กลับไป Portal</span>
+        </a>
+    </main>
+
+    <script>
+        const dict = {
+            th: { kicker: 'กำลังพัฒนา', title: 'ฐานข้อมูลและเอกสาร S.A.', lead: 'พื้นที่สำหรับทีม S.A. และผู้จัดการในการบันทึกราคาซัพพลายเออร์ เอกสารบริการ และข้อมูลอ้างอิงที่ใช้ซ้ำ', supplierTitle: 'ราคาซัพพลายเออร์', supplierDesc: 'บันทึกราคาซื้อ เงื่อนไข และแหล่งจัดหาที่ทีมใช้เปรียบเทียบได้', docsTitle: 'เอกสารบริการ', docsDesc: 'รวมเอกสาร ขั้นตอน และแบบฟอร์มที่เกี่ยวข้องกับงานบริการลูกค้า', recordsTitle: 'บันทึกอ้างอิง', recordsDesc: 'เก็บข้อมูลที่ S.A. และผู้จัดการต้องใช้ซ้ำในงานประจำวัน', back: 'กลับไป Portal' },
+            en: { kicker: 'In progress', title: 'S.A. Database and Documentation', lead: 'A workspace for S.A. and managers to record supplier prices, service documents, and reusable reference data.', supplierTitle: 'Supplier pricing', supplierDesc: 'Record purchase prices, terms, and sourcing references for comparison.', docsTitle: 'Service documents', docsDesc: 'Collect documents, procedures, and forms used in customer service work.', recordsTitle: 'Reference records', recordsDesc: 'Store reusable information for S.A. and manager daily workflows.', back: 'Back to Portal' }
+        };
+        const LANG_KEY = 'app.session.language';
+        const LEGACY_LANG_KEY = 'bcauto_lang';
+        let lang = (localStorage.getItem(LANG_KEY) || localStorage.getItem(LEGACY_LANG_KEY)) === 'en' ? 'en' : 'th';
+        function renderLang() {
+            document.documentElement.lang = lang;
+            localStorage.setItem(LANG_KEY, lang);
+            document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = dict[lang][el.dataset.i18n]);
+            document.querySelectorAll('[data-lang]').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+        }
+        document.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', () => { lang = btn.dataset.lang; renderLang(); }));
+        renderLang();
+    </script>
+    <script type="module">
+        import '../../services/pocketbase.js';
+        import '../../services/authService.js';
+        import '../../components/ui.js';
+        import '../../assets/js/app-shell.js';
+    </script>
+</body>
+
+</html>

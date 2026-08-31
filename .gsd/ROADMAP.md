@@ -88,12 +88,12 @@
 - Build and deploy to Docker test environment
 - End-to-end workflow testing (create job → assign → work → close → pay → print → summary)
 
-### Phase 6: Management Portal — Mechanic Dashboard
+### Phase 6: Portal — Mechanic Dashboard
 **Status**: ✅ Complete
-**Objective**: Create a dedicated workspace for mechanics in the Management Portal.
+**Objective**: Create a dedicated workspace for mechanics in the Portal.
 **Features**: F3 (KPI aggregation & QC)
 **Deliverables**:
-- Dedicated mechanic route (`/mechanic`) in the Management Portal
+- Dedicated mechanic route (`/mechanic`) in the Portal
 - Mechanic dashboard showing active jobs assigned to them
 - QC approval interface for uploading proof images and signing off
 - KPI tracking (jobs completed, hours logged, performance metrics)
@@ -118,7 +118,7 @@
 **Status**: ✅ Complete
 **Objective**: Test ALL MungkhudShop pages (stocking simulation, print templates, kanban, QC, settings, job workflow). Identify any broken links to the schema or dead buttons. Log every failure and bug as a list to be fixed in Phase 4.
 
-### Phase 3: Management Portal Role-Based Testing
+### Phase 3: Portal Role-Based Testing
 **Status**: ✅ Complete
 **Objective**: Test all portal features across every role (mechanic, SA, manager, owner, admin). Simulate distinct workflows to ensure security, correct schema interaction, and no dead ends. Log every failure and bug as a list to be fixed in Phase 4.
 

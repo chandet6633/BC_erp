@@ -40,7 +40,7 @@ A `prepare-production.mjs` script was written and validated against the NocoDB s
 ### ✅ Must-Have 4: Nginx Routing and API Proxy Config
 **Status:** PASS
 **Evidence:** 
-`nginx-management.conf` and `nginx-mungkhud.conf` have been properly updated to:
+`nginx-portal.conf` and `nginx-mungkhud.conf` have been properly updated to:
 ```nginx
 location /api/ {
     proxy_pass http://bc-api:3000/api/;

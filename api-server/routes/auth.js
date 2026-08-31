@@ -39,7 +39,7 @@ function userResponse(user) {
         name: user.name || user.display_name,
         username: user.username,
         role: user.role,
-        branch: user.branch || user.branch_id || 'all',
+        branch: user.branch || user.branch_id || '',
         must_change_password: !!user.must_change_password
     }
 }
@@ -104,10 +104,10 @@ router.post('/login', authLimiter, async (req, res) => {
             id: user.id,
             name: user.name || user.display_name || 'User',
             role: user.role,
-            branch: user.branch || user.branch_id || 'all'
+            branch: user.branch || user.branch_id || ''
         })
 
-        audit('login_success', user.name, `Password login: ${user.name} (${user.role}, ${user.branch || 'all'})`)
+        audit('login_success', user.name, `Password login: ${user.name} (${user.role}, ${user.branch || user.branch_id || 'missing-branch'})`)
 
         return res.json({
             token,
@@ -173,10 +173,10 @@ router.post('/pin-login', authLimiter, async (req, res) => {
             id: match.id,
             name: match.name || match.display_name || 'User',
             role: match.role,
-            branch: match.branch || match.branch_id || 'all'
+            branch: match.branch || match.branch_id || ''
         })
 
-        audit('login_success', match.name, `PIN login: ${match.name} (${match.role}, ${match.branch || 'all'})`)
+        audit('login_success', match.name, `PIN login: ${match.name} (${match.role}, ${match.branch || match.branch_id || 'missing-branch'})`)
 
         return res.json({
             token,

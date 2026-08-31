@@ -3,7 +3,7 @@
  * Fully wired to NocoDB `lookups` table with CRUD.
  */
 import { showToast, showConfirm } from '../components/ui.js'
-import { getCurrentUser } from '../services/auth.js'
+import { getApiAuthHeaders, getCurrentUser } from '../services/auth.js'
 import { fetchFullList, createRecord, updateRecord, deleteRecord } from '../services/pb.js'
 import { sanitizeFilter } from '../utils/sanitize.js'
 
@@ -20,7 +20,7 @@ const LOOKUP_CATEGORIES = [
 
 export function initMasterLookupPage(container) {
     const user = getCurrentUser()
-    const canEditMasterData = ['manager', 'owner', 'admin'].includes(user?.role)
+    const canEditMasterData = Boolean(user)
     let selectedCategory = LOOKUP_CATEGORIES[0].id
     let editingId = null
 
@@ -63,7 +63,7 @@ export function initMasterLookupPage(container) {
             <div class="card">
                 <div class="card-header">
                     <h3 id="lookupTitle">${LOOKUP_CATEGORIES[0].label}</h3>
-                    ${canEditMasterData ? '<button class="btn btn-sm btn-primary" id="btnAddLookup"><span class="material-icons-outlined" style="font-size:16px;">add</span> เพิ่มรายการ</button>' : ''}
+                    ${canEditMasterData ? '<div class="toolbar-actions"><button class="btn btn-sm btn-primary" id="btnAddLookup"><span class="material-icons-outlined" style="font-size:16px;">add</span> เพิ่มรายการ</button><button class="btn btn-sm btn-danger" id="btnClearLookupData"><span class="material-icons-outlined" style="font-size:16px;">delete_sweep</span> ล้างหมวดนี้</button></div>' : ''}
                 </div>
                 <div class="card-body">
                     <!-- Inline Add/Edit Form (hidden by default) -->
@@ -121,6 +121,27 @@ export function initMasterLookupPage(container) {
         container.querySelector('#lookupValue').value = ''
         container.querySelector('#lookupForm').style.display = 'block'
         container.querySelector('#lookupLabel').focus()
+    })
+
+    container.querySelector('#btnClearLookupData')?.addEventListener('click', async () => {
+        if (!canEditMasterData) return
+        const cat = LOOKUP_CATEGORIES.find(c => c.id === selectedCategory)
+        if (!await showConfirm('ยืนยันลบข้อมูลอ้างอิง', `ต้องการลบข้อมูล ${cat?.label || selectedCategory} ทั้งหมดใช่หรือไม่?`)) return
+        try {
+            const res = await fetch('/api/dev/clear-data', {
+                method: 'POST',
+                headers: getApiAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ action: 'lookup_type', type: selectedCategory })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Request failed')
+            showToast(data.message || 'ล้างข้อมูลอ้างอิงเรียบร้อย', 'success')
+            hideForm()
+            loadCategoryData()
+        } catch (e) {
+            console.error(e)
+            showToast('Error: ' + e.message, 'error')
+        }
     })
 
     // ─── Cancel Button ───

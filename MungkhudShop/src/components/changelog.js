@@ -25,7 +25,7 @@ const CHANGELOG = [
         title: 'Sprint 2 — Security & UX',
         items: [
             '🔐 PIN Login รวมฐานข้อมูลเดียวกัน',
-            '🏠 ปุ่มกลับหน้าหลัก Management',
+            '🏠 ปุ่มกลับหน้าหลัก Portal',
             '🌙 Dark Mode — สลับธีมมืด/สว่าง',
             '👷 สิทธิ์พนักงาน — ซ่อนเมนูรายงานและตั้งค่า',
             '🔒 Branch Lock — พนักงานเห็นเฉพาะสาขาตัวเอง',

@@ -4,13 +4,14 @@
  * P3: Dynamic imports for code splitting — pages load on-demand.
  */
 import { initDashboardPage } from './pages/dashboard.js'
-import { initLoginPage } from './pages/login.js'
-import { getCurrentUser, setCurrentUser, hasAccess, logout, getRoleLabel, getBranch, setBranch, isSSO, tryAutoLogin } from './services/auth.js'
+import { getApiAuthHeaders, getCurrentUser, setCurrentUser, hasAccess, logout, getRoleLabel, getBranch, setBranch, isSSO, clearCurrentSession, redirectToPortal } from './services/auth.js'
 import { showHelp } from './components/help.js'
 import { initChangelog } from './components/changelog.js'
 import { sanitizeFilter } from './utils/sanitize.js'
-import { fetchFullList, getManagementUrl } from './services/pb.js'
+import { fetchFullList, getPortalUrl } from './services/pb.js'
 import { setAuthToken } from '@shared/nocodb-adapter.js'
+import { fetchBranchMetadata, getBranchLabel as getMetadataBranchLabel, getBranchOptions } from '@shared/branch-metadata.js'
+import { clearLegacySessionKeys, isRealBranchId, setDevSession as writeDevSession } from '@shared/session.js'
 import { getStockStatus, isLowStock, isStockTrackedProduct } from './utils/stock-rules.js'
 
 /* ── P3: Route → Lazy init function map ── */
@@ -55,6 +56,26 @@ const ROUTES = {
 
 
 const DEFAULT_ROUTE = 'dashboard'
+
+let branchMetadata = []
+
+function normalizePortalBranch(branchId) {
+    const raw = String(branchId || '').trim()
+    if (!raw || raw === 'all') return ''
+    const match = branchMetadata.find(branch =>
+        branch.branch_id === raw ||
+        branch.code === raw ||
+        branch.id === raw ||
+        (branch.aliases || []).includes(raw)
+    )
+    return match?.branch_id || raw
+}
+
+function getBranchDisplayName(branchCode) {
+    const code = String(branchCode || '').trim()
+    if (!isRealBranchId(code)) return 'ไม่ระบุสาขา'
+    return getMetadataBranchLabel(code, branchMetadata, 'th') || code
+}
 
 const ICON_FALLBACKS = {
     account_balance: '▥', account_balance_wallet: '▤', account_circle: '◎',
@@ -122,18 +143,15 @@ function getRouteFromHash() {
 async function navigate(route) {
     const user = getCurrentUser()
 
-    // --- Login page (no auth needed) ---
+    // MungkhudShop is portal-only. The legacy login route is intentionally bypassed.
     if (route === 'login') {
-        hideAppShell()
-        const content = document.getElementById('pageContent')
-        content.innerHTML = ''
-        initLoginPage(content)
+        redirectToPortal('portal_required')
         return
     }
 
     // --- Auth guard ---
     if (!user) {
-        window.location.hash = '#/login'
+        redirectToPortal('portal_required')
         return
     }
 
@@ -366,7 +384,6 @@ function resetSessionTimer() {
 
     sessionTimer = setTimeout(() => {
         logout()
-        window.location.hash = '#/login'
     }, SESSION_TIMEOUT_MS)
 }
 
@@ -427,12 +444,22 @@ async function handleSSO() {
         const cleanToken = token.replace(/ /g, '+')
         const json = decodeURIComponent(escape(atob(cleanToken)))
         const data = JSON.parse(json)
+        const isDevPortalToken = ['bcauto_portal', 'app.portal'].includes(data.portal_source) && !data.jwt
         
         // Token expiry check (5 minutes)
         if (Date.now() - data.issued_at > 5 * 60 * 1000) {
             console.warn('SSO token expired')
+            clearCurrentSession()
+            redirectToPortal('sso_expired')
             return
         }
+
+        // Clean URL early to prevent token re-use/sharing while metadata loads.
+        params.delete('sso_token')
+        const newSearch = params.toString()
+        const cleanPath = window.location.pathname || '/'
+        const cleanHash = window.location.hash || '#/dashboard'
+        window.history.replaceState({}, '', cleanPath + (newSearch ? '?' + newSearch : '') + cleanHash)
 
         // Update NocoDB adapter token FIRST so subsequent API calls work
         if (data.jwt) {
@@ -441,6 +468,33 @@ async function handleSSO() {
             } catch (err) {
                 console.warn('SSO: Failed to set adapter token', err)
             }
+        }
+
+        const branchId = normalizePortalBranch(data.branch_id)
+        if (!isRealBranchId(branchId)) {
+            clearCurrentSession()
+            redirectToPortal('branch_required')
+            return
+        }
+
+        if (isDevPortalToken) {
+            writeDevSession({
+                role: data.role || '',
+                userId: data.id || '',
+                userName: data.display_name || data.username || 'Dev User',
+                authModel: {
+                    id: data.id,
+                    username: data.username,
+                    display_name: data.display_name,
+                    role: data.role,
+                    branch_id: branchId,
+                    branch: branchId,
+                    dev_mode: true
+                },
+                branchId,
+                branchLocked: true
+            })
+            clearLegacySessionKeys()
         }
 
         // Fetch role data for menu permissions
@@ -477,27 +531,24 @@ async function handleSSO() {
             display_name: data.display_name,
             role: data.role,
             allowed_menus: allowedMenus,
-            branch_id: data.branch_id || '',
-            permissions: '{}'
+            branch_id: branchId,
+            branch_locked: data.branch_locked === true || data.branch_locked === 'true',
+            dev_mode: isDevPortalToken,
+            permissions: '{}',
+            sso_source: 'app.portal'
         }
 
         setCurrentUser(session, data.jwt)
-        if (data.branch_id) setBranch(data.branch_id)
+        setBranch(branchId)
 
         console.log('✅ SSO Login successful:', session.display_name)
-
-        // Clean URL to prevent re-use/sharing
-        params.delete('sso_token')
-        const newSearch = params.toString()
-        const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash
-        window.history.replaceState({}, '', newUrl)
 
     } catch (e) {
         console.error('❌ SSO parsing failed:', e)
     }
 }
 
-/* ── Embedded Mode (iframe inside Management) ── */
+/* ── Embedded Mode (iframe inside Portal) ── */
 function applyEmbeddedMode() {
     document.documentElement.classList.add('embedded-mode')
     const sidebar = document.getElementById('sidebar')
@@ -512,17 +563,17 @@ function applyEmbeddedMode() {
     if (mainContent) mainContent.classList.add('login-mode')
 }
 
-/* ── Back to Management Button (SSO users only) ── */
+/* ── Back to Portal Button (SSO users only) ── */
 function initBackToMgmt() {
     const btn = document.getElementById('backToMgmtBtn')
     if (!btn) return
 
     const user = getCurrentUser()
     // Show for SSO and shared PIN users
-    if (user && (user.sso_source === 'management' || user.sso_source === 'pin_shared')) {
+    if (user && (user.sso_source === 'portal' || user.sso_source === 'app.portal' || user.sso_source === 'pin_shared')) {
         btn.style.display = 'flex'
         btn.addEventListener('click', () => {
-            window.location.href = getManagementUrl()
+            window.location.href = getPortalUrl()
         })
     }
 }
@@ -561,6 +612,12 @@ function initDarkMode() {
 async function boot() {
     const isEmbedded = window.self !== window.top
     await handleSSO()
+    const portalUser = getCurrentUser()
+    if (!isSSO(portalUser)) {
+        clearCurrentSession()
+        redirectToPortal('portal_required')
+        return
+    }
     initSidebar()
     initMobileMenu()
     initHelpButton()
@@ -571,14 +628,6 @@ async function boot() {
     filterSidebarByRole()
     await initBranchSwitcher()
     if (isEmbedded) applyEmbeddedMode()
-    // Auto-login: if no session but stored JWT exists, validate it
-    if (!getCurrentUser()) {
-        const session = await tryAutoLogin()
-        if (session) {
-            console.log('[Auth] Auto-login successful:', session.display_name)
-        }
-    }
-
     navigate(getRouteFromHash())
     window.addEventListener('hashchange', () => navigate(getRouteFromHash()))
 
@@ -604,7 +653,7 @@ async function checkLowStock() {
         let stockMap = {}
         try {
             const stockRes = await fetch(`/api/data/custom/stock-balances?branch_id=${encodeURIComponent(getBranch() || '')}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('mungkhud_jwt')}` }
+                headers: getApiAuthHeaders()
             })
             if (stockRes.ok) {
                 const rawMap = await stockRes.json()
@@ -729,20 +778,19 @@ async function initBranchSwitcher() {
     const user = getCurrentUser()
     if (!user) return
 
-    // Roles that are LOCKED to their assigned branch — show label, no dropdown
-    const LOCKED_ROLES = ['sa', 'manager', 'mechanic', 'technician', 'employee', 'employee_main', 'employee_sup']
-    const isLocked = LOCKED_ROLES.includes(user.role)
+    // Roles or portal sessions locked to their assigned branch show a label, not a dropdown.
+    const LOCKED_ROLES = ['sa', 'mechanic', 'technician', 'employee', 'employee_main', 'employee_sup']
+    const isLocked = true
 
     try {
-        // Load branch list from DB
-        const allBranches = await fetchFullList('branches', { requestKey: 'branch_list' })
+        branchMetadata = await fetchBranchMetadata({ includeAll: false })
 
         const SKIP_CODES = ['all', '']
         const branchMap = new Map() // code → display name
-        allBranches.forEach(b => {
-            const code = (b.code || b.name || '').trim()
+        getBranchOptions(branchMetadata, { scopedOnly: true }).forEach(b => {
+            const code = normalizePortalBranch(b.branch_id || b.code || b.id || '')
             if (code && !SKIP_CODES.includes(code.toLowerCase())) {
-                branchMap.set(code, b.name || code)
+                branchMap.set(code, getBranchDisplayName(code))
             }
         })
 
@@ -751,9 +799,16 @@ async function initBranchSwitcher() {
             select.style.display = 'none'
             if (label) label.style.display = ''
 
-            const branchCode = user.branch_id || ''
-            const branchName = branchMap.get(branchCode) || branchCode || 'สาขาของคุณ'
+            const branchCode = user.branch_id || getBranch() || ''
+            if (!isRealBranchId(branchCode)) {
+                clearCurrentSession()
+                redirectToPortal('branch_required')
+                return
+            }
+            const branchName = branchMap.get(branchCode) || getBranchDisplayName(branchCode)
             if (label) label.textContent = branchName
+            select.innerHTML = `<option value="${branchCode}">${branchName}</option>`
+            select.value = branchCode
 
             // Always enforce the branch filter
             setBranch(branchCode)
@@ -764,30 +819,27 @@ async function initBranchSwitcher() {
             if (label) label.style.display = 'none'
 
             select.innerHTML = ''
+            const allOpt = document.createElement('option')
+            allOpt.value = ''
+            allOpt.textContent = getBranchDisplayName('')
+            select.appendChild(allOpt)
+
             const sortedCodes = [...branchMap.keys()].sort()
             sortedCodes.forEach(code => {
                 const opt = document.createElement('option')
                 opt.value = code
-                opt.textContent = branchMap.get(code)
+                opt.textContent = branchMap.get(code) || getBranchDisplayName(code)
                 select.appendChild(opt)
             })
 
-            // Fallback if no branches defined
-            if (select.options.length === 0) {
-                const opt = document.createElement('option')
-                opt.value = 'main'
-                opt.textContent = 'สาขาหลัก'
-                select.appendChild(opt)
-            }
-
             // Restore saved branch — fall back to first option
-            const saved = getBranch()
+            const saved = user.branch_id || getBranch()
             if (saved && select.querySelector(`option[value="${saved}"]`)) {
                 select.value = saved
             } else {
-                select.value = select.options[0]?.value || ''
-                setBranch(select.value)
+                select.value = ''
             }
+            setBranch(select.value)
 
             select.addEventListener('change', () => {
                 setBranch(select.value)
@@ -799,14 +851,25 @@ async function initBranchSwitcher() {
         console.warn('Could not load branches:', e)
         // Graceful fallback
         if (isLocked) {
+            const fallbackBranch = user.branch_id || getBranch()
+            if (!isRealBranchId(fallbackBranch)) {
+                clearCurrentSession()
+                redirectToPortal('branch_required')
+                return
+            }
             select.style.display = 'none'
             if (label) {
                 label.style.display = ''
-                label.textContent = user.branch_id || 'สาขาของคุณ'
+                label.textContent = getBranchDisplayName(fallbackBranch)
             }
-            setBranch(user.branch_id || '')
+            select.innerHTML = `<option value="${fallbackBranch}">${getBranchDisplayName(fallbackBranch)}</option>`
+            select.value = fallbackBranch
+            setBranch(fallbackBranch)
         } else {
-            select.innerHTML = '<option value="main">สาขาหลัก</option>'
+            const saved = user.branch_id || getBranch()
+            select.innerHTML = `<option value="${saved || ''}">${getBranchDisplayName(saved)}</option>`
+            select.value = select.querySelector(`option[value="${saved}"]`) ? saved : ''
+            setBranch(select.value)
         }
     }
 }

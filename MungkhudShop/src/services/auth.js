@@ -6,13 +6,13 @@
  *
  * Architecture: Browser → Nginx → Express API → NocoDB
  */
-import { fetchFullList } from './pb.js'
+import { fetchFullList, getPortalUrl } from './pb.js'
 import { loginWithPin, loginWithUsername, validateToken, clearAuthToken } from '@shared/nocodb-adapter.js'
+import { buildDevAuthHeaders, clearAppSession, getSession, isRealBranchId, setSessionBranch } from '@shared/session.js'
 import { sanitizeFilter } from '../utils/sanitize.js'
 
 const AUTH_KEY = 'mungkhud_auth'
 const TOKEN_KEY = 'mungkhud_jwt'
-const BRANCH_KEY = 'mungkhud_branch'
 
 /* ═══════════════════════════════════════════════════
    SESSION MANAGEMENT
@@ -42,6 +42,8 @@ export function setCurrentUser(user, token) {
     const sessionWithExpiry = { ...user, _expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }
     localStorage.setItem(AUTH_KEY, JSON.stringify(sessionWithExpiry))
     if (token) localStorage.setItem(TOKEN_KEY, token)
+    const branchId = user.branch_id || user.branch || ''
+    if (isRealBranchId(branchId)) setSessionBranch(branchId, { locked: user.branch_locked !== false })
 }
 
 /** Get stored JWT token — checks localStorage then sessionStorage */
@@ -49,15 +51,40 @@ export function getStoredToken() {
     return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || ''
 }
 
+/** Build auth headers for direct fetch() calls that bypass the shared adapter. */
+export function getApiAuthHeaders(extra = {}) {
+    const token = getStoredToken()
+    const headers = { ...extra }
+    if (token) {
+        headers.Authorization = `Bearer ${token}`
+        return headers
+    }
+
+    return buildDevAuthHeaders(headers)
+}
+
 /** Clear user session */
-export function logout() {
+export function clearCurrentSession() {
     localStorage.removeItem(AUTH_KEY)
     localStorage.removeItem(TOKEN_KEY)
+    clearAppSession()
     sessionStorage.removeItem(AUTH_KEY)
     sessionStorage.removeItem(TOKEN_KEY)
     clearAuthToken()
-    window.location.hash = '#/login'
-    window.location.reload()
+}
+
+/** Send the user back to the Portal, the only entry point for MungkhudShop. */
+export function redirectToPortal(reason = 'portal_required') {
+    const url = new URL(getPortalUrl(), window.location.href)
+    url.searchParams.set('from', 'mungkhudshop')
+    url.searchParams.set('reason', reason)
+    window.location.href = url.toString()
+}
+
+/** Clear user session */
+export function logout() {
+    clearCurrentSession()
+    redirectToPortal('signed_out')
 }
 
 /* ═══════════════════════════════════════════════════
@@ -220,7 +247,7 @@ export function hasAccess(hash) {
 export function requireAuth() {
     const user = getCurrentUser()
     if (!user) {
-        window.location.hash = '#/login'
+        redirectToPortal('portal_required')
         return false
     }
     return true
@@ -229,7 +256,7 @@ export function requireAuth() {
 /** Check if current session came from SSO */
 export function isSSO() {
     const user = getCurrentUser()
-    return user && user.sso_source === 'management'
+    return user && (user.sso_source === 'portal' || user.sso_source === 'app.portal')
 }
 
 /** Get role display name */
@@ -250,16 +277,21 @@ export function getRoleLabel(role) {
    ═══════════════════════════════════════════════════ */
 
 export function getBranch() {
-    return localStorage.getItem(BRANCH_KEY) || ''
+    const sessionBranch = getSession().branchId
+    if (isRealBranchId(sessionBranch)) return sessionBranch
+    const user = getCurrentUser()
+    const userBranch = user?.branch_id || user?.branch || ''
+    return isRealBranchId(userBranch) ? userBranch : ''
 }
 
 export function setBranch(branchId) {
-    localStorage.setItem(BRANCH_KEY, branchId || '')
+    if (!isRealBranchId(branchId)) return
+    setSessionBranch(branchId, { locked: true })
 }
 
 export function getBranchFilter(fieldName = 'branch_id') {
     const branch = getBranch()
-    if (!branch) return ''
+    if (!isRealBranchId(branch)) return `${fieldName}='__missing_branch__'`
     return `${fieldName}='${sanitizeFilter(branch)}'`
 }
 

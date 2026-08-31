@@ -22,7 +22,7 @@
 
 ## ADR-004: SSO via Base64 Token
 - **Date:** 2026-04
-- **Decision:** Cross-app authentication between Management and MungkhudShop uses Base64-encoded JSON tokens with embedded JWT
+- **Decision:** Cross-app authentication between Portal and MungkhudShop uses Base64-encoded JSON tokens with embedded JWT
 - **Rationale:** Avoids shared cookie complexity; works with separate Nginx containers on different ports
 - **Consequence:** 5-minute expiry window; token must include JWT for authenticated API calls in the target app
 

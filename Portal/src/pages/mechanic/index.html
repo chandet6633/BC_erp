@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>หน้างานช่าง | BC Auto</title>
+    <meta name="description" content="ดูงานที่ได้รับมอบหมาย ส่ง QC และดูผลงานประจำเดือน" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=7" />
+
+    <link rel="stylesheet" href="../../assets/css/design-system.css" />
+    <link rel="stylesheet" href="../../assets/css/glass-ui.css" />
+    <link rel="stylesheet" href="../../assets/css/app-shell.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+    <!-- Toast Notifications -->
+    <div class="toast-stack" id="toastStack"></div>
+
+    <!-- Image Viewer Modal -->
+    <div id="imgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center;cursor:pointer;" onclick="this.style.display='none'">
+        <img id="imgModalSrc" src="" alt="QC Image" style="max-width:95vw;max-height:90vh;border-radius:12px;object-fit:contain;" />
+    </div>
+
+    <div class="page-container">
+
+        <!-- Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="material-icons-outlined" style="font-size:1.2rem;vertical-align:text-bottom;-webkit-text-fill-color:initial;background:none;">engineering</span>
+                    หน้างานช่าง
+                </h1>
+                <p id="greetingText">กำลังโหลด...</p>
+            </div>
+            <a href="../main/index.html" class="btn btn-outline btn-sm" style="font-size:0.8rem;padding:0.4rem 0.8rem;">← เมนูหลัก</a>
+        </div>
+
+        <!-- Toggle Tabs -->
+        <div class="tabs-container" style="display:flex; gap:10px; margin-bottom:1rem; border-bottom:1px solid var(--surface-200); padding-bottom:0px; margin-top: 1rem;">
+            <button id="tabActive" class="tab-btn active" style="background:none; border:none; font-family:inherit; font-weight:600; font-size:0.9rem; color:var(--primary-color); border-bottom:2px solid var(--primary-color); cursor:pointer; padding:5px 10px;">
+                <span class="material-icons-outlined" style="font-size:0.85rem;vertical-align:text-bottom;">work</span> งานปัจจุบัน
+            </button>
+            <button id="tabHistory" class="tab-btn" style="background:none; border:none; font-family:inherit; font-weight:500; font-size:0.9rem; color:var(--surface-600); cursor:pointer; padding:5px 10px;">
+                <span class="material-icons-outlined" style="font-size:0.85rem;vertical-align:text-bottom;">history</span> ประวัติการทำงาน
+            </button>
+        </div>
+        
+        <div id="activeJobsContainer" class="mechanic-jobs">
+            <div class="job-card" style="text-align:center;padding:2rem;">
+                <div class="spinner"></div>
+                <div style="margin-top:0.5rem;font-size:0.85rem;color:#94A3B8;">กำลังโหลด...</div>
+            </div>
+        </div>
+
+        <!-- History Jobs Section -->
+        <div id="historyJobsContainer" style="display:none;">
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 0.8rem;">
+                <select id="historyFilter" class="input" style="width: auto; padding: 4px 8px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--surface-200);">
+                    <option value="this_month">เดือนนี้</option>
+                    <option value="last_month">เดือนที่แล้ว</option>
+                    <option value="all">ทั้งหมด</option>
+                </select>
+            </div>
+            <div id="historyJobsList">
+                <div class="job-card" style="text-align:center;padding:2rem;">
+                    <div class="spinner"></div>
+                    <div style="margin-top:0.5rem;font-size:0.85rem;color:#94A3B8;">กำลังโหลดประวัติ...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Section -->
+        <div class="section-label" style="margin-top:1.5rem;">
+            <span class="material-icons-outlined" style="font-size:0.85rem;vertical-align:text-bottom;">bar_chart</span>
+            ผลงานของฉัน (เดือนนี้)
+        </div>
+        <div class="kpi-grid">
+            <!-- Always visible -->
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiLed">—</div>
+                <div class="kpi-label">งานหลัก (ใบ)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="kpiAssisted">—</div>
+                <div class="kpi-label">งานช่วย (ใบ)</div>
+            </div>
+            <!-- Manager / Owner / Admin only -->
+            <div class="kpi-card manager-only" style="display:none;">
+                <div class="kpi-value" id="kpiHours">—</div>
+                <div class="kpi-label">ชั่วโมงทำงาน</div>
+            </div>
+            <div class="kpi-card manager-only" style="display:none;">
+                <div class="kpi-value" id="kpiCompleted">—</div>
+                <div class="kpi-label">งานเสร็จ (ใบ)</div>
+            </div>
+            <div class="kpi-card manager-only" style="display:none;grid-column:1/-1;">
+                <div class="kpi-value" id="kpiRevenue" style="font-size:1.4rem;">—</div>
+                <div class="kpi-label">รายได้จากงานหลัก</div>
+            </div>
+        </div>
+
+        <div style="height:2rem;"></div>
+
+    </div><!-- /page-container -->
+
+    <script type="module" src="../../assets/js/app-shell.js"></script>
+    <script type="module" src="./logic.js"></script>
+</body>
+
+</html>

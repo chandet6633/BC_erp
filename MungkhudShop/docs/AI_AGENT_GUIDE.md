@@ -123,7 +123,7 @@ const docs = await fetchFullList('documents', { filter: `doc_type='IV'`, request
 4. `app.js` checks `getCurrentUser()` on every route change
 5. Sidebar filtered by `allowed_menus` string (`app.js:184-216`)
 
-**PIN login**: Queries Management's PB instance (`managementPB`) for shared user database (`auth.js:104-162`)
+**PIN login**: Queries Portal's PB instance (`portalPB`) for shared user database (`auth.js:104-162`)
 
 **30-min session timeout**: Auto-logout after inactivity. Reset on mouse/key/touch events. (`app.js:280-308`)
 
@@ -168,4 +168,4 @@ const docs = await fetchFullList('documents', { filter: `doc_type='IV'`, request
 - Styled with Glassmorphism (Navy/Gold/White)
 - Connected to PocketBase with 19+ collections
 - Extended with: custom auth, RBAC, PIN shared login, Thai help, autocomplete, VAT toggle, multi-shop, granular permissions, favorites, evaluation, multi-payment, kanban, dark mode, session timeout, Telegram alerts
-- Sibling project: `Management/` — different Vite + PocketBase dashboard for business analytics. Shares user data via `managementPB`.
+- Sibling project: `Portal/` — different Vite + PocketBase dashboard for business analytics. Shares user data via `portalPB`.

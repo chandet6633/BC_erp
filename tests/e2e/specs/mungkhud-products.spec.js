@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { loginMungkhudShop, gotoMungkhudRoute } = require('../utils/auth');
 
-test.describe('MungkhudShop Product Management', () => {
+test.describe('MungkhudShop Product Portal', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'MungkhudShop', 'Only runs in MungkhudShop project');
     await loginMungkhudShop(page, 'admin', 'admin123');
@@ -82,5 +82,45 @@ test.describe('MungkhudShop Product Management', () => {
     const deleteToast = page.locator('.toast.success').last();
     await expect(deleteToast).toBeVisible({ timeout: 5000 });
     await expect(deleteToast).toContainText(/ลบข้อมูลเรียบร้อย/i);
+  });
+
+  test('Product master saves and reloads stock tracking type', async ({ page }) => {
+    const suffix = Date.now();
+    const testCode = `E2E-TRK-${suffix}`;
+    const testName = `E2E Tracked Product ${suffix}`;
+
+    await gotoMungkhudRoute(page, 'master-product', '#masterSearchInput');
+    await page.click('.tab-btn[data-tab="add"]');
+    await page.waitForSelector('#field_code', { timeout: 5000 });
+
+    await page.fill('#field_code', testCode);
+    await page.fill('#field_name', testName);
+    await page.selectOption('#field_type', 'part');
+    await page.selectOption('#field_is_track_stock', 'true');
+    await page.selectOption('#field_tracking_type', 'SERIALIZED');
+    await page.fill('#field_price', '100');
+    await page.fill('#field_cost', '50');
+
+    await page.click('#btnSaveMaster');
+    await expect(page.locator('.toast.success').last()).toBeVisible({ timeout: 5000 });
+
+    await page.click('.tab-btn[data-tab="search"]');
+    await page.fill('#masterSearchInput', testCode);
+    await page.waitForTimeout(500);
+
+    const productRow = page.locator('tr', { hasText: testCode });
+    await expect(productRow).toBeVisible({ timeout: 5000 });
+    await expect(productRow).toContainText('Serialized');
+
+    await productRow.locator('.btn-edit').click();
+    await expect(page.locator('#field_tracking_type')).toHaveValue('SERIALIZED');
+    await expect(page.locator('#field_tracking_type')).toBeEnabled();
+
+    await page.click('.tab-btn[data-tab="search"]');
+    await page.fill('#masterSearchInput', testCode);
+    await page.waitForTimeout(500);
+    await productRow.locator('.btn-delete').click();
+    await page.click('#confirmOk');
+    await expect(page.locator('.toast.success').last()).toBeVisible({ timeout: 5000 });
   });
 });
